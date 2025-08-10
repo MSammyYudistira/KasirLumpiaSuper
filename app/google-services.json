@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "940432107940",
+    "project_id": "lumpia-super-cashier-30a96",
+    "storage_bucket": "lumpia-super-cashier-30a96.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:940432107940:android:5579f24d493d172206b931",
+        "android_client_info": {
+          "package_name": "com.example.kasirlumpiasuper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDd7RSOGgNvw2cF7kxPnKxocxZTGZp67JI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
