@@ -20,18 +20,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             KasirLumpiaSuperTheme {
                 AuthScreen()
-                }
             }
         }
     }
+}
 
 @Composable
 fun AuthScreen() {
     val navController = rememberNavController()
     NavHost(navController, startDestination = "login") {
-        composable ("login") { LoginScreen(navController)}
-        composable ("signup") { SignupScreen(navController)}
-        composable ("home") { HomeScreen(navController)}
+        composable("login") { LoginScreen(navController) }
+        composable("signup") { SignupScreen(navController) }
+        composable("home") { HomeScreen(navController) }
 
     }
 }

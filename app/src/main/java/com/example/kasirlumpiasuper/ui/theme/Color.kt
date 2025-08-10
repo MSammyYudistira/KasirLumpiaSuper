@@ -11,11 +11,13 @@ val Primary = Color(0xFF127AF1)         // Warna utama
 val PrimaryBold = Color(0xFF05318B)     // Warna utama versi gelap/tegas
 
 // Secondary Color
-val Secondary = Color(0xFFCFEEFE)       // Warna sekunder, biasanya untuk aksen ringan atau background sekunder
+val Secondary =
+    Color(0xFFCFEEFE)       // Warna sekunder, biasanya untuk aksen ringan atau background sekunder
 
 // Surface & Background
 val Surface = Color(0xFFFFFFFF)         // Warna permukaan utama (card, sheet, dll)
-val Background = Color(0xFFF9FAFB)      // Warna layar kosong, bisa digunakan sebagai background utama
+val Background =
+    Color(0xFFF9FAFB)      // Warna layar kosong, bisa digunakan sebagai background utama
 
 // Text
 val OnSurface = Color(0xFF2F353E)       // Warna teks utama (tebal)

@@ -1,15 +1,12 @@
 package com.example.kasirlumpiasuper.ui
 
-import android.graphics.drawable.shapes.Shape
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -45,8 +41,6 @@ import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +56,7 @@ fun HomeScreen(navController: NavHostController) {
             )
         },
         floatingActionButtonPosition = FabPosition.Center,
-            floatingActionButton = {
+        floatingActionButton = {
             FloatingActionButton(
                 onClick = { /* Aksi ketika tombol diklik */ },
                 shape = RoundedCornerShape(8.dp),
@@ -92,7 +86,7 @@ fun HomeScreen(navController: NavHostController) {
         },
 
 
-    ) { innerPadding ->
+        ) { innerPadding ->
 
         LazyColumn(
             horizontalAlignment = Alignment.CenterHorizontally,

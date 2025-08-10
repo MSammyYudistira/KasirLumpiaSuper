@@ -1,34 +1,22 @@
 package com.example.kasirlumpiasuper.ui
 
-import android.R.attr.label
-import android.R.attr.name
-import android.R.attr.password
-import android.app.ProgressDialog.show
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
@@ -48,7 +36,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
@@ -56,11 +43,9 @@ import com.example.kasirlumpiasuper.data.User
 import com.example.kasirlumpiasuper.ui.theme.Background
 import com.example.kasirlumpiasuper.ui.theme.HintText
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
-import com.example.kasirlumpiasuper.ui.theme.OnSurface
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.Surface
 import com.google.firebase.Firebase
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 
@@ -112,8 +97,8 @@ fun SignupScreen(navController: NavHostController) {
                             ).show()
 
                             if (role.isNotEmpty()) {
-                                navController.navigate("login"){
-                                    popUpTo("signup") { inclusive = true}
+                                navController.navigate("login") {
+                                    popUpTo("signup") { inclusive = true }
                                 }
                             } else {
                                 Toast.makeText(context, "Gagal Signup", Toast.LENGTH_SHORT).show()
