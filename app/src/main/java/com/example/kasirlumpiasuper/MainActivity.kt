@@ -8,8 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.ui.HomeScreen
-import com.example.kasirlumpiasuper.ui.LoginScreen
-import com.example.kasirlumpiasuper.ui.SignupScreen
+import com.example.kasirlumpiasuper.ui.login.LoginScreen
+import com.example.kasirlumpiasuper.ui.signup.SignupScreen
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.google.firebase.FirebaseApp
 

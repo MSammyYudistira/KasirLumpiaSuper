@@ -1,4 +1,4 @@
-package com.example.kasirlumpiasuper.ui
+package com.example.kasirlumpiasuper.ui.signup
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -9,11 +9,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -21,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,90 +42,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.User
 import com.example.kasirlumpiasuper.ui.theme.Background
 import com.example.kasirlumpiasuper.ui.theme.HintText
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.Surface
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
 
 @Composable
-fun SignupScreen(navController: NavHostController) {
+fun SignupScreen(
+    navController: NavHostController,
+    viewModel: SignupViewModel = viewModel()
+) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
     val context = LocalContext.current
-    val auth = Firebase.auth
-    val firestore = Firebase.firestore
 
-    fun handleSignup(role: String) {
-        // Validasi sederhana
-        if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-            Toast.makeText(context, "Isi semua field!", Toast.LENGTH_SHORT).show()
-            return
+    LaunchedEffect(viewModel.errorMessage) {
+        viewModel.errorMessage?.let { text ->
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
         }
-        if (password != confirmPassword) {
-            Toast.makeText(context, "Password dan Confirm Password tidak sama!", Toast.LENGTH_SHORT)
-                .show()
-        }
-
-        // Buat akun
-        auth.createUserWithEmailAndPassword(email.trim(), password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val uid = task.result?.user?.uid ?: return@addOnCompleteListener
-
-                    // Siapkan data user untuk Firestore
-                    val newUser = User(
-                        uid = uid,
-                        name = username.trim(),
-                        email = email.trim(),
-                        role = role,
-                    )
-
-                    // Simpan ke koleksi "users" dengan document id = uid
-                    firestore.collection("users")
-                        .document(uid)
-                        .set(newUser)
-                        .addOnSuccessListener {
-                            Toast.makeText(
-                                context,
-                                "Signup berhasil!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-
-                            if (role.isNotEmpty()) {
-                                navController.navigate("login") {
-                                    popUpTo("signup") { inclusive = true }
-                                }
-                            } else {
-                                Toast.makeText(context, "Gagal Signup", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            auth.currentUser?.delete()
-                            Toast.makeText(
-                                context,
-                                "Gagal menyimpan data user: ${e.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                } else {
-                    Toast.makeText(
-                        context,
-                        task.exception?.message ?: "Signup gagal: ${task.exception?.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
     }
 
     Box(
@@ -198,9 +146,37 @@ fun SignupScreen(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp),
-                    onClick = { handleSignup("kasir") }) {
-                    Text("Sign Up")
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    enabled = !viewModel.isLoading,
+                    onClick = {
+                        viewModel.signupUser(
+                            username = username,
+                            email = email,
+                            password = password,
+                            confirmPassword = confirmPassword,
+                            role = "kasir"
+                        ) {
+                            Toast.makeText(context, "Signup berhasil!", Toast.LENGTH_SHORT).show()
+                            navController.navigate("login") {
+                                popUpTo("signup") { inclusive = true }
+                            }
+                        }
+                    }
+                ) {
+                    if (viewModel.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Loading...")
+                    } else {
+                        Icon(painter = painterResource(R.drawable.baseline_person_add_24), contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Sign Up", style = MaterialTheme.typography.titleSmall)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
