@@ -1,7 +1,8 @@
-package com.example.kasirlumpiasuper.ui
+package com.example.kasirlumpiasuper.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -52,7 +53,8 @@ fun HomeScreen(navController: NavHostController) {
                 userName = "Sammy",
                 onHomeClick = {},
                 onHistoryClick = {},
-                onStatsClick = {}
+                onStatsClick = {},
+                onProfileClick = { navController.navigate("profile") }
             )
         },
         floatingActionButtonPosition = FabPosition.Center,
@@ -72,7 +74,7 @@ fun HomeScreen(navController: NavHostController) {
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Tambah Item",
+                        contentDescription = "Tambahkan Item",
                         tint = Color.White
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -92,13 +94,15 @@ fun HomeScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(32.dp),
             modifier = Modifier
-                .padding(horizontal = 72.dp, vertical = 32.dp)
                 .padding(innerPadding)
+                .padding(horizontal = 72.dp)
+                .padding(bottom = 72.dp)
         ) {
             item {
                 Surface(
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .padding(top = 32.dp),
                     shadowElevation = 4.dp,
                     shape = RoundedCornerShape(8.dp),
                 ) {
@@ -348,27 +352,19 @@ fun HomeScreen(navController: NavHostController) {
                     }
                 }
             }
-
-//            Button(onClick = {
-//                Firebase.auth.signOut()
-//                navController.navigate("login") {
-//                    popUpTo("home") { inclusive = true }
-//                }
-//            }) { Text("Logout") }
-
         }
     }
 }
 
 @Composable
-fun CustomTopBar(
+private fun CustomTopBar(
     userName: String,
     onHomeClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onStatsClick: () -> Unit
+    onStatsClick: () -> Unit,
+    onProfileClick: () -> Unit
 ) {
     Surface(
-        tonalElevation = 4.dp,
         shadowElevation = 4.dp
     ) {
         Row(
@@ -376,17 +372,19 @@ fun CustomTopBar(
                 .fillMaxWidth()
                 .padding(horizontal = 72.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.Absolute.SpaceBetween
         ) {
             Text(
                 text = "Halaman Beranda",
                 style = MaterialTheme.typography.titleMedium,
-                color = Primary
+                color = Primary,
+                modifier = Modifier.weight(1f)
             )
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(64.dp)
+                horizontalArrangement = Arrangement.Center,
+
             ) {
                 TextButton(onClick = onHomeClick) {
                     Icon(
@@ -396,6 +394,8 @@ fun CustomTopBar(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Beranda", style = MaterialTheme.typography.titleSmall)
                 }
+
+                Spacer(modifier = Modifier.width(64.dp))
 
                 TextButton(onClick = onHistoryClick) {
                     Icon(
@@ -411,6 +411,8 @@ fun CustomTopBar(
                     )
                 }
 
+                Spacer(modifier = Modifier.width(64.dp))
+
                 TextButton(onClick = onStatsClick) {
                     Icon(
                         painter = painterResource(R.drawable.outline_statistic_up),
@@ -421,14 +423,17 @@ fun CustomTopBar(
                     Text(
                         "Statistik",
                         style = MaterialTheme.typography.titleSmall,
-                        color = OnSurfaceVariant
+                        color = OnSurfaceVariant,
+                        maxLines = 1
                     )
                 }
             }
 
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .weight(1f)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.lumper_logo),
@@ -436,6 +441,9 @@ fun CustomTopBar(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
+                        .clickable{
+                            onProfileClick()
+                        }
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -453,7 +461,8 @@ private fun CustomTopBarPreview() {
             userName = "Sammy",
             onHomeClick = {},
             onHistoryClick = {},
-            onStatsClick = {}
+            onStatsClick = {},
+            onProfileClick = {}
         )
     }
 }
