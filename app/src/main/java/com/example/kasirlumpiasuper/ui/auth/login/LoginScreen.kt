@@ -1,6 +1,7 @@
-package com.example.kasirlumpiasuper.ui.signup
+package com.example.kasirlumpiasuper.ui.auth.login
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,18 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,8 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,21 +41,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
+import com.example.kasirlumpiasuper.ui.auth.signup.CustomTextField
 import com.example.kasirlumpiasuper.ui.theme.Background
-import com.example.kasirlumpiasuper.ui.theme.HintText
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
-import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.Surface
 
 @Composable
-fun SignupScreen(
+fun LoginScreen(
     navController: NavHostController,
-    viewModel: SignupViewModel = viewModel()
+    viewModel: LoginViewModel = viewModel()
 ) {
-    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
 
     val context = LocalContext.current
 
@@ -76,6 +68,7 @@ fun SignupScreen(
             .background(Background),
         contentAlignment = Alignment.Center,
     ) {
+
         Card(
             modifier = Modifier
                 .widthIn(max = 500.dp)
@@ -91,23 +84,21 @@ fun SignupScreen(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Buat Akun Baru", style = MaterialTheme.typography.headlineMedium)
+                Image(
+                    painter = painterResource(R.drawable.lumper_logo),
+                    contentDescription = "Lumper Logo",
+                    modifier = Modifier.size(121.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Selamat Datang", style = MaterialTheme.typography.headlineMedium)
 
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Daftarkan diri Anda untuk menggunakan aplikasi kasir Lumpia Super",
+                    "Silahkan login untuk masuk ke aplikasi kasir lumpia super",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                CustomTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = "Username",
-                    placeholder = "Masukkan username kamu",
-                    iconRes = R.drawable.baseline_person_24
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -134,109 +125,91 @@ fun SignupScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                CustomTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    label = "Confirm Password",
-                    placeholder = "Ketik ulang password kamu",
-                    iconRes = R.drawable.outline_password_24,
-                    isPassword = true
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    enabled = !viewModel.isLoading,
+                TextButton(
                     onClick = {
-                        viewModel.signupUser(
-                            username = username,
-                            email = email,
-                            password = password,
-                            confirmPassword = confirmPassword,
-                            role = "kasir"
-                        ) {
-                            Toast.makeText(context, "Signup berhasil!", Toast.LENGTH_SHORT).show()
-                            navController.navigate("login") {
-                                popUpTo("signup") { inclusive = true }
+                        viewModel.resetPassword(email) { success ->
+                            if (success) {
+                                Toast.makeText(
+                                    context,
+                                    "Email reset password telah dikirim ke $email",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
-                    }
+                    },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Lupa password?")
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Button(
+                    onClick = {
+                        viewModel.loginUser(email, password) { success, role, username ->
+                            if (success) {
+                                if (role == "kasir") {
+                                    navController.navigate("dashboard_kasir") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                    Toast.makeText(
+                                        context,
+                                        "Selamat datang kasir $username!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else if (role == "admin") {
+                                    navController.navigate("dashboard_admin") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                    Toast.makeText(
+                                        context,
+                                        "Selamat datang Admin!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+//                                navController.navigate("home") {
+//                                    popUpTo("login") { inclusive = true }
+//                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !viewModel.isLoading,
                 ) {
                     if (viewModel.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             color = Color.White,
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                         Spacer(Modifier.width(8.dp))
                         Text("Loading...")
                     } else {
-                        Icon(painter = painterResource(R.drawable.baseline_person_add_24), contentDescription = null)
+                        Icon(painter = painterResource(R.drawable.outline_login_24), contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Sign Up", style = MaterialTheme.typography.titleSmall)
+                        Text("Login", style = MaterialTheme.typography.titleSmall)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 TextButton(onClick = {
-                    navController.navigate("login") {
-                        popUpTo("signup") { inclusive = true }
+                    navController.navigate("signup") {
+                        popUpTo("login") { inclusive = true }
                     }
                 }) {
-                    Text("Already have an account? Login")
+                    Text("Don't an account? Sign up")
                 }
             }
         }
     }
 }
 
-
-@Composable
-fun CustomTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    iconRes: Int,
-    isPassword: Boolean = false
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        placeholder = { Text(placeholder, color = HintText) },
-        leadingIcon = {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = label,
-                tint = Primary
-            )
-        },
-        singleLine = true,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = TextFieldDefaults.colors(
-            focusedIndicatorColor = Primary,
-            unfocusedIndicatorColor = HintText,
-            cursorColor = Primary,
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedLabelColor = Primary,
-            unfocusedLabelColor = Color.Gray
-        )
-    )
-}
-
 @Preview(showBackground = true, device = Devices.TABLET)
 @Composable
-private fun SignupScreenPreview() {
+private fun LoginScreenPreview() {
     KasirLumpiaSuperTheme {
-        SignupScreen(
-            navController = rememberNavController()
-        )
+        LoginScreen(navController = rememberNavController())
     }
+
 }

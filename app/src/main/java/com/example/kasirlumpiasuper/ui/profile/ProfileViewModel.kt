@@ -1,25 +1,24 @@
 package com.example.kasirlumpiasuper.ui.profile
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.data.User
+import com.example.kasirlumpiasuper.data.model.Users
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 class ProfileViewModel : ViewModel() {
 
+
     private val _user = MutableStateFlow(
-        User(
+        Users(
             name = "",
             email = "",
             quote = ""
         )
     )
 
-    val user: StateFlow<User> = _user
+    val user: StateFlow<Users> = _user
 
     init {
         loadUserFromAuth()
@@ -37,20 +36,36 @@ class ProfileViewModel : ViewModel() {
                     if (document != null && document.exists()) {
                         val name = document.getString("name") ?: ""
                         val email = document.getString("email") ?: user.email ?: ""
+                        val quote = document.getString("quote") ?: ""
 
-                        _user.value = User(
+                        _user.value = Users(
                             name = name,
                             email = email,
-                            quote = ""
+                            quote = quote
                         )
                     }
                 }
         }
     }
 
-    fun updateQuote(newQuote: String) {
-        viewModelScope.launch {
-            _user.value = _user.value.copy(quote = newQuote)
-        }
+    fun updateUser(newUser: Users, onResult: (Boolean) -> Unit) {
+        val firebaseUser = FirebaseAuth.getInstance().currentUser ?: return
+
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(firebaseUser.uid)
+            .set(newUser)
+            .addOnSuccessListener {
+                _user.value = newUser
+                onResult(true)
+            }
+            .addOnFailureListener { e ->
+                e.printStackTrace()
+                onResult(false)
+            }
     }
+}
+
+fun logoutUser() {
+    val logout = FirebaseAuth.getInstance().signOut()
 }

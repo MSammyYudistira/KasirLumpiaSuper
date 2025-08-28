@@ -36,9 +36,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
+import com.example.kasirlumpiasuper.ui.components.CustomTopBar
+import com.example.kasirlumpiasuper.ui.components.TopBarMenu
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary
@@ -54,7 +57,8 @@ fun HomeScreen(navController: NavHostController) {
                 onHomeClick = {},
                 onHistoryClick = {},
                 onStatsClick = {},
-                onProfileClick = { navController.navigate("profile") }
+                onProfileClick = { navController.navigate("profile") },
+                onSelectedMenu = TopBarMenu.HOME
             )
         },
         floatingActionButtonPosition = FabPosition.Center,
@@ -356,102 +360,6 @@ fun HomeScreen(navController: NavHostController) {
     }
 }
 
-@Composable
-private fun CustomTopBar(
-    userName: String,
-    onHomeClick: () -> Unit,
-    onHistoryClick: () -> Unit,
-    onStatsClick: () -> Unit,
-    onProfileClick: () -> Unit
-) {
-    Surface(
-        shadowElevation = 4.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 72.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Absolute.SpaceBetween
-        ) {
-            Text(
-                text = "Halaman Beranda",
-                style = MaterialTheme.typography.titleMedium,
-                color = Primary,
-                modifier = Modifier.weight(1f)
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-
-            ) {
-                TextButton(onClick = onHomeClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.baseline_home_24),
-                        contentDescription = "Beranda"
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Beranda", style = MaterialTheme.typography.titleSmall)
-                }
-
-                Spacer(modifier = Modifier.width(64.dp))
-
-                TextButton(onClick = onHistoryClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_history_24),
-                        contentDescription = "Riwayat",
-                        tint = OnSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        "Riwayat",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = OnSurfaceVariant
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(64.dp))
-
-                TextButton(onClick = onStatsClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_statistic_up),
-                        contentDescription = "Statistik",
-                        tint = OnSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        "Statistik",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = OnSurfaceVariant,
-                        maxLines = 1
-                    )
-                }
-            }
-
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .weight(1f)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.lumper_logo),
-                    contentDescription = "Foto Profil",
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .clickable{
-                            onProfileClick()
-                        }
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = userName, style = MaterialTheme.typography.labelMedium)
-            }
-        }
-    }
-}
 
 @Preview(showBackground = true, device = Devices.TABLET)
 @Composable
@@ -462,7 +370,8 @@ private fun CustomTopBarPreview() {
             onHomeClick = {},
             onHistoryClick = {},
             onStatsClick = {},
-            onProfileClick = {}
+            onProfileClick = {},
+            onSelectedMenu = TopBarMenu.HOME
         )
     }
 }

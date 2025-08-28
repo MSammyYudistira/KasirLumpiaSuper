@@ -1,4 +1,4 @@
-package com.example.kasirlumpiasuper.ui.login
+package com.example.kasirlumpiasuper.ui.auth.login
 
 import android.widget.Toast
 import androidx.compose.runtime.getValue
@@ -27,6 +27,12 @@ class LoginViewModel: ViewModel() {
         password: String,
         onResult: (success: Boolean, role: String?, username: String?) -> Unit
     ) {
+
+        if (email.isBlank() || password.isBlank()) {
+            errorMessage = "Isi semua field!"
+            return
+        }
+
         isLoading = true
         errorMessage = null
 
@@ -43,6 +49,7 @@ class LoginViewModel: ViewModel() {
                                     val role = document.getString("role") ?: "kasir"
                                     val username = document.getString("name") ?: ""
                                     onResult(true, role, username)
+                                    isLoading = false
                                 } else {
                                     errorMessage = "Data user tidak ditemukan."
                                     onResult(false, null, null)
@@ -89,5 +96,4 @@ class LoginViewModel: ViewModel() {
                 }
         }
     }
-
 }

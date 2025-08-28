@@ -1,5 +1,11 @@
 package com.example.kasirlumpiasuper.ui.profile
 
+import android.R.attr.contentDescription
+import android.R.attr.enabled
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,12 +35,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,9 +53,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImagePainter.State.Empty.painter
+import coil.compose.rememberAsyncImagePainter
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Primary
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +69,18 @@ fun ProfileScreen(
     navController: NavHostController,
     viewModel: ProfileViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val user by viewModel.user.collectAsState()
+
+    // state input sementara (biar bisa bandingin dengan data asli)
+    var editedName by remember(user) { mutableStateOf(user.name) }
+    var editedQuote by remember(user) { mutableStateOf(user.quote) }
+
+    // cek apakah ada perubahan dari data asli
+    val hasChanges = editedName != user.name || editedQuote != user.quote
+
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -78,17 +106,17 @@ fun ProfileScreen(
                     .padding(horizontal = 24.dp, vertical = 48.dp)
             ) {
                 ProfilePictureWithEdit(
-                    image = painterResource(R.drawable.lumper_logo),
-                    onEditClick = { }
+                    imageUri = selectedImageUri,
+                    onEditClick = {
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Nama
                 OutlinedTextField(
-                    value = user.name,
-                    onValueChange = {},
-                    readOnly = true,
+                    value = editedName,
+                    onValueChange = { editedName = it },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(R.drawable.baseline_person_24),
@@ -98,12 +126,10 @@ fun ProfileScreen(
                     label = { Text("Nama Lengkap") },
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = {
-                        IconButton(onClick = {}) {
-                            Icon(
-                                painter = painterResource(R.drawable.outline_edit_square_24),
-                                contentDescription = null
-                            )
-                        }
+                        Icon(
+                            painter = painterResource(R.drawable.outline_edit_square_24),
+                            contentDescription = null
+                        )
                     }
                 )
 
@@ -128,10 +154,8 @@ fun ProfileScreen(
 
                 // Quote
                 OutlinedTextField(
-                    value = user.quote,
-                    onValueChange = { newValue ->
-                        viewModel.updateQuote(newValue)
-                    },
+                    value = editedQuote,
+                    onValueChange = { editedQuote = it },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(R.drawable.baseline_format_quote_24),
@@ -140,25 +164,39 @@ fun ProfileScreen(
                     },
                     label = { Text("Quote") },
                     trailingIcon = {
-                        IconButton(onClick = {}) {
-                            Icon(
-                                painter = painterResource(R.drawable.outline_edit_square_24),
-                                contentDescription = null
-                            )
-                        }
+                        Icon(
+                            painter = painterResource(R.drawable.outline_edit_square_24),
+                            contentDescription = null
+                        )
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
 
+        // Tombol Simpan
         Button(
             colors = ButtonDefaults.buttonColors(Primary),
             shape = RoundedCornerShape(8.dp),
-            onClick = {},
+            onClick = {
+                val updatedUser = user.copy(
+                    name = editedName,
+                    quote = editedQuote
+                )
+                viewModel.updateUser(updatedUser) { success ->
+                    if (success) {
+                        Toast.makeText(context, "Perubahan berhasil disimpan", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        Toast.makeText(context, "Gagal menyimpan perubahan", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 321.dp)
+                .padding(horizontal = 321.dp),
+            enabled = hasChanges
         ) {
             Text("Simpan Perubahan", style = MaterialTheme.typography.titleSmall)
         }
@@ -168,7 +206,12 @@ fun ProfileScreen(
         TextButton(
             colors = ButtonDefaults.buttonColors(Color.Red),
             shape = RoundedCornerShape(8.dp),
-            onClick = {},
+            onClick = {
+                FirebaseAuth.getInstance().signOut()
+                navController.navigate("login") {
+                    popUpTo("home") { inclusive = true }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 321.dp)
@@ -180,40 +223,58 @@ fun ProfileScreen(
 
 @Composable
 private fun ProfilePictureWithEdit(
-    image: Painter,
+    imageUri: Uri?,
     onEditClick: () -> Unit
 ) {
     Box(
         modifier = Modifier.size(100.dp), // ukuran foto
         contentAlignment = Alignment.BottomEnd
     ) {
-        Image(
-            painter = image,
-            contentDescription = "Profile Picture",
-            modifier = Modifier
-                .clip(CircleShape)
-                .size(100.dp)
-                .border(
-                    BorderStroke(4.dp, color = Primary),
-                    CircleShape
-                ),
-            contentScale = ContentScale.Crop
-        )
-
-        IconButton(
-            onClick = onEditClick,
-            modifier = Modifier
-                .size(24.dp)
-                .background(Primary, shape = RoundedCornerShape(72.dp))
-        ) {
+//        if (imageUri != null) {
+//            Image(
+//                painter = rememberAsyncImagePainter(imageUri),
+//                contentDescription = "Profile Picture",
+//                modifier = Modifier
+//                    .clip(CircleShape)
+//                    .size(100.dp)
+//                    .border(
+//                        BorderStroke(4.dp, color = Primary),
+//                        CircleShape
+//                    ),
+//                contentScale = ContentScale.Crop
+//            )
+//        } else {
             Icon(
-                painter = painterResource(R.drawable.baseline_photo_camera_24),
-                contentDescription = "Edit Foto",
-                tint = Color.White,
-                modifier = Modifier
-                    .background(Primary)
+                painter = painterResource(R.drawable.baseline_person_24),
+                contentDescription = "Default Profile Picture",
+                tint = Color.Gray,
+                modifier = Modifier.size(100.dp)
             )
-        }
+//            Image(
+//                painter = painterResource(R.drawable.baseline_person_24),
+//                contentDescription = "Default Profile Picture",
+////                modifier = Modifier
+////                    .clip(CircleShape)
+////                    .size(100.dp)
+////                    .border(BorderStroke(4.dp, color = Primary), CircleShape),
+//                contentScale = ContentScale.Crop
+//            )
+//        }
+
+//        IconButton(
+//            onClick = onEditClick,
+//            modifier = Modifier
+//                .size(24.dp)
+//                .background(Primary, shape = RoundedCornerShape(72.dp))
+//        ) {
+//            Icon(
+//                painter = painterResource(R.drawable.baseline_photo_camera_24),
+//                contentDescription = "Edit Foto",
+//                tint = Color.White,
+//                modifier = Modifier
+//                    .background(Primary)
+//            )
+//        }
     }
 }
 
@@ -254,13 +315,13 @@ private fun ProfileTopBarPreview() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun ProfilePictureWithEditPreview() {
-    KasirLumpiaSuperTheme {
-        ProfilePictureWithEdit(
-            image = painterResource(R.drawable.lumper_logo),
-            onEditClick = {}
-        )
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//private fun ProfilePictureWithEditPreview() {
+//    KasirLumpiaSuperTheme {
+//        ProfilePictureWithEdit(
+//            image = painterResource(R.drawable.lumper_logo),
+//            onEditClick = {}
+//        )
+//    }
+//}

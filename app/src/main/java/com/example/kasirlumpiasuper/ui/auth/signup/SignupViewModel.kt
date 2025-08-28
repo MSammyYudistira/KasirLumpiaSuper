@@ -1,15 +1,21 @@
-package com.example.kasirlumpiasuper.ui.signup
+package com.example.kasirlumpiasuper.ui.auth.signup
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.example.kasirlumpiasuper.data.User
+import androidx.lifecycle.viewModelScope
+import com.example.kasirlumpiasuper.data.model.Users
+import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.google.firebase.Firebase
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.launch
 
-class SignupViewModel: ViewModel() {
+class SignupViewModel(
+    private val repository: FirestoreRepository = FirestoreRepository()
+): ViewModel() {
 
     var isLoading by mutableStateOf(false)
         private set
@@ -19,6 +25,12 @@ class SignupViewModel: ViewModel() {
 
     private val auth = Firebase.auth
     private val firestore = Firebase.firestore
+
+    fun addUser(users: Users, function: () -> Unit) {
+        viewModelScope.launch {
+            repository.addUser(users)
+        }
+    }
 
     fun signupUser(
         username: String,
@@ -46,12 +58,26 @@ class SignupViewModel: ViewModel() {
                 if (task.isSuccessful) {
                     val uid = task.result?.user?.uid ?: return@addOnCompleteListener
 
-                    val newUser = User(
+                    val newUser = Users(
                         uid = uid,
                         name = username.trim(),
                         email = email.trim(),
                         role = role,
+                        quote = "",
+                        createdAt = Timestamp.now()
                     )
+
+//                    viewModelScope.launch {
+//                        try {
+//                            repository.addUser(newUser)
+//                            isLoading = false
+//                            onSuccess()
+//                        } catch (e: Exception) {
+//                            isLoading = false
+//                            auth.currentUser?.delete()
+//                            errorMessage = "Gagal menyimpan data user: ${e.message}"
+//                        }
+//                    }
 
                     firestore.collection("users")
                         .document(uid)
