@@ -1,8 +1,6 @@
-package com.example.kasirlumpiasuper.ui.home
+package com.example.kasirlumpiasuper.ui.kasir
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -16,11 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,69 +24,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.ui.components.CustomTopBar
-import com.example.kasirlumpiasuper.ui.components.TopBarMenu
-import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
-import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary
+import com.google.firebase.Timestamp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun KasirDashboard(navController: NavHostController) {
 
     Scaffold(
-        topBar = {
-            CustomTopBar(
-                userName = "Sammy",
-                onHomeClick = {},
-                onHistoryClick = {},
-                onStatsClick = {},
-                onProfileClick = { navController.navigate("profile") },
-                onSelectedMenu = TopBarMenu.HOME
-            )
-        },
         floatingActionButtonPosition = FabPosition.Center,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* Aksi ketika tombol diklik */ },
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .padding(horizontal = 72.dp)
-                    .fillMaxWidth(),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Tambahkan Item",
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Tambahkan Item",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        },
-
-
-        ) { innerPadding ->
+    ) { innerPadding ->
 
         LazyColumn(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -119,6 +64,7 @@ fun HomeScreen(navController: NavHostController) {
                             text = "Ringkasan Hari Ini",
                             style = MaterialTheme.typography.titleMedium
                         )
+                        Timestamp.now()
                         Text(
                             text = "15 Mei 2025",
                             style = MaterialTheme.typography.bodyMedium
@@ -280,11 +226,11 @@ fun HomeScreen(navController: NavHostController) {
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "Ingin Lihat Riwayat Transaksi?",
+                                text = "Buat Pesanan Baru",
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "Lihat semua transaksi yang dilakukan",
+                                text = "Ayo Buat Pesanan Sekarang!",
                                 style = MaterialTheme.typography.bodyMedium
                             )
 
@@ -293,62 +239,13 @@ fun HomeScreen(navController: NavHostController) {
                         TextButton(onClick = {}) {
                             Icon(
                                 modifier = Modifier.size(30.dp),
-                                painter = painterResource(R.drawable.outline_history_24),
-                                contentDescription = "Riwayat Transaksi",
+                                painter = painterResource(R.drawable.outline_add_24),
+                                contentDescription = "Tambah Pesanan",
                                 tint = Primary
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Lihat Riwayat Transaksi disini",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Primary
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    shadowElevation = 4.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp, horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.Start,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Ingin Lihat Statistik Penjualan?",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "Analisis performa penjualan bulanan Anda",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-
-                        }
-
-                        TextButton(onClick = {}) {
-                            Icon(
-                                modifier = Modifier.size(30.dp),
-                                painter = painterResource(R.drawable.outline_statistic_up),
-                                contentDescription = "Statistik",
-                                tint = Primary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Lihat Statistik disini",
+                                text = "Klik disini untuk membuat pesanan baru",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Primary
                             )
@@ -357,29 +254,5 @@ fun HomeScreen(navController: NavHostController) {
                 }
             }
         }
-    }
-}
-
-
-@Preview(showBackground = true, device = Devices.TABLET)
-@Composable
-private fun CustomTopBarPreview() {
-    KasirLumpiaSuperTheme {
-        CustomTopBar(
-            userName = "Sammy",
-            onHomeClick = {},
-            onHistoryClick = {},
-            onStatsClick = {},
-            onProfileClick = {},
-            onSelectedMenu = TopBarMenu.HOME
-        )
-    }
-}
-
-@Preview(showBackground = true, device = Devices.TABLET)
-@Composable
-private fun HomeScreenPreview() {
-    KasirLumpiaSuperTheme {
-        HomeScreen(navController = rememberNavController())
     }
 }

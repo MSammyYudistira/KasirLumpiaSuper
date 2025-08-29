@@ -19,10 +19,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,8 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,14 +40,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.model.Users
+import com.example.kasirlumpiasuper.ui.components.CustomTextField
 import com.example.kasirlumpiasuper.ui.theme.Background
-import com.example.kasirlumpiasuper.ui.theme.HintText
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
-import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.Surface
-import com.google.firebase.Timestamp
-import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun SignupScreen(
@@ -152,15 +144,6 @@ fun SignupScreen(
                     enabled = !viewModel.isLoading,
                     onClick = {
 
-//                        val newUser = Users(
-//                            uid = FirebaseAuth.getInstance().currentUser?.uid ?: "",
-//                            name = username,
-//                            email = email,
-//                            role = "kasir",
-//                            quote = "",
-//                            createdAt = Timestamp.now()
-//                        )
-//                        viewModel.addUser(newUser)
                         viewModel.signupUser(
                             username = username,
                             email = email,
@@ -206,44 +189,6 @@ fun SignupScreen(
             }
         }
     }
-}
-
-
-@Composable
-fun CustomTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    iconRes: Int,
-    isPassword: Boolean = false
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        placeholder = { Text(placeholder, color = HintText) },
-        leadingIcon = {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = label,
-                tint = Primary
-            )
-        },
-        singleLine = true,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = TextFieldDefaults.colors(
-            focusedIndicatorColor = Primary,
-            unfocusedIndicatorColor = HintText,
-            cursorColor = Primary,
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedLabelColor = Primary,
-            unfocusedLabelColor = Color.Gray
-        )
-    )
 }
 
 @Preview(showBackground = true, device = Devices.TABLET)

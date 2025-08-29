@@ -1,32 +1,20 @@
 package com.example.kasirlumpiasuper.ui.profile
 
-import android.R.attr.contentDescription
-import android.R.attr.enabled
 import android.net.Uri
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -37,31 +25,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import coil.compose.AsyncImagePainter.State.Empty.painter
-import coil.compose.rememberAsyncImagePainter
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,11 +62,11 @@ fun ProfileScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        CustomProfileTopBar(
-            onBackClick = {
-                navController.popBackStack()
-            }
-        )
+//        CustomProfileTopBar(
+//            onBackClick = {
+//                navController.popBackStack()
+//            }
+//        )
 
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -244,12 +219,12 @@ private fun ProfilePictureWithEdit(
 //                contentScale = ContentScale.Crop
 //            )
 //        } else {
-            Icon(
-                painter = painterResource(R.drawable.baseline_person_24),
-                contentDescription = "Default Profile Picture",
-                tint = Color.Gray,
-                modifier = Modifier.size(100.dp)
-            )
+        Icon(
+            painter = painterResource(R.drawable.baseline_person_24),
+            contentDescription = "Default Profile Picture",
+            tint = Color.Gray,
+            modifier = Modifier.size(100.dp)
+        )
 //            Image(
 //                painter = painterResource(R.drawable.baseline_person_24),
 //                contentDescription = "Default Profile Picture",
@@ -278,42 +253,42 @@ private fun ProfilePictureWithEdit(
     }
 }
 
-@Composable
-fun CustomProfileTopBar(onBackClick: () -> Unit) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shadowElevation = 4.dp
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .padding(horizontal = 72.dp, vertical = 8.dp)
-        ) {
-            IconButton(onClick = { onBackClick() }) {
-                Icon(
-                    painter = painterResource(R.drawable.outline_back_24),
-                    contentDescription = "back",
-                    tint = Primary
-                )
-            }
-            Text(
-                text = "Ubah Profil",
-                style = MaterialTheme.typography.titleMedium,
-                color = Primary,
-            )
-        }
-    }
-}
+//@Composable
+//fun CustomProfileTopBar(onBackClick: () -> Unit) {
+//    Surface(
+//        modifier = Modifier
+//            .fillMaxWidth(),
+//        shadowElevation = 4.dp
+//    ) {
+//        Row(
+//            horizontalArrangement = Arrangement.spacedBy(4.dp),
+//            verticalAlignment = Alignment.CenterVertically,
+//            modifier = Modifier
+//                .padding(horizontal = 72.dp, vertical = 8.dp)
+//        ) {
+//            IconButton(onClick = { onBackClick() }) {
+//                Icon(
+//                    painter = painterResource(R.drawable.outline_back_24),
+//                    contentDescription = "back",
+//                    tint = Primary
+//                )
+//            }
+//            Text(
+//                text = "Ubah Profil",
+//                style = MaterialTheme.typography.titleMedium,
+//                color = Primary,
+//            )
+//        }
+//    }
+//}
 
-@Preview(showBackground = true, device = Devices.TABLET)
-@Composable
-private fun ProfileTopBarPreview() {
-    KasirLumpiaSuperTheme {
-        CustomProfileTopBar(onBackClick = {})
-    }
-}
+//@Preview(showBackground = true, device = Devices.TABLET)
+//@Composable
+//private fun ProfileTopBarPreview() {
+//    KasirLumpiaSuperTheme {
+//        CustomProfileTopBar(onBackClick = {})
+//    }
+//}
 
 //@Preview(showBackground = true)
 //@Composable

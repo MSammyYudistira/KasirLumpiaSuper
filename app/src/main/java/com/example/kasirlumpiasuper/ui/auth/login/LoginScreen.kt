@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,31 +35,45 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.ui.auth.signup.CustomTextField
+import com.example.kasirlumpiasuper.ui.auth.AuthViewModel
+import com.example.kasirlumpiasuper.ui.components.CustomTextField
+import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Background
-import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Surface
 
 @Composable
 fun LoginScreen(
     navController: NavHostController,
-    viewModel: LoginViewModel = viewModel()
+    loginViewModel: LoginViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
+    val loginState by loginViewModel.loginState.collectAsState()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     val context = LocalContext.current
 
-    LaunchedEffect(viewModel.errorMessage) {
-        viewModel.errorMessage?.let { text ->
+    LaunchedEffect(loginViewModel.errorMessage) {
+        loginViewModel.errorMessage?.let { text ->
             Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(loginState) {
+        loginState?.let { result ->
+            if (result.isSuccess) {
+                authViewModel.checkAuthStatus()
+                    navController.navigate(NavRoutes.AuthCheck.route) {
+                        popUpTo(0)
+                    }
+            } else {
+                loginViewModel.errorMessage
+            }
         }
     }
 
@@ -127,7 +142,7 @@ fun LoginScreen(
 
                 TextButton(
                     onClick = {
-                        viewModel.resetPassword(email) { success ->
+                        loginViewModel.resetPassword(email) { success ->
                             if (success) {
                                 Toast.makeText(
                                     context,
@@ -146,7 +161,7 @@ fun LoginScreen(
 
                 Button(
                     onClick = {
-                        viewModel.loginUser(email, password) { success, role, username ->
+                        loginViewModel.loginUser(email, password) { success, role, username ->
                             if (success) {
                                 if (role == "kasir") {
                                     navController.navigate("dashboard_kasir") {
@@ -167,16 +182,13 @@ fun LoginScreen(
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
-//                                navController.navigate("home") {
-//                                    popUpTo("login") { inclusive = true }
-//                                }
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !viewModel.isLoading,
+                    enabled = !loginViewModel.isLoading,
                 ) {
-                    if (viewModel.isLoading) {
+                    if (loginViewModel.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             color = Color.White,
@@ -185,7 +197,10 @@ fun LoginScreen(
                         Spacer(Modifier.width(8.dp))
                         Text("Loading...")
                     } else {
-                        Icon(painter = painterResource(R.drawable.outline_login_24), contentDescription = null)
+                        Icon(
+                            painter = painterResource(R.drawable.outline_login_24),
+                            contentDescription = null
+                        )
                         Spacer(Modifier.width(8.dp))
                         Text("Login", style = MaterialTheme.typography.titleSmall)
                     }
@@ -203,13 +218,4 @@ fun LoginScreen(
             }
         }
     }
-}
-
-@Preview(showBackground = true, device = Devices.TABLET)
-@Composable
-private fun LoginScreenPreview() {
-    KasirLumpiaSuperTheme {
-        LoginScreen(navController = rememberNavController())
-    }
-
 }

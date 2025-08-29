@@ -4,18 +4,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.kasirlumpiasuper.data.model.Users
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.launch
 
 class SignupViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
-): ViewModel() {
+) : ViewModel() {
 
     var isLoading by mutableStateOf(false)
         private set
@@ -25,12 +23,6 @@ class SignupViewModel(
 
     private val auth = Firebase.auth
     private val firestore = Firebase.firestore
-
-    fun addUser(users: Users, function: () -> Unit) {
-        viewModelScope.launch {
-            repository.addUser(users)
-        }
-    }
 
     fun signupUser(
         username: String,

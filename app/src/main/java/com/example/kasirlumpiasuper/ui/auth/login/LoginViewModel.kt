@@ -1,26 +1,38 @@
 package com.example.kasirlumpiasuper.ui.auth.login
 
-import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-class LoginViewModel: ViewModel() {
-
-    var isLoading by mutableStateOf(false)
-    private set
-
-    var errorMessage by mutableStateOf<String?>(null)
-    private set
-
+class LoginViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+
+    var isLoading by mutableStateOf(false)
+        private set
+
+    var errorMessage by mutableStateOf<String?>(null)
+        private set
+
+    private val _loginState = MutableStateFlow<Result<Boolean>?>(null)
+    val loginState: StateFlow<Result<Boolean>?> = _loginState.asStateFlow()
+
+    fun login(email: String, password: String) {
+        _loginState.value = null
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnSuccessListener {
+                _loginState.value = Result.success(true)
+            }
+            .addOnFailureListener { e ->
+                _loginState.value = Result.failure(e)
+            }
+    }
 
     fun loginUser(
         email: String,
@@ -85,15 +97,15 @@ class LoginViewModel: ViewModel() {
         isLoading = true
         errorMessage = null
 
-            auth.sendPasswordResetEmail(email)
-                .addOnCompleteListener { task ->
-                    isLoading = false
-                    if (task.isSuccessful) {
-                        onResult(true)
-                    } else {
-                        errorMessage = task.exception?.message ?: "Gagal mengirim email reset password."
-                        onResult(false)
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                isLoading = false
+                if (task.isSuccessful) {
+                    onResult(true)
+                } else {
+                    errorMessage = task.exception?.message ?: "Gagal mengirim email reset password."
+                    onResult(false)
                 }
-        }
+            }
     }
 }
