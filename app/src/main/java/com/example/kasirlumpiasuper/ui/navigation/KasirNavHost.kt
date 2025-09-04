@@ -7,12 +7,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
+import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
 import com.example.kasirlumpiasuper.ui.LoadingScreen
 import com.example.kasirlumpiasuper.ui.admin.AdminDashboard
 import com.example.kasirlumpiasuper.ui.auth.AuthCheckScreen
@@ -25,11 +27,14 @@ import com.example.kasirlumpiasuper.ui.kasir.KasirDashboard
 import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
 import com.example.kasirlumpiasuper.ui.splash.SplashScreen
 import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
+import com.example.kasirlumpiasuper.ui.stock.StockScreen
 
 @Composable
 fun KasirNavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+
+    val firestoreViewModel: FirestoreViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -51,15 +56,22 @@ fun KasirNavHost() {
             startDestination = NavRoutes.DashboardKasir.route,
             route = "main"
         ) {
+
             composable(NavRoutes.DashboardKasir.route) {
-                MainScaffold(navController) { innerPadding ->
+                MainScaffold(
+                    navController = navController,
+                    viewModel = firestoreViewModel
+                ) { innerPadding ->
                     Box(Modifier.padding(innerPadding)) {
                         KasirDashboard(navController)
                     }
                 }
             }
             composable(NavRoutes.DashboardAdmin.route) {
-                MainScaffold(navController) { innerPadding ->
+                MainScaffold(
+                    navController = navController,
+                    viewModel = firestoreViewModel
+                ) { innerPadding ->
                     Box(Modifier.padding(innerPadding)) {
                         AdminDashboard(
                             navController = navController
@@ -68,35 +80,46 @@ fun KasirNavHost() {
                 }
             }
             composable(NavRoutes.Profile.route) {
-                MainScaffold(navController) { innerPadding ->
+                MainScaffold(
+                    navController = navController,
+                    viewModel = firestoreViewModel
+                ) { innerPadding ->
                     Box(Modifier.padding(innerPadding)) {
                         ProfileScreen(navController)
                     }
                 }
             }
             composable(NavRoutes.History.route) {
-                MainScaffold(navController) { innerPadding ->
+                MainScaffold(
+                    navController = navController,
+                    viewModel = firestoreViewModel
+                ) { innerPadding ->
                     Box(Modifier.padding(innerPadding)) {
                         HistoryScreen(navController)
                     }
                 }
             }
             composable(NavRoutes.Statistic.route) {
-                MainScaffold(navController) { innerPadding ->
+                MainScaffold(
+                    navController = navController,
+                    viewModel = firestoreViewModel
+                ) { innerPadding ->
                     Box(Modifier.padding(innerPadding)) {
                         StatisticScreen(navController)
                     }
                 }
             }
+
+            composable(NavRoutes.Stock.route) { StockScreen(navController) }
         }
     }
 }
-//}
 
 @Composable
 fun MainScaffold(
     navController: NavHostController,
-    content: @Composable (PaddingValues) -> Unit
+    viewModel: FirestoreViewModel,
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -112,12 +135,12 @@ fun MainScaffold(
     Scaffold(
         topBar = {
             CustomTopBar(
-                userName = "Sammy",
                 onHomeClick = { navController.navigateSingleTopTo(NavRoutes.DashboardKasir.route) },
                 onHistoryClick = { navController.navigateSingleTopTo(NavRoutes.History.route) },
                 onProfileClick = { navController.navigateSingleTopTo(NavRoutes.Profile.route) },
                 onStatsClick = { navController.navigateSingleTopTo(NavRoutes.Statistic.route) },
-                onSelectedMenu = selectedMenu
+                onSelectedMenu = selectedMenu,
+                viewModel = viewModel
             )
         }
     ) { innerPadding ->

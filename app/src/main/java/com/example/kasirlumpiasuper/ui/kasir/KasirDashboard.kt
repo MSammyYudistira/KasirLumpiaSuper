@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.kasir
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,227 +30,197 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
+import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
+import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.google.firebase.Timestamp
 
 @Composable
 fun KasirDashboard(navController: NavHostController) {
-
-    Scaffold(
-        floatingActionButtonPosition = FabPosition.Center,
-    ) { innerPadding ->
-
-        LazyColumn(
+    Scaffold { innerPadding ->
+        Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(32.dp),
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(horizontal = 72.dp)
-                .padding(bottom = 72.dp)
         ) {
-            item {
-                Surface(
+            // Ringkasan Hari Ini
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 32.dp),
+                shadowElevation = 4.dp,
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Ringkasan Hari Ini",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "15 Mei 2025",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // Card pelanggan
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFE1EEFE),
+                            shape = RoundedCornerShape(8.dp),
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(24.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_people_24),
+                                    contentDescription = "Pelanggan Hari Ini",
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = Primary,
+                                            shape = CircleShape
+                                        )
+                                        .padding(6.dp),
+                                    tint = Color.White
+                                )
+                                Text(
+                                    "Pelanggan Hari ini",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    "25",
+                                    style = MaterialTheme.typography.displayMedium,
+                                    color = Primary
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(24.dp))
+
+                        // Card pendapatan
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFE3FCEB),
+                            shape = RoundedCornerShape(8.dp),
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(24.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.round_money_24),
+                                    contentDescription = "Total Pendapatan Hari Ini",
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            color = Color(0xFF22C55E),
+                                            shape = CircleShape
+                                        )
+                                        .padding(6.dp),
+                                    tint = Color.White
+                                )
+                                Text(
+                                    "Total Pendapatan Hari Ini",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    "Rp 24.000",
+                                    style = MaterialTheme.typography.displayMedium,
+                                    color = Color(0xFF22C55E)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Atur stok
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                shadowElevation = 4.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 32.dp),
-                    shadowElevation = 4.dp,
-                    shape = RoundedCornerShape(8.dp),
+                        .padding(vertical = 24.dp, horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Column {
+                        Text("Ayo Atur Stok!", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = "Ringkasan Hari Ini",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Timestamp.now()
-                        Text(
-                            text = "15 Mei 2025",
+                            "Atur stok sebelum melakukan transaksi",
                             style = MaterialTheme.typography.bodyMedium
                         )
-
-                        Row(
-                            modifier = Modifier
-                                .padding(24.dp)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f),
-                                color = Color(0xFFE1EEFE),
-                                shape = RoundedCornerShape(8.dp),
-                            ) {
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(24.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.baseline_people_24),
-                                        contentDescription = "Pelanggan Hari Ini",
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .background(
-                                                color = Primary,
-                                                shape = CircleShape
-                                            )
-                                            .padding(6.dp),
-                                        tint = Color.White
-                                    )
-
-                                    Text(
-                                        "Pelanggan Hari ini",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        "25",
-                                        style = MaterialTheme.typography.displayMedium,
-                                        color = Primary
-                                    )
-                                }
-                            }
-
-
-                            Spacer(modifier = Modifier.width(24.dp))
-
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f),
-                                color = Color(0xFFE3FCEB),
-                                shape = RoundedCornerShape(8.dp),
-                            ) {
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(24.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.round_money_24),
-                                        contentDescription = "Total Pendapatan Hari Ini",
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .background(
-                                                color = Color(0xFF22C55E),
-                                                shape = CircleShape
-                                            )
-                                            .padding(6.dp),
-                                        tint = Color.White
-                                    )
-
-                                    Text(
-                                        "Total Pendapatan Hari Ini",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        "Rp 24.000",
-                                        style = MaterialTheme.typography.displayMedium,
-                                        color = Color(0xFF22C55E)
-                                    )
-                                }
-                            }
-                        }
+                    }
+                    TextButton(onClick = {
+                        navController.navigate(NavRoutes.Stock.route)
+                    }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_management_stockout),
+                            contentDescription = "Atur Stock",
+                            modifier = Modifier.size(30.dp),
+                            tint = Primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Atur stok kamu disini",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Primary
+                        )
                     }
                 }
             }
 
-            item {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    shadowElevation = 4.dp,
+            // Buat pesanan baru
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                shadowElevation = 4.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-
+                        .padding(vertical = 24.dp, horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp, horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.Start,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Ayo Atur Stok!",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "Atur stok sebelum melakukan transaksi",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-
-                        }
-
-                        TextButton(onClick = {}) {
-                            Icon(
-                                modifier = Modifier.size(30.dp),
-                                painter = painterResource(R.drawable.outline_management_stockout),
-                                contentDescription = "Atur Stock",
-                                tint = Primary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Atur stok kamu disini",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Primary
-                            )
-                        }
+                    Column {
+                        Text("Buat Pesanan Baru", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Ayo Buat Pesanan Sekarang!",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
-                }
-            }
-
-            item {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    shadowElevation = 4.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp, horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.Start,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Buat Pesanan Baru",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "Ayo Buat Pesanan Sekarang!",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-
-                        }
-
-                        TextButton(onClick = {}) {
-                            Icon(
-                                modifier = Modifier.size(30.dp),
-                                painter = painterResource(R.drawable.outline_add_24),
-                                contentDescription = "Tambah Pesanan",
-                                tint = Primary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Klik disini untuk membuat pesanan baru",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Primary
-                            )
-                        }
+                    TextButton(onClick = { /*TODO*/ }) {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_add_24),
+                            contentDescription = "Tambah Pesanan",
+                            modifier = Modifier.size(30.dp),
+                            tint = Primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Klik disini untuk membuat pesanan baru",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Primary
+                        )
                     }
                 }
             }

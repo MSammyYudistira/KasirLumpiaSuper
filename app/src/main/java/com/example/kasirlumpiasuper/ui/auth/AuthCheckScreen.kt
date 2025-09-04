@@ -40,7 +40,6 @@ fun AuthCheckScreen(navController: NavHostController, viewModel: AuthViewModel =
         }
     }
 
-    // UI sementara (loading spinner)
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center

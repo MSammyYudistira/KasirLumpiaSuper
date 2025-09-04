@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -46,5 +47,6 @@ class AuthViewModel : ViewModel() {
         auth.signOut()
         _authState.value = AuthState.LoggedOut
     }
+
 
 }
