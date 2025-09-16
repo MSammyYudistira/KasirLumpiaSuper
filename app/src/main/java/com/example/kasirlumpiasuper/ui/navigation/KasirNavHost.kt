@@ -15,7 +15,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
-import com.example.kasirlumpiasuper.ui.LoadingScreen
 import com.example.kasirlumpiasuper.ui.admin.AdminDashboard
 import com.example.kasirlumpiasuper.ui.auth.AuthCheckScreen
 import com.example.kasirlumpiasuper.ui.auth.login.LoginScreen
@@ -28,6 +27,7 @@ import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
 import com.example.kasirlumpiasuper.ui.splash.SplashScreen
 import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
+import com.example.kasirlumpiasuper.ui.transaction.TransactionScreen
 
 @Composable
 fun KasirNavHost() {
@@ -111,6 +111,7 @@ fun KasirNavHost() {
             }
 
             composable(NavRoutes.Stock.route) { StockScreen(navController) }
+            composable(NavRoutes.Transaction.route) { TransactionScreen(navController) }
         }
     }
 }

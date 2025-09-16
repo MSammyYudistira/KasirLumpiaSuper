@@ -11,4 +11,5 @@ sealed class NavRoutes(val route: String) {
     object Splash : NavRoutes("splash")
     object AuthCheck : NavRoutes("auth_check")
     object Stock : NavRoutes("stock")
+    object Transaction : NavRoutes("transaction")
 }

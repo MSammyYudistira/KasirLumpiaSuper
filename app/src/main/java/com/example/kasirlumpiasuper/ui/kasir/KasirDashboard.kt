@@ -1,6 +1,7 @@
 package com.example.kasirlumpiasuper.ui.kasir
 
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,20 +24,34 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.google.firebase.Timestamp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @Composable
-fun KasirDashboard(navController: NavHostController) {
+fun KasirDashboard(
+    navController: NavHostController,
+    viewModel: KasirViewModel = viewModel()
+    ) {
+    val stockFilledToday by viewModel.stockFilledToday.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.checkStockForToday()
+    }
+
     Scaffold { innerPadding ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -152,7 +167,12 @@ fun KasirDashboard(navController: NavHostController) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 shadowElevation = 4.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                color = if (!stockFilledToday) Color(0xFFFFD4D4) else Color.Transparent
+//                border = BorderStroke(
+//                    width = 2.dp,
+//                    color = if (!stockFilledToday) Color.Red else Color.Transparent
+//                )
             ) {
                 Row(
                     modifier = Modifier
@@ -162,10 +182,15 @@ fun KasirDashboard(navController: NavHostController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Ayo Atur Stok!", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Atur stok sebelum melakukan transaksi",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = if (!stockFilledToday)"Kamu Belum Atur Stok" else "Ayo Atur Stok!",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (!stockFilledToday) Color.Red else Color.Black
+                        )
+                        Text(
+                            text = if (!stockFilledToday)"Segera atur stok sebelum melakukan transaksi" else "Atur stok sebelum melakukan transaksi",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (!stockFilledToday) Color.Red else Color.Black
                         )
                     }
                     TextButton(onClick = {
@@ -176,13 +201,13 @@ fun KasirDashboard(navController: NavHostController) {
                             painter = painterResource(R.drawable.outline_management_stockout),
                             contentDescription = "Atur Stock",
                             modifier = Modifier.size(30.dp),
-                            tint = Primary
+//                            tint = if (!stockFilledToday) Color.Black else Primary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "Atur stok kamu disini",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Primary
+//                            color = if (!stockFilledToday) Color.Black else Primary
                         )
                     }
                 }
@@ -208,7 +233,7 @@ fun KasirDashboard(navController: NavHostController) {
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-                    TextButton(onClick = { /*TODO*/ }) {
+                    TextButton(onClick = { navController.navigate(NavRoutes.Transaction.route) }) {
                         Icon(
                             painter = painterResource(R.drawable.outline_add_24),
                             contentDescription = "Tambah Pesanan",

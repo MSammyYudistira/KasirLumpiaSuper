@@ -66,7 +66,7 @@ fun CustomTopBar(
             horizontalArrangement = Arrangement.Absolute.SpaceBetween
         ) {
             Text(
-                text = "Halaman Beranda",
+                text = "Dashboard Kasir",
                 style = MaterialTheme.typography.titleMedium,
                 color = Primary,
                 modifier = Modifier.weight(1f)
