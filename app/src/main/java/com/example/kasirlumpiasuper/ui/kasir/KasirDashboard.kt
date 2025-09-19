@@ -64,7 +64,7 @@ fun KasirDashboard(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 32.dp),
+                    .padding(top = 24.dp),
                 shadowElevation = 4.dp,
                 shape = RoundedCornerShape(8.dp),
             ) {

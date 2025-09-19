@@ -62,29 +62,19 @@ fun ProfileScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-//        CustomProfileTopBar(
-//            onBackClick = {
-//                navController.popBackStack()
-//            }
-//        )
-
         Surface(
             shape = RoundedCornerShape(16.dp),
             shadowElevation = 4.dp,
             modifier = Modifier
-                .padding(horizontal = 321.dp, vertical = 32.dp)
+                .padding(horizontal = 321.dp, vertical = 24.dp)
         ) {
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 48.dp)
+                    .padding(horizontal = 24.dp, vertical = 32.dp)
             ) {
-                ProfilePictureWithEdit(
-                    imageUri = selectedImageUri,
-                    onEditClick = {
-                    }
-                )
+                ProfilePicture()
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -176,7 +166,7 @@ fun ProfileScreen(
             Text("Simpan Perubahan", style = MaterialTheme.typography.titleSmall)
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         TextButton(
             colors = ButtonDefaults.buttonColors(Color.Red),
@@ -197,96 +187,26 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfilePictureWithEdit(
-    imageUri: Uri?,
-    onEditClick: () -> Unit
+private fun ProfilePicture(
 ) {
     Box(
         modifier = Modifier.size(100.dp), // ukuran foto
         contentAlignment = Alignment.BottomEnd
     ) {
-//        if (imageUri != null) {
-//            Image(
-//                painter = rememberAsyncImagePainter(imageUri),
-//                contentDescription = "Profile Picture",
-//                modifier = Modifier
-//                    .clip(CircleShape)
-//                    .size(100.dp)
-//                    .border(
-//                        BorderStroke(4.dp, color = Primary),
-//                        CircleShape
-//                    ),
-//                contentScale = ContentScale.Crop
-//            )
-//        } else {
         Icon(
             painter = painterResource(R.drawable.baseline_person_24),
             contentDescription = "Default Profile Picture",
             tint = Color.Gray,
             modifier = Modifier.size(100.dp)
         )
-//            Image(
-//                painter = painterResource(R.drawable.baseline_person_24),
-//                contentDescription = "Default Profile Picture",
-////                modifier = Modifier
-////                    .clip(CircleShape)
-////                    .size(100.dp)
-////                    .border(BorderStroke(4.dp, color = Primary), CircleShape),
-//                contentScale = ContentScale.Crop
-//            )
-//        }
-
-//        IconButton(
-//            onClick = onEditClick,
-//            modifier = Modifier
-//                .size(24.dp)
-//                .background(Primary, shape = RoundedCornerShape(72.dp))
-//        ) {
-//            Icon(
-//                painter = painterResource(R.drawable.baseline_photo_camera_24),
-//                contentDescription = "Edit Foto",
-//                tint = Color.White,
-//                modifier = Modifier
-//                    .background(Primary)
-//            )
-//        }
     }
 }
-
-//@Composable
-//fun CustomProfileTopBar(onBackClick: () -> Unit) {
-//    Surface(
-//        modifier = Modifier
-//            .fillMaxWidth(),
-//        shadowElevation = 4.dp
-//    ) {
-//        Row(
-//            horizontalArrangement = Arrangement.spacedBy(4.dp),
-//            verticalAlignment = Alignment.CenterVertically,
-//            modifier = Modifier
-//                .padding(horizontal = 72.dp, vertical = 8.dp)
-//        ) {
-//            IconButton(onClick = { onBackClick() }) {
-//                Icon(
-//                    painter = painterResource(R.drawable.outline_back_24),
-//                    contentDescription = "back",
-//                    tint = Primary
-//                )
-//            }
-//            Text(
-//                text = "Ubah Profil",
-//                style = MaterialTheme.typography.titleMedium,
-//                color = Primary,
-//            )
-//        }
-//    }
-//}
 
 //@Preview(showBackground = true, device = Devices.TABLET)
 //@Composable
 //private fun ProfileTopBarPreview() {
 //    KasirLumpiaSuperTheme {
-//        CustomProfileTopBar(onBackClick = {})
+//        ProfileScreen()
 //    }
 //}
 

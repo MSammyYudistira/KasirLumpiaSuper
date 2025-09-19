@@ -1,5 +1,7 @@
 package com.example.kasirlumpiasuper.ui.transaction
 
+import android.R.attr.text
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +28,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -45,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -61,6 +70,7 @@ import com.example.kasirlumpiasuper.ui.components.AddButtonTransaction
 import com.example.kasirlumpiasuper.ui.components.CupDropdown
 import com.example.kasirlumpiasuper.ui.components.ServingDropdown
 import com.example.kasirlumpiasuper.ui.components.queueLabel
+import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Outline
 import com.example.kasirlumpiasuper.ui.theme.Primary
@@ -68,7 +78,9 @@ import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
+import kotlin.math.exp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionScreen(navController: NavHostController) {
 
@@ -76,6 +88,7 @@ fun TransactionScreen(navController: NavHostController) {
 
     var cupIdx by remember { mutableStateOf(0) }
     var containerIdx by remember { mutableStateOf(0) }
+    var expanded by remember { mutableStateOf(false) }
 
     val subtotal by transactionViewModel.subtotal.collectAsState()
     val total by transactionViewModel.total.collectAsState()
@@ -86,6 +99,11 @@ fun TransactionScreen(navController: NavHostController) {
     val queuePreview by transactionViewModel.queuePreview.collectAsState()
     val cups by transactionViewModel.cups.collectAsState()
     val currentItems = cups[currentCup] ?: emptyList()
+
+    val allItems = cups.values.flatten()
+    val isValid = allItems.isNotEmpty() && customerName.isNotBlank()
+
+    val context = LocalContext.current
 
 
     LaunchedEffect(Unit) {
@@ -136,7 +154,7 @@ fun TransactionScreen(navController: NavHostController) {
             val products = listOf(
                 Triple("Lumpia Super", 9000, painterResource(R.drawable.lumpia_super)),
                 Triple("Tahu Lumpia", 9000, painterResource(R.drawable.tahu_lumpia)),
-                Triple("Siomay Goreng", 1000, painterResource(R.drawable.siomay_goreng)),
+                Triple("Siomay Goreng", 10000, painterResource(R.drawable.siomay_goreng)),
                 Triple("Singkong Goreng", 20000, painterResource(R.drawable.singkong_goreng)),
                 Triple("Mihun Goreng", 15000, painterResource(R.drawable.mihun)),
                 Triple("Es Kacang Merah", 25000, painterResource(R.drawable.es_kacang_merah)),
@@ -160,20 +178,20 @@ fun TransactionScreen(navController: NavHostController) {
                                 onFreeClick = {
                                     transactionViewModel.addItemToCurrentCup(
                                         OrderItem(
-                                        productId = name,
-                                        name = name,
-                                        unitPrice = price,
-                                        isFree = true
+                                            productId = name,
+                                            name = name,
+                                            unitPrice = price,
+                                            isFree = true
                                         )
                                     )
                                 },
                                 onItemClick = {
                                     transactionViewModel.addItemToCurrentCup(
                                         OrderItem(
-                                        productId = name,
-                                        name = name,
-                                        unitPrice = price,
-                                        isFree = false
+                                            productId = name,
+                                            name = name,
+                                            unitPrice = price,
+                                            isFree = false
                                         )
                                     )
                                 }
@@ -208,7 +226,7 @@ fun TransactionScreen(navController: NavHostController) {
                 Column() {
                     Surface(
                         shape = RoundedCornerShape(
-                            topStart = 16.dp, topEnd = 16.dp,      // samakan dengan parent
+                            topStart = 16.dp, topEnd = 16.dp,
                             bottomStart = 0.dp, bottomEnd = 0.dp
                         ),
                         modifier = Modifier
@@ -252,8 +270,7 @@ fun TransactionScreen(navController: NavHostController) {
                             .fillMaxWidth()
                             .weight(1f, fill = true),
                         shadowElevation = 4.dp
-                    )
-                    {
+                    ) {
                         Column(
                             modifier = Modifier
                                 .padding(16.dp)
@@ -261,46 +278,77 @@ fun TransactionScreen(navController: NavHostController) {
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                cups.keys.sorted().forEach { cup ->
-                                    Button(
-                                        onClick = {transactionViewModel.setCurrentCup(cup) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (cup == currentCup) Primary else Color.LightGray
-                                        )
+
+                                Button(
+                                    onClick = { transactionViewModel.addCup() },
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(45.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2FF))
+                                ) {
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Cup-$cup")
+                                        Icon(
+                                            painterResource(R.drawable.outline_add_24),
+                                            contentDescription = "add Cup",
+                                            tint = PrimaryBold
+                                        )
+                                        Text(
+                                            text = "Tambah Cup",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = PrimaryBold
+                                        )
                                     }
                                 }
-                                OutlinedButton(onClick = {transactionViewModel.addCup()}) {
-                                    Text("+ Cup")
-                                }
-//                                CupDropdown(
-//                                    current = currentCup, onChange = transactionViewModel::setCurrentCup
-//                                )
-//                                Spacer(Modifier.width(8.dp))
-//                                ServingDropdown(
-//                                    current = currentServing, onChange = transactionViewModel::setCurrentServing
-//                                )
 
-//                                CustomDropdown(
-//                                    options = cupOptions,
-//                                    selectedIndex = cupIdx,
-//                                    onSelected = { cupIdx = it },
-//                                    modifier = Modifier.weight(1f),
-//                                )
-//
-//                                CustomDropdown(
-//                                    options = servingOptions,
-//                                    selectedIndex = containerIdx,
-//                                    onSelected = { containerIdx = it },
-//                                    modifier = Modifier.weight(1f),
-//                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                if (cups.isNotEmpty()) {
+                                    ExposedDropdownMenuBox(
+                                        expanded = expanded,
+                                        onExpandedChange = { expanded = !expanded },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        OutlinedTextField(
+                                            readOnly = true,
+                                            value = "Cup - $currentCup",
+                                            onValueChange = {},
+                                            label = { Text("Pilih Cup") },
+                                            trailingIcon = {
+                                                ExposedDropdownMenuDefaults.TrailingIcon(
+                                                    expanded = expanded
+                                                )
+                                            },
+                                            modifier = Modifier
+                                                .menuAnchor()
+                                                .height(50.dp),
+                                            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
+                                        ) {
+                                            cups.keys.sorted().forEach { cup ->
+                                                DropdownMenuItem(
+                                                    text = { Text("Cup - $cup") },
+                                                    onClick = {
+                                                        transactionViewModel.setCurrentCup(cup)
+                                                        expanded = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             Spacer(Modifier.height(12.dp))
-                            val cartItems by transactionViewModel.cartItems.collectAsState()
 
                             LazyColumn(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -309,17 +357,6 @@ fun TransactionScreen(navController: NavHostController) {
                                     items = currentItems,
                                     key = { it.productId + "-" + it.isFree }
                                 ) { item ->
-
-//                                    CustomDropdown(
-//                                        options = (1..10).map { "Cup-$it" },
-//                                        selectedIndex = item.cupIndex - 1,
-//                                        onSelected = { newIndex ->
-//                                            transactionViewModel.changeServing(
-//                                                item,
-//                                                Serving.values()[newIndex]
-//                                            )
-//                                        }
-//                                    )
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -346,11 +383,6 @@ fun TransactionScreen(navController: NavHostController) {
                                             horizontalAlignment = Alignment.Start
                                         ) {
                                             Text(text = item.name, fontWeight = FontWeight.SemiBold)
-                                            Text(
-                                                "${item.serving.name}${if (item.isFree) " • FREE" else ""} • Cup-${item.cupIndex}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
-                                            )
                                             Text(
                                                 text = if (item.isFree) "Rp 0" else "Rp ${item.unitPrice * item.qty}",
                                                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
@@ -428,6 +460,8 @@ fun TransactionScreen(navController: NavHostController) {
                             )
 
                             Spacer(Modifier.height(8.dp))
+//                            HorizontalDivider(thickness = 2.dp)
+//                            Spacer(Modifier.height(4.dp))
 
                             Row(
                                 modifier = Modifier
@@ -444,10 +478,17 @@ fun TransactionScreen(navController: NavHostController) {
                                 Text("Rp $total", style = MaterialTheme.typography.titleMedium)
                             }
 
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(8.dp))
 
                             Button(
-                                onClick = { /* pilih metode pembayaran */ },
+                                onClick = {
+                                    if (isValid) {
+                                        navController.navigate(NavRoutes.Payment.route)
+                                    } else {
+                                        Toast.makeText(context, "Lengkapi pesanan & nama customer terlebih dahulu", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                enabled = isValid,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
                             ) {

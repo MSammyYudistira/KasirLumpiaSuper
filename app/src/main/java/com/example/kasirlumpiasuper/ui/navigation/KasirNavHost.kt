@@ -23,6 +23,7 @@ import com.example.kasirlumpiasuper.ui.components.CustomTopBar
 import com.example.kasirlumpiasuper.ui.components.TopBarMenu
 import com.example.kasirlumpiasuper.ui.history.HistoryScreen
 import com.example.kasirlumpiasuper.ui.kasir.KasirDashboard
+import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
 import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
 import com.example.kasirlumpiasuper.ui.splash.SplashScreen
 import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
@@ -112,6 +113,7 @@ fun KasirNavHost() {
 
             composable(NavRoutes.Stock.route) { StockScreen(navController) }
             composable(NavRoutes.Transaction.route) { TransactionScreen(navController) }
+            composable(NavRoutes.Payment.route) { PaymentScreen(navController) }
         }
     }
 }
