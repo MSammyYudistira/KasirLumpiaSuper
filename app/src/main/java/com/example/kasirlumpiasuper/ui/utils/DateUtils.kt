@@ -1,6 +1,7 @@
 package com.example.kasirlumpiasuper.ui.utils
 
 import java.util.Calendar
+import java.util.Locale
 
 object DateUtils {
     fun getBusinessDate(): String {
@@ -12,7 +13,7 @@ object DateUtils {
         val month = cal.get(Calendar.MONTH) + 1
         val day = cal.get(Calendar.DAY_OF_MONTH)
 
-        return String.format("%04d-%02d-%02d", year, month, day)
+        return String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month, day)
     }
 
 }

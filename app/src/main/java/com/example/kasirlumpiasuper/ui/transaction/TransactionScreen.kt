@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.transaction
 
-import android.R.attr.text
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,7 +27,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -38,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,44 +64,37 @@ import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.OrderItem
 import com.example.kasirlumpiasuper.ui.components.AddButtonTransaction
-import com.example.kasirlumpiasuper.ui.components.CupDropdown
-import com.example.kasirlumpiasuper.ui.components.ServingDropdown
 import com.example.kasirlumpiasuper.ui.components.queueLabel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Outline
-import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
-import kotlin.math.exp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionScreen(navController: NavHostController) {
+fun TransactionScreen(
+    navController: NavHostController,
+    transactionViewModel: TransactionViewModel
+) {
 
-    val transactionViewModel: TransactionViewModel = viewModel()
-
-    var cupIdx by remember { mutableStateOf(0) }
-    var containerIdx by remember { mutableStateOf(0) }
     var expanded by remember { mutableStateOf(false) }
 
     val subtotal by transactionViewModel.subtotal.collectAsState()
     val total by transactionViewModel.total.collectAsState()
-    val customerName by transactionViewModel.customerName.collectAsState()
     val discountInput by transactionViewModel.discountInput.collectAsState()
     val currentCup by transactionViewModel.currentCupIndex.collectAsState()
-//    val currentServing by transactionViewModel.currentServing.collectAsState()
     val queuePreview by transactionViewModel.queuePreview.collectAsState()
     val cups by transactionViewModel.cups.collectAsState()
     val currentItems = cups[currentCup] ?: emptyList()
+    val notes by transactionViewModel.notes.collectAsState()
 
     val allItems = cups.values.flatten()
-    val isValid = allItems.isNotEmpty() && customerName.isNotBlank()
+    val isValid = allItems.isNotEmpty()
 
     val context = LocalContext.current
-
 
     LaunchedEffect(Unit) {
         transactionViewModel.fetchQueuePreview()
@@ -143,7 +133,7 @@ fun TransactionScreen(navController: NavHostController) {
                     }
                     Text(
                         text = "Detail Transaksi",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -152,13 +142,14 @@ fun TransactionScreen(navController: NavHostController) {
             Spacer(Modifier.height(16.dp))
 
             val products = listOf(
-                Triple("Lumpia Super", 9000, painterResource(R.drawable.lumpia_super)),
-                Triple("Tahu Lumpia", 9000, painterResource(R.drawable.tahu_lumpia)),
-                Triple("Siomay Goreng", 10000, painterResource(R.drawable.siomay_goreng)),
-                Triple("Singkong Goreng", 20000, painterResource(R.drawable.singkong_goreng)),
-                Triple("Mihun Goreng", 15000, painterResource(R.drawable.mihun)),
-                Triple("Es Kacang Merah", 25000, painterResource(R.drawable.es_kacang_merah)),
-                Triple("Air Mineral", 5000, painterResource(R.drawable.air_mineral)),
+                Triple("Lumpia", 9000, R.drawable.lumpia),
+                Triple("Tahu Lumpia", 9000, R.drawable.tahu_lumpia_3),
+                Triple("Siomay", 10000, R.drawable.siomay_goreng),
+                Triple("Siomay Basah", 10000, R.drawable.siomay_basah_2),
+                Triple("Singkong Goreng", 20000, R.drawable.singkong_goreng),
+                Triple("Mihun", 15000, R.drawable.mihun_2),
+                Triple("Es Kacang Merah", 25000, R.drawable.es_kacang_merah),
+                Triple("Air Mineral", 5000, R.drawable.air_mineral_2),
             )
 
             // Grid
@@ -181,7 +172,8 @@ fun TransactionScreen(navController: NavHostController) {
                                             productId = name,
                                             name = name,
                                             unitPrice = price,
-                                            isFree = true
+                                            isFree = true,
+                                            imageRes = image
                                         )
                                     )
                                 },
@@ -191,7 +183,8 @@ fun TransactionScreen(navController: NavHostController) {
                                             productId = name,
                                             name = name,
                                             unitPrice = price,
-                                            isFree = false
+                                            isFree = false,
+                                            imageRes = image
                                         )
                                     )
                                 }
@@ -232,7 +225,6 @@ fun TransactionScreen(navController: NavHostController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(headerHeight)
-//                            .align(Alignment.TopStart) // tempel ke atas
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(modifier = Modifier.padding(start = 16.dp)) {
@@ -240,7 +232,7 @@ fun TransactionScreen(navController: NavHostController) {
                                     color = Secondary,
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier
-                                        .size(49.dp)
+                                        .size(40.dp)
 
                                 ) {
                                     Box(
@@ -248,10 +240,10 @@ fun TransactionScreen(navController: NavHostController) {
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            painter = painterResource(R.drawable.baseline_menu_book_24),
+                                            painter = painterResource(R.drawable.outline_food_menu_24),
                                             contentDescription = null,
                                             tint = PrimaryBold,
-                                            modifier = Modifier.size(28.dp)
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
                                 }
@@ -259,7 +251,7 @@ fun TransactionScreen(navController: NavHostController) {
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
                                 "Pesanan Nomor #${queueLabel(queuePreview)}",
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -286,7 +278,7 @@ fun TransactionScreen(navController: NavHostController) {
                                     shape = RoundedCornerShape(4.dp),
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(45.dp),
+                                        .height(50.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2FF))
                                 ) {
 
@@ -301,7 +293,7 @@ fun TransactionScreen(navController: NavHostController) {
                                         )
                                         Text(
                                             text = "Tambah Cup",
-                                            style = MaterialTheme.typography.titleSmall,
+                                            style = MaterialTheme.typography.titleMedium,
                                             color = PrimaryBold
                                         )
                                     }
@@ -326,8 +318,8 @@ fun TransactionScreen(navController: NavHostController) {
                                                 )
                                             },
                                             modifier = Modifier
-                                                .menuAnchor()
-                                                .height(50.dp),
+                                                .menuAnchor(),
+//                                                .height(60.dp),
                                             textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
                                         )
                                         ExposedDropdownMenu(
@@ -371,7 +363,7 @@ fun TransactionScreen(navController: NavHostController) {
                                             Image(
                                                 modifier = Modifier
                                                     .padding(16.dp),
-                                                painter = painterResource(R.drawable.lumpia_super),
+                                                painter = painterResource(item.imageRes),
                                                 contentDescription = null
                                             )
                                         }
@@ -420,48 +412,35 @@ fun TransactionScreen(navController: NavHostController) {
                                 Text("Rp $subtotal", style = MaterialTheme.typography.labelLarge)
                             }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "Discount",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = Success
-                                )
-                                Text(
-                                    text = "Rp 0",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = Success
-                                )
-
-                            }
+                            Spacer(Modifier.height(8.dp))
 
                             OutlinedTextField(
-                                value = discountInput,
-                                onValueChange = transactionViewModel::setDiscount,
-                                label = { Text("Discount (Rp)") },
+                                value = if (discountInput.toString().isNotEmpty()) "(${discountInput})" else "",
+                                onValueChange = { input ->
+                                    // filter hanya angka
+                                    val onlyDigits = input.filter { it.isDigit() }
+                                    transactionViewModel.setDiscount(onlyDigits)
+                                },
+                                label = { Text("Discount") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 textStyle = LocalTextStyle.current.copy(color = Success),
                                 modifier = Modifier
                                     .fillMaxWidth(),
-                                prefix = { Text("Rp ", color = Success) }
+                                prefix = { Text("Rp ", color = Success) },
                             )
 
                             OutlinedTextField(
-                                value = customerName,
-                                onValueChange = transactionViewModel::setCustomerName,
-                                label = { Text("Nama customer") },
+                                value = notes,
+                                onValueChange = transactionViewModel::setNotes,
+                                label = { Text("Catatan") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
 
                             Spacer(Modifier.height(8.dp))
-//                            HorizontalDivider(thickness = 2.dp)
-//                            Spacer(Modifier.height(4.dp))
+                            HorizontalDivider(thickness = 2.dp)
+                            Spacer(Modifier.height(4.dp))
 
                             Row(
                                 modifier = Modifier
@@ -471,11 +450,11 @@ fun TransactionScreen(navController: NavHostController) {
                             ) {
                                 Text(
                                     "Total",
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = MaterialTheme.typography.titleLarge,
                                     color = Color.Black
                                 )
 
-                                Text("Rp $total", style = MaterialTheme.typography.titleMedium)
+                                Text("Rp $total", style = MaterialTheme.typography.titleLarge)
                             }
 
                             Spacer(Modifier.height(8.dp))
@@ -507,7 +486,7 @@ fun ProductCard(
     name: String,
     price: Int,
     modifier: Modifier = Modifier,
-    image: Painter,
+    image: Int,
     onFreeClick: () -> Unit,
     onItemClick: () -> Unit
 ) {
@@ -531,8 +510,10 @@ fun ProductCard(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    modifier = modifier.size(125.dp),
-                    painter = image,
+                    modifier = modifier
+                        .size(125.dp)
+                        .padding(8.dp),
+                    painter = painterResource(image),
                     contentDescription = null,
                     alignment = Alignment.Center
                 )
@@ -582,12 +563,12 @@ fun ProductCard(
 //    }
 //}
 
-@Preview(showBackground = true, device = Devices.TABLET)
-@Composable
-fun TransactionPreview() {
-    KasirLumpiaSuperTheme {
-        TransactionScreen(
-            navController = rememberNavController()
-        )
-    }
-}
+//@Preview(showBackground = true, device = Devices.TABLET)
+//@Composable
+//fun TransactionPreview() {
+//    KasirLumpiaSuperTheme {
+//        TransactionScreen(
+//            navController = rememberNavController()
+//        )
+//    }
+//}

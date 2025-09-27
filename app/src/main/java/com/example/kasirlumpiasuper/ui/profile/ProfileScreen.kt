@@ -2,14 +2,19 @@ package com.example.kasirlumpiasuper.ui.profile
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,9 +58,6 @@ fun ProfileScreen(
 
     // cek apakah ada perubahan dari data asli
     val hasChanges = editedName != user.name || editedQuote != user.quote
-
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -136,6 +138,42 @@ fun ProfileScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Surface(
+                        onClick = {
+                            logoutUser(
+                                navController = navController,
+                                context = context
+                                )
+                        },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_logout_24),
+                                contentDescription = "Log out",
+                                tint = Color.Red
+                            )
+
+                            Spacer(Modifier.width(4.dp))
+
+                            Text(
+                                text = "Log Out",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.Red
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -163,25 +201,7 @@ fun ProfileScreen(
                 .padding(horizontal = 321.dp),
             enabled = hasChanges
         ) {
-            Text("Simpan Perubahan", style = MaterialTheme.typography.titleSmall)
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(
-            colors = ButtonDefaults.buttonColors(Color.Red),
-            shape = RoundedCornerShape(8.dp),
-            onClick = {
-                FirebaseAuth.getInstance().signOut()
-                navController.navigate("login") {
-                    popUpTo("home") { inclusive = true }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 321.dp)
-        ) {
-            Text("Log Out", style = MaterialTheme.typography.titleSmall)
+            Text("Simpan Perubahan", style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -193,30 +213,10 @@ private fun ProfilePicture(
         modifier = Modifier.size(100.dp), // ukuran foto
         contentAlignment = Alignment.BottomEnd
     ) {
-        Icon(
-            painter = painterResource(R.drawable.baseline_person_24),
+        Image(
+            painter = painterResource(R.drawable.lumper_logo),
             contentDescription = "Default Profile Picture",
-            tint = Color.Gray,
             modifier = Modifier.size(100.dp)
         )
     }
 }
-
-//@Preview(showBackground = true, device = Devices.TABLET)
-//@Composable
-//private fun ProfileTopBarPreview() {
-//    KasirLumpiaSuperTheme {
-//        ProfileScreen()
-//    }
-//}
-
-//@Preview(showBackground = true)
-//@Composable
-//private fun ProfilePictureWithEditPreview() {
-//    KasirLumpiaSuperTheme {
-//        ProfilePictureWithEdit(
-//            image = painterResource(R.drawable.lumper_logo),
-//            onEditClick = {}
-//        )
-//    }
-//}

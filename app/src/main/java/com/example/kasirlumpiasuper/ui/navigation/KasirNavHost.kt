@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.navigation
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -24,17 +25,18 @@ import com.example.kasirlumpiasuper.ui.components.TopBarMenu
 import com.example.kasirlumpiasuper.ui.history.HistoryScreen
 import com.example.kasirlumpiasuper.ui.kasir.KasirDashboard
 import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
+import com.example.kasirlumpiasuper.ui.payment.PaymentViewModel
 import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
 import com.example.kasirlumpiasuper.ui.splash.SplashScreen
 import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionScreen
+import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
 
+@SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
 fun KasirNavHost() {
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-
     val firestoreViewModel: FirestoreViewModel = viewModel()
 
     NavHost(
@@ -74,9 +76,7 @@ fun KasirNavHost() {
                     viewModel = firestoreViewModel
                 ) { innerPadding ->
                     Box(Modifier.padding(innerPadding)) {
-                        AdminDashboard(
-                            navController = navController
-                        )
+                        AdminDashboard(navController = navController)
                     }
                 }
             }
@@ -112,8 +112,25 @@ fun KasirNavHost() {
             }
 
             composable(NavRoutes.Stock.route) { StockScreen(navController) }
-            composable(NavRoutes.Transaction.route) { TransactionScreen(navController) }
-            composable(NavRoutes.Payment.route) { PaymentScreen(navController) }
+
+            composable(NavRoutes.Transaction.route) { backStackEntry ->
+                val transactionViewModel: TransactionViewModel = viewModel(backStackEntry)
+                TransactionScreen(
+                    navController = navController,
+                    transactionViewModel = transactionViewModel
+                )
+            }
+
+            composable(NavRoutes.Payment.route) { backStackEntry ->
+                val transactionViewModel: TransactionViewModel =
+                    viewModel(navController.getBackStackEntry(NavRoutes.Transaction.route))
+                val paymentViewModel: PaymentViewModel = viewModel(backStackEntry)
+                PaymentScreen(
+                    navController = navController,
+                    paymentViewModel = paymentViewModel,
+                    transactionViewModel = transactionViewModel
+                )
+            }
         }
     }
 }

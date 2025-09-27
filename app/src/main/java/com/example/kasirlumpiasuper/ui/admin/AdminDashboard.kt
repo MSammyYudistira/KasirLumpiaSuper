@@ -39,6 +39,6 @@ fun AdminDashboard(modifier: Modifier = Modifier, navController: NavHostControll
             .fillMaxWidth()
             .padding(horizontal = 321.dp)
     ) {
-        Text("Log Out", style = MaterialTheme.typography.titleSmall)
+        Text("Log Out", style = MaterialTheme.typography.titleMedium)
     }
 }

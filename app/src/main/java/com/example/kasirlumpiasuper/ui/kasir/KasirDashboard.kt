@@ -40,22 +40,27 @@ import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.google.firebase.Timestamp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.example.kasirlumpiasuper.ui.utils.DateUtils
 
 @Composable
 fun KasirDashboard(
     navController: NavHostController,
     viewModel: KasirViewModel = viewModel()
     ) {
+
+    val datekey = DateUtils.getBusinessDate()
     val stockFilledToday by viewModel.stockFilledToday.collectAsState()
+    val customerCountToday by viewModel.customerCountToday.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.checkStockForToday()
+        viewModel.checkCustomerCountToday()
     }
 
     Scaffold { innerPadding ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(32.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(horizontal = 72.dp)
@@ -74,10 +79,10 @@ fun KasirDashboard(
                 ) {
                     Text(
                         text = "Ringkasan Hari Ini",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge
                     )
                     Text(
-                        text = "15 Mei 2025",
+                        text = datekey.toString(),
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -116,7 +121,7 @@ fun KasirDashboard(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    "25",
+                                    text = customerCountToday.toString(),
                                     style = MaterialTheme.typography.displayMedium,
                                     color = Primary
                                 )
@@ -137,7 +142,7 @@ fun KasirDashboard(
                                 modifier = Modifier.padding(24.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.round_money_24),
+                                    painter = painterResource(R.drawable.baseline_money_bill_wave_24),
                                     contentDescription = "Total Pendapatan Hari Ini",
                                     modifier = Modifier
                                         .size(40.dp)
@@ -184,7 +189,7 @@ fun KasirDashboard(
                     Column {
                         Text(
                             text = if (!stockFilledToday)"Kamu Belum Atur Stok" else "Ayo Atur Stok!",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             color = if (!stockFilledToday) Color.Red else Color.Black
                         )
                         Text(
@@ -206,7 +211,7 @@ fun KasirDashboard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "Atur stok kamu disini",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
 //                            color = if (!stockFilledToday) Color.Black else Primary
                         )
                     }
@@ -227,7 +232,7 @@ fun KasirDashboard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Buat Pesanan Baru", style = MaterialTheme.typography.titleMedium)
+                        Text("Buat Pesanan Baru", style = MaterialTheme.typography.titleLarge)
                         Text(
                             "Ayo Buat Pesanan Sekarang!",
                             style = MaterialTheme.typography.bodyMedium
@@ -243,7 +248,7 @@ fun KasirDashboard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "Klik disini untuk membuat pesanan baru",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             color = Primary
                         )
                     }

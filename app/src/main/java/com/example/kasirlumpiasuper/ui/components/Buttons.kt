@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,13 +45,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.OrderItem
-import com.example.kasirlumpiasuper.data.model.Serving
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Outline
 import com.example.kasirlumpiasuper.ui.theme.Surface
@@ -98,15 +101,26 @@ fun AddButtonStock(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(96.dp))
+//                Spacer(modifier = Modifier.width(96.dp))
 
                 // Jumlah
-                Text(
-                    text = count.toString(),
-                    style = MaterialTheme.typography.bodyLarge
+                BasicTextField(
+                    value = count.toString(),
+                    onValueChange = { newValue ->
+                        // filter hanya angka
+                        val filtered = newValue.filter { it.isDigit() }
+                        count = filtered.toIntOrNull() ?: 0
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier
+                        .width(232.dp) // biar ga kepanjangan
                 )
 
-                Spacer(modifier = Modifier.width(96.dp))
+//                Spacer(modifier = Modifier.width(96.dp))
 
                 // Tombol plus
                 Box(
@@ -158,7 +172,7 @@ fun CustomActionButton(onClicked: () -> Unit, text: String) {
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
             color = Color.White
         )
     }
@@ -321,33 +335,33 @@ fun CupDropdown(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ServingDropdown(
-    current: Serving,
-    onChange: (Serving) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val options = Serving.values()
-
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(
-            readOnly = true,
-            value = current.name,
-            onValueChange = {},
-            label = { Text("Penyajian") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor()
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { p ->
-                DropdownMenuItem(text = { Text(p.name) }, onClick = {
-                    onChange(p); expanded = false
-                })
-            }
-        }
-    }
-}
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun ServingDropdown(
+//    current: Serving,
+//    onChange: (Serving) -> Unit
+//) {
+//    var expanded by remember { mutableStateOf(false) }
+//    val options = Serving.values()
+//
+//    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+//        OutlinedTextField(
+//            readOnly = true,
+//            value = current.name,
+//            onValueChange = {},
+//            label = { Text("Penyajian") },
+//            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+//            modifier = Modifier.menuAnchor()
+//        )
+//        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+//            options.forEach { p ->
+//                DropdownMenuItem(text = { Text(p.name) }, onClick = {
+//                    onChange(p); expanded = false
+//                })
+//            }
+//        }
+//    }
+//}
 
 fun queueLabel(n: Int?): String =
     if (n == null) "---" else n.toString().padStart(3, '0')

@@ -67,17 +67,17 @@ val AppTypography = Typography(
     titleLarge = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 48.sp
+        fontSize = 24.sp
     ),
     titleMedium = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp
+        fontSize = 16.sp
     ),
     titleSmall = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp
+        fontSize = 12.sp
     ),
 
     // Body = Isi paragraf

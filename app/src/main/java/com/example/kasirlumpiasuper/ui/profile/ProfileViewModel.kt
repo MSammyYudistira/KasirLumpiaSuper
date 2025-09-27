@@ -1,6 +1,9 @@
 package com.example.kasirlumpiasuper.ui.profile
 
+import android.content.Context
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
+import androidx.navigation.NavController
 import com.example.kasirlumpiasuper.data.model.Users
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -66,6 +69,10 @@ class ProfileViewModel : ViewModel() {
     }
 }
 
-fun logoutUser() {
-    val logout = FirebaseAuth.getInstance().signOut()
+fun logoutUser(navController: NavController, context: Context) {
+    FirebaseAuth.getInstance().signOut()
+    Toast.makeText(context, "Log out berhasil", Toast.LENGTH_SHORT).show()
+    navController.navigate("login") {
+        popUpTo("home") { inclusive = true }
+    }
 }

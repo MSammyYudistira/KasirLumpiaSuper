@@ -173,7 +173,7 @@ fun SignupScreen(
                             contentDescription = null
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Sign Up", style = MaterialTheme.typography.titleSmall)
+                        Text("Sign Up", style = MaterialTheme.typography.titleMedium)
                     }
                 }
 

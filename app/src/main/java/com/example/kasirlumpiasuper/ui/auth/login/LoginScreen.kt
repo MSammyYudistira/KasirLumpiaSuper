@@ -203,7 +203,7 @@ fun LoginScreen(
                             contentDescription = null
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Login", style = MaterialTheme.typography.titleSmall)
+                        Text("Login", style = MaterialTheme.typography.titleMedium)
                     }
                 }
 

@@ -43,7 +43,7 @@ fun HistoryScreen(navController: NavHostController) {
                 .padding(horizontal = 72.dp)
                 .padding(top = 16.dp)
                 .padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
                 Surface(
@@ -65,7 +65,7 @@ fun HistoryScreen(navController: NavHostController) {
 
                         Text(
                             text = "15 Mei 2025",
-                            style = MaterialTheme.typography.titleSmall
+                            style = MaterialTheme.typography.titleMedium
                         )
                     }
                 }
@@ -95,7 +95,7 @@ fun HistoryScreen(navController: NavHostController) {
                         modifier = Modifier
                             .padding(horizontal = 24.dp, vertical = 16.dp)
                     ) {
-                        Text("Transaksi Hari Ini", style = MaterialTheme.typography.titleMedium)
+                        Text("Transaksi Hari Ini", style = MaterialTheme.typography.titleLarge)
 
                         Spacer(modifier = Modifier.height(4.dp))
 
@@ -113,14 +113,14 @@ fun HistoryScreen(navController: NavHostController) {
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.outline_ic_invoice),
+                                        painter = painterResource(R.drawable.outline_receipt_24),
                                         contentDescription = "Struk",
                                         tint = OnSurfaceVariant,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(28.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
-                                        Text(title, style = MaterialTheme.typography.bodyMedium)
+                                        Text(title, style = MaterialTheme.typography.titleMedium)
                                         Text(
                                             desc,
                                             style = MaterialTheme.typography.bodySmall,
@@ -132,7 +132,7 @@ fun HistoryScreen(navController: NavHostController) {
                                 // Harga
                                 Text(
                                     "Rp ${"%,.0f".format(harga.toDouble())}",
-                                    style = MaterialTheme.typography.titleSmall,
+                                    style = MaterialTheme.typography.titleMedium,
                                     color = Primary
                                 )
 
@@ -148,7 +148,7 @@ fun HistoryScreen(navController: NavHostController) {
                                             painter = painterResource(R.drawable.baseline_print_24),
                                             contentDescription = "Print",
                                             tint = Color.White,
-                                            modifier = Modifier.padding(2.dp)
+                                            modifier = Modifier.padding(4.dp)
                                         )
                                     }
 
@@ -161,12 +161,16 @@ fun HistoryScreen(navController: NavHostController) {
                         // Total
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Grand Total\n${transaksiList.size} Total Struk")
+                            Column {
+                                Text("Grand Total", style = MaterialTheme.typography.titleMedium)
+                                Text("${transaksiList.size} Total Struk", style = MaterialTheme.typography.bodySmall)
+                            }
                             Text(
                                 "Rp ${"%,.0f".format(grandTotal.toDouble())}",
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleLarge,
                                 color = Primary
                             )
                         }
@@ -179,10 +183,14 @@ fun HistoryScreen(navController: NavHostController) {
                 Button(
                     onClick = { /*TODO*/ },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(4.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)
                 ) {
-                    Text("Buat Rekapan", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Buat Rekapan",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             }
         }

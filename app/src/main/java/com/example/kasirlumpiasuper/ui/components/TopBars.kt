@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.kasirlumpiasuper.R
@@ -67,7 +68,7 @@ fun CustomTopBar(
         ) {
             Text(
                 text = "Dashboard Kasir",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = Primary,
                 modifier = Modifier.weight(1f)
             )
@@ -86,7 +87,7 @@ fun CustomTopBar(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         "Beranda",
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleMedium,
                         color = if (onSelectedMenu == TopBarMenu.DASHBOARD) Primary else OnSurfaceVariant
                     )
                 }
@@ -102,7 +103,7 @@ fun CustomTopBar(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         "Riwayat",
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleMedium,
                         color = if (onSelectedMenu == TopBarMenu.HISTORY) Primary else OnSurfaceVariant
                     )
                 }
@@ -119,7 +120,7 @@ fun CustomTopBar(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "Statistik",
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             color = if (onSelectedMenu == TopBarMenu.STATS) Primary else OnSurfaceVariant,
                             maxLines = 1
                         )
@@ -136,10 +137,7 @@ fun CustomTopBar(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
-                        colorFilter = ColorFilter.tint(
-                            if (onSelectedMenu == TopBarMenu.PROFILE) Color.Black else OnSurfaceVariant
-                        ),
-                        painter = painterResource(R.drawable.baseline_person_pin_24),
+                        painter = painterResource(R.drawable.lumper_logo),
                         contentDescription = "Foto Profil",
                         modifier = Modifier
                             .size(32.dp)
@@ -152,8 +150,8 @@ fun CustomTopBar(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = user?.name ?: "",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (onSelectedMenu == TopBarMenu.PROFILE) Color.Black else OnSurfaceVariant
+                        style = if (onSelectedMenu == TopBarMenu.PROFILE)MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelMedium,
+                        color = if (onSelectedMenu == TopBarMenu.PROFILE) Primary else Color.Black
                     )
                 }
             }
@@ -185,7 +183,7 @@ fun CustomTopBarWithBackAction(
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = Primary,
             )
         }
