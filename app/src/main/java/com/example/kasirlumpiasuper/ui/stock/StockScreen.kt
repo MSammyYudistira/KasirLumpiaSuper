@@ -15,7 +15,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,14 +35,12 @@ import com.example.kasirlumpiasuper.ui.components.StockGridStatic
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Surface
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockScreen(navController: NavHostController) {
-    val stok = listOf("Lumpia", "Tahu", "Siomay", "Mihun", "Singkong", "Kacang Merah", "Aqua")
-    var uangKas by remember { mutableStateOf("") }
+    val stok = listOf("Lumpia", "Tahu", "Siomay", "Siomay Basah", "Mihun", "Singkong", "Kacang Merah", "Aqua")
+    var uangKas by remember { mutableStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -110,25 +109,30 @@ fun StockScreen(navController: NavHostController) {
                     shape = RoundedCornerShape(8.dp),
                     shadowElevation = 4.dp
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        Text("Uang Yang Dibawa", style = MaterialTheme.typography.titleLarge)
-
-                        Spacer(modifier = Modifier.height(4.dp))
+                    Column{
+                        Text(
+                            "Uang Yang Dibawa",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier
+                                .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
+                        )
 
                         OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("0") }, // label composable
-                            value = uangKas,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            value = if (uangKas == 0) "0" else uangKas.toString(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             onValueChange = { newInput ->
                                 // filter hanya angka
-                                uangKas = newInput.filter { it.isDigit() }
+                                uangKas = newInput.toInt()
                             },
+                            textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Surface,
+                            ),
                         )
                     }
-
                 }
             }
 

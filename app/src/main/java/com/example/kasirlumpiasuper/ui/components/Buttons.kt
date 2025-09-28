@@ -100,9 +100,6 @@ fun AddButtonStock(
                         )
                     }
                 }
-
-//                Spacer(modifier = Modifier.width(96.dp))
-
                 // Jumlah
                 BasicTextField(
                     value = count.toString(),
@@ -117,10 +114,8 @@ fun AddButtonStock(
                         textAlign = TextAlign.Center
                     ),
                     modifier = Modifier
-                        .width(232.dp) // biar ga kepanjangan
+                        .width(300.dp) // biar ga kepanjangan
                 )
-
-//                Spacer(modifier = Modifier.width(96.dp))
 
                 // Tombol plus
                 Box(
@@ -146,8 +141,8 @@ fun AddButtonStock(
 fun StockGridStatic(items: List<String>, modifier: Modifier = Modifier) {
     // Grid non-scroll: 3 item per baris, jarak rapi
     FlowRow(
-        maxItemsInEachRow = 3,
-        horizontalArrangement = Arrangement.spacedBy(46.dp, Alignment.CenterHorizontally),
+        maxItemsInEachRow = 2,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -229,140 +224,6 @@ fun AddButtonTransaction(
     }
 }
 
-@Composable
-fun CustomDropdown(
-    options: List<String>,
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    placeholder: String? = null,
-    containerColor: Color = Color(0xFFF2F4F6), // abu terang seperti contoh
-    contentColor: Color = Color(0xFF1D2433),   // teks gelap
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box(modifier = modifier) {
-        Surface(
-            color = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-            shape = RoundedCornerShape(128.dp),
-            shadowElevation = 0.dp,
-            tonalElevation = 0.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(36.dp)
-                .defaultMinSize(minWidth = 110.dp)
-                .clickable(
-                    enabled = enabled,
-                    role = Role.Button,
-                    onClick = { expanded = true }
-                )
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = 14.dp)
-                    .fillMaxHeight(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = selectedIndex.takeIf { it in options.indices }
-                        ?.let { options[it] }
-                        ?: (placeholder ?: ""),
-                    color = contentColor,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-//                    modifier = Modifier.weight(1f),
-                    maxLines = 1
-                )
-
-                Box(
-                    modifier = Modifier
-                        .background(Surface, CircleShape)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_arrow_drop_down_24),
-                        contentDescription = null,
-                        tint = contentColor
-                    )
-                }
-            }
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-        ) {
-            options.forEachIndexed { i, label ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = {
-                        onSelected(i)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CupDropdown(
-    current: Int,
-    onChange: (Int) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val options = (1..10).toList()
-
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(
-            readOnly = true,
-            value = "Cup-$current",
-            onValueChange = {},
-            label = { Text("Cup") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor()
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { v ->
-                DropdownMenuItem(text = { Text("Cup-$v") }, onClick = {
-                    onChange(v); expanded = false
-                })
-            }
-        }
-    }
-}
-
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun ServingDropdown(
-//    current: Serving,
-//    onChange: (Serving) -> Unit
-//) {
-//    var expanded by remember { mutableStateOf(false) }
-//    val options = Serving.values()
-//
-//    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-//        OutlinedTextField(
-//            readOnly = true,
-//            value = current.name,
-//            onValueChange = {},
-//            label = { Text("Penyajian") },
-//            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-//            modifier = Modifier.menuAnchor()
-//        )
-//        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-//            options.forEach { p ->
-//                DropdownMenuItem(text = { Text(p.name) }, onClick = {
-//                    onChange(p); expanded = false
-//                })
-//            }
-//        }
-//    }
-//}
-
 fun queueLabel(n: Int?): String =
     if (n == null) "---" else n.toString().padStart(3, '0')
 
@@ -375,12 +236,3 @@ private fun AddButtonPreview() {
         )
     }
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//private fun AddButtonTransactionPreview() {
-//    KasirLumpiaSuperTheme {
-//        AddButtonTransaction(
-//        )
-//    }
-//}

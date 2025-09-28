@@ -22,7 +22,7 @@ object ReceiptFormatter {
             .format(Date(order.createdAt))
         sb.append("[C]$dateStr\n")
         sb.append("[C]Nomor Antrian\n")
-        sb.append("[C]<b>${String.format(Locale.getDefault(), "%03d", order.queueNumber)}</b>\n\n")
+        sb.append("[C]<font size='big'><b>${String.format(Locale.getDefault(), "%03d", order.queueNumber)}</b></font>\n\n")
 
         // Notes (optional)
         if (order.notes.isNotBlank()) {

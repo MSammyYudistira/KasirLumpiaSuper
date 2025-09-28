@@ -59,18 +59,6 @@ class SignupViewModel(
                         createdAt = Timestamp.now()
                     )
 
-//                    viewModelScope.launch {
-//                        try {
-//                            repository.addUser(newUser)
-//                            isLoading = false
-//                            onSuccess()
-//                        } catch (e: Exception) {
-//                            isLoading = false
-//                            auth.currentUser?.delete()
-//                            errorMessage = "Gagal menyimpan data user: ${e.message}"
-//                        }
-//                    }
-
                     firestore.collection("users")
                         .document(uid)
                         .set(newUser)

@@ -1,22 +1,17 @@
 package com.example.kasirlumpiasuper.ui.kasir
 
-import android.util.Log
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FabPosition
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -35,12 +30,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
-import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.google.firebase.Timestamp
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.kasirlumpiasuper.data.PreferencesManager
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
+import kotlinx.coroutines.launch
 
 @Composable
 fun KasirDashboard(
@@ -48,13 +47,54 @@ fun KasirDashboard(
     viewModel: KasirViewModel = viewModel()
     ) {
 
-    val datekey = DateUtils.getBusinessDate()
+    val datekey = DateUtils.getBusinessDateLabel()
     val stockFilledToday by viewModel.stockFilledToday.collectAsState()
     val customerCountToday by viewModel.customerCountToday.collectAsState()
+    val isNewDay by viewModel.isNewDay.collectAsState()
+    val manualResetRequired by viewModel.manualResetRequired.collectAsState()
+    val totalRevenue by viewModel.grandTotalToday.collectAsState()
+
+    val context = LocalContext.current
+    val prefs = remember { PreferencesManager(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val currentBusinessDate = remember { DateUtils.getBusinessDateLabel() }
 
     LaunchedEffect(Unit) {
+        viewModel.checkIfNewDay(prefs)
+        viewModel.fetchTodayRevenue()
         viewModel.checkStockForToday()
         viewModel.checkCustomerCountToday()
+    }
+
+    if (isNewDay) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Hari Baru Dimulai")},
+            text = {Text("Tanggal berganti. Apakah kamu ingin mulai hari baru sekarang?")},
+            confirmButton = {
+                TextButton(onClick = {
+                    coroutineScope.launch {
+                        viewModel.resetDailyData(
+                            prefs = prefs,
+                            currentDate = currentBusinessDate,
+                            viewModel = viewModel,
+                            navController = navController
+                        )
+                        viewModel.markResetDone(prefs)
+                    }
+                }) {
+                    Text("Ya, Reset")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.rejectAutoReset()
+                }) {
+                    Text("Tidak Sekarang")
+                }
+            }
+        )
     }
 
     Scaffold { innerPadding ->
@@ -158,11 +198,65 @@ fun KasirDashboard(
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
-                                    "Rp 24.000",
+                                    text = DateUtils.rupiah(totalRevenue),
                                     style = MaterialTheme.typography.displayMedium,
                                     color = Color(0xFF22C55E)
                                 )
                             }
+                        }
+                    }
+                }
+            }
+
+            // Reset Hari
+        if (manualResetRequired) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                    color =  Color(0xFFFFD4D4)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp, horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Tanggal telah berganti ke ${DateUtils.getBusinessDateLabel()}" ,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color.Red
+                            )
+                            Text(
+                                text = "Segera reset hari untuk memulai transaksi hari ini",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Red
+                            )
+                        }
+                        TextButton(onClick = {
+                            coroutineScope.launch {
+                                viewModel.resetDailyData(
+                                    prefs = prefs,
+                                    currentDate = DateUtils.getBusinessDateLabel(),
+                                    viewModel = viewModel,
+                                    navController = navController
+                                )
+                                viewModel.markResetDone(prefs)
+                            }
+                        }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_reset_tv_24),
+                                contentDescription = "Reset Hari",
+                                modifier = Modifier.size(30.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Reset Hari Baru",
+                                style = MaterialTheme.typography.titleLarge,
+                            )
                         }
                     }
                 }
@@ -174,10 +268,6 @@ fun KasirDashboard(
                 shadowElevation = 4.dp,
                 modifier = Modifier.fillMaxWidth(),
                 color = if (!stockFilledToday) Color(0xFFFFD4D4) else Color.Transparent
-//                border = BorderStroke(
-//                    width = 2.dp,
-//                    color = if (!stockFilledToday) Color.Red else Color.Transparent
-//                )
             ) {
                 Row(
                     modifier = Modifier
@@ -206,13 +296,11 @@ fun KasirDashboard(
                             painter = painterResource(R.drawable.outline_management_stockout),
                             contentDescription = "Atur Stock",
                             modifier = Modifier.size(30.dp),
-//                            tint = if (!stockFilledToday) Color.Black else Primary
-                        )
+                            )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "Atur stok kamu disini",
                             style = MaterialTheme.typography.titleLarge,
-//                            color = if (!stockFilledToday) Color.Black else Primary
                         )
                     }
                 }

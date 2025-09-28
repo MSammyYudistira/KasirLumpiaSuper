@@ -27,6 +27,9 @@ import com.example.kasirlumpiasuper.ui.kasir.KasirDashboard
 import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentViewModel
 import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
+import com.example.kasirlumpiasuper.ui.recap.DetailRecapScreen
+import com.example.kasirlumpiasuper.ui.recap.InputRecapScreen
+import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
 import com.example.kasirlumpiasuper.ui.splash.SplashScreen
 import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
@@ -112,6 +115,22 @@ fun KasirNavHost() {
             }
 
             composable(NavRoutes.Stock.route) { StockScreen(navController) }
+
+            composable(NavRoutes.InputRecap.route) { backStackEntry ->
+                val recapViewModel: RecapViewModel = viewModel(backStackEntry)
+                InputRecapScreen(
+                    navController = navController,
+                    recapViewModel = recapViewModel
+                )
+            }
+
+            composable(NavRoutes.DetailRecap.route) { backStackEntry ->
+                val recapViewModel: RecapViewModel = viewModel(backStackEntry)
+                DetailRecapScreen(
+                    navController = navController,
+                    recapViewModel = recapViewModel
+                )
+            }
 
             composable(NavRoutes.Transaction.route) { backStackEntry ->
                 val transactionViewModel: TransactionViewModel = viewModel(backStackEntry)

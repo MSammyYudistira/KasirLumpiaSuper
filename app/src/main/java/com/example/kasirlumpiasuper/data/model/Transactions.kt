@@ -40,5 +40,5 @@ data class OrderItem(
     val qty: Int = 1,
     val cupIndex: Int = 1, // Cup-1, Cup-2 ...
     val isFree: Boolean = false,
-    val imageRes: Int
+    val imageRes: Int = 0
 )

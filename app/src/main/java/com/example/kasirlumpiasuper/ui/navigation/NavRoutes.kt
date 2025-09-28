@@ -13,4 +13,6 @@ sealed class NavRoutes(val route: String) {
     object Stock : NavRoutes("stock")
     object Transaction : NavRoutes("transaction")
     object Payment : NavRoutes("payment")
+    object InputRecap : NavRoutes("input_recap")
+    object DetailRecap : NavRoutes("detail_recap")
 }

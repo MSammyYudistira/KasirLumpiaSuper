@@ -2,12 +2,18 @@ package com.example.kasirlumpiasuper.ui.transaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kasirlumpiasuper.data.Result
 import com.example.kasirlumpiasuper.data.model.Order
 import com.example.kasirlumpiasuper.data.model.OrderItem
 import com.example.kasirlumpiasuper.data.model.PaymentMethod
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
+import com.example.kasirlumpiasuper.domain.error.DomainError
+import com.example.kasirlumpiasuper.domain.error.ErrorMapper
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.example.kasirlumpiasuper.ui.utils.DateUtils.getBusinessDate
+import com.example.kasirlumpiasuper.ui.utils.DateUtils.getBusinessDateLabel
+import com.google.firebase.firestore.FirebaseFirestoreException
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +25,8 @@ import kotlinx.coroutines.launch
 class TransactionViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
 ) : ViewModel() {
+
+//    private val appContext = getApplication<Application>().applicationContext
 
     private val _cups = MutableStateFlow<Map<Int, List<OrderItem>>>(mapOf(1 to emptyList()))
     val cups: StateFlow<Map<Int, List<OrderItem>>> = _cups
@@ -51,6 +59,8 @@ class TransactionViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    private val _saveOrderState = MutableStateFlow<Result<Unit>?>(null)
+    val saveOrderState: StateFlow<Result<Unit>?> = _saveOrderState
 
     val subtotal: StateFlow<Int> = cups.map { allCups ->
         allCups.values.flatten()
@@ -122,26 +132,67 @@ class TransactionViewModel(
         _lastOrder.value = order
     }
 
-    fun getLastOrder(): Order? = _lastOrder.value
-
-    fun saveOrder(order: Order, onResult: (Boolean, String?) -> Unit) {
-        viewModelScope.launch {
-            try {
-                repository.saveOrder(order)
-                _isSuccess.value = true
-                onResult(true, null)
-            } catch (e: Exception) {
-                _isSuccess.value = false
-                _errorMessage.value = e.message
-                onResult(false, e.message)
-            }
+    fun commitTransaction(order: Order) {
+        viewModelScope.launch(SupervisorJob()) {
+            val result = tryCommitWithRetry(order)
+            _saveOrderState.value = result
         }
     }
 
+    private suspend fun tryCommitWithRetry(order: Order): Result<Unit> {
+        val maxAttempts = 3
+        val delays = listOf(200L, 500L, 1000L)
+
+        repeat(maxAttempts) { attempt ->
+            when (val result = repository.saveOrder(order)) {
+                is Result.Success -> return result
+                is Result.Error -> {
+                    if (result.error is DomainError.NetworkError && attempt < maxAttempts - 1) {
+                        delay(delays[attempt])
+                    } else {
+                        return result
+                    }
+                }
+            }
+        }
+        return Result.Error(DomainError.UnknownError)
+    }
+
+    fun getLastOrder(): Order? = _lastOrder.value
+
+    suspend fun saveOrder(order: Order): Result<Unit> {
+            return try {
+                repository.saveOrder(order)
+                Result.Success(Unit)
+            } catch (e: FirebaseFirestoreException) {
+                Result.Error(ErrorMapper.mapFirestoreException(e))
+            } catch (e: Exception) {
+                Result.Error(DomainError.UnknownError)
+            }
+    }
+
+    fun clearSaveOrderState() {
+        _saveOrderState.value = null
+    }
+
     suspend fun fetchQueuePreview() {
-        val date = getBusinessDate()
-        val next = repository.getNextQueueNumber(date)
-        _queuePreview.value = next
+        val date = getBusinessDateLabel()
+        when (val result = repository.getNextQueueNumber(date)) {
+            is Result.Success -> {
+                _queuePreview.value = result.data // ✅ Ambil data Int di dalam Result
+            }
+            is Result.Error -> {
+                // Kalau gagal ambil queue number, fallback ke 1 (biar gak crash)
+                _queuePreview.value = 1
+
+                // Kamu juga bisa tampilkan error log kalau mau
+                _errorMessage.value = when (result.error) {
+                    DomainError.NetworkError -> "Gagal ambil nomor antrian (koneksi buruk)"
+                    DomainError.PreconditionFailed -> "Index Firestore belum dibuat"
+                    else -> "Terjadi kesalahan mengambil nomor antrian"
+                }
+            }
+        }
     }
 
     fun resetTransaction() {
@@ -160,7 +211,7 @@ class TransactionViewModel(
         change: Int? = null,
         nonCashAmount: Int? = null
     ): Order {
-        val businessDate = DateUtils.getBusinessDate()
+        val businessDate = DateUtils.getBusinessDateLabel()
         val now = System.currentTimeMillis()
 
         val itemsFlat = cups.value.flatMap { (cupIndex, items) ->

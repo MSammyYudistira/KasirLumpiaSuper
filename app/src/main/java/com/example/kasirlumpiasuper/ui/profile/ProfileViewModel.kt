@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.example.kasirlumpiasuper.data.model.Users
+import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,7 +73,7 @@ class ProfileViewModel : ViewModel() {
 fun logoutUser(navController: NavController, context: Context) {
     FirebaseAuth.getInstance().signOut()
     Toast.makeText(context, "Log out berhasil", Toast.LENGTH_SHORT).show()
-    navController.navigate("login") {
-        popUpTo("home") { inclusive = true }
+    navController.navigate(NavRoutes.AuthCheck.route) {
+        popUpTo(0) { inclusive = true }
     }
 }

@@ -68,7 +68,7 @@ fun LoginScreen(
     LaunchedEffect(loginState) {
         loginState?.let { result ->
             if (result.isSuccess) {
-                authViewModel.checkAuthStatus()
+//                authViewModel.checkAuthStatus()
                     navController.navigate(NavRoutes.AuthCheck.route) {
                         popUpTo(0)
                     }
@@ -165,8 +165,8 @@ fun LoginScreen(
                         loginViewModel.loginUser(email, password) { success, role, username ->
                             if (success) {
                                 if (role == "kasir") {
-                                    navController.navigate("dashboard_kasir") {
-                                        popUpTo("login") { inclusive = true }
+                                    navController.navigate(NavRoutes.AuthCheck.route) {
+                                        popUpTo(0)
                                     }
                                     Toast.makeText(
                                         context,
@@ -174,12 +174,18 @@ fun LoginScreen(
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 } else if (role == "admin") {
-                                    navController.navigate("dashboard_admin") {
-                                        popUpTo("login") { inclusive = true }
+                                    navController.navigate(NavRoutes.AuthCheck.route) {
+                                        popUpTo(0)
                                     }
                                     Toast.makeText(
                                         context,
                                         "Selamat datang Admin!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }else {
+                                    Toast.makeText(
+                                        context,
+                                        loginViewModel.errorMessage ?: "Login gagal",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }

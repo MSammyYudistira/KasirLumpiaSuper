@@ -67,4 +67,6 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.4")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation(libs.escpos.thermalprinter.android)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
 }

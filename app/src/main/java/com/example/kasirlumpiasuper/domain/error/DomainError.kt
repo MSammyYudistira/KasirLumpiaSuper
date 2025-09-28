@@ -1,4 +1,4 @@
-package com.example.kasirlumpiasuper.domain
+package com.example.kasirlumpiasuper.domain.error
 
 sealed class DomainError {
     object NetworkError : DomainError()

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -43,7 +44,6 @@ fun SplashScreen(
         animationSpec = tween(durationMillis = 3000),
         finishedListener = { navToNext() }
     )
-
 
     LaunchedEffect(Unit) {
         viewModel.loadQuote()

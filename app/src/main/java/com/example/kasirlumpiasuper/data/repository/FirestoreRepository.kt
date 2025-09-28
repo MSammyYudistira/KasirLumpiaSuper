@@ -1,12 +1,14 @@
 package com.example.kasirlumpiasuper.data.repository
 
 import android.util.Log
+import com.example.kasirlumpiasuper.data.Result
 import com.example.kasirlumpiasuper.data.model.MonthlyStats
 import com.example.kasirlumpiasuper.data.model.Order
 import com.example.kasirlumpiasuper.data.model.Report
 import com.example.kasirlumpiasuper.data.model.Stock
 import com.example.kasirlumpiasuper.data.model.Users
-import com.example.kasirlumpiasuper.domain.DomainError
+import com.example.kasirlumpiasuper.domain.error.DomainError
+import com.example.kasirlumpiasuper.domain.error.ErrorMapper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,7 +25,7 @@ class FirestoreRepository(
 
     private val ordersCollection = db.collection("orders")
 
-    suspend fun getNextQueueNumber(date: String): Int {
+    suspend fun getNextQueueNumber(date: String): Result<Int> {
         return try {
             val snapshot = db.collection("orders")
                 .document(date)
@@ -37,17 +39,18 @@ class FirestoreRepository(
                 .firstOrNull()
                 ?.getLong("queueNumber")
                 ?.toInt() ?: 0
+            Result.Success(lastQueue + 1)
 
-            lastQueue + 1
+        } catch (e: FirebaseFirestoreException) {
+            Result.Error(ErrorMapper.mapFirestoreException(e))
         } catch (e: Exception) {
-            Log.e("FirestoreRepository", "Error fetching queue number: ${e.message}", e)
-            1 // fallback jika belum ada transaksi
+            Result.Error(DomainError.UnknownError)
         }
     }
 
 
-    suspend fun saveOrder(order: Order) {
-        try {
+    suspend fun saveOrder(order: Order): Result<Unit> {
+        return try {
             val dateKey = order.businessDate // "2025-09-28"
             val queueNumber = order.queueNumber.toString() // "001", "002", dst.
 
@@ -59,10 +62,11 @@ class FirestoreRepository(
 
             docRef.set(order).await()
 
-            Log.d("FirestoreRepository", "Order saved: $dateKey/$queueNumber")
+            Result.Success(Unit)
+        } catch (e: FirebaseFirestoreException) {
+            Result.Error(ErrorMapper.mapFirestoreException(e))
         } catch (e: Exception) {
-            Log.e("FirestoreRepository", "Error saving order: ${e.message}", e)
-            throw e
+            Result.Error(DomainError.UnknownError)
         }
     }
 
@@ -105,64 +109,107 @@ class FirestoreRepository(
         }
     }
 
-suspend fun getUserName(): Users? {
-    val userId = auth.currentUser?.uid ?: return null
-    val snapshot = firestore
-        .collection("users")
-        .document(userId)
-        .get()
-        .await()
+    suspend fun getUserName(): Users? {
+        val userId = auth.currentUser?.uid ?: return null
+        val snapshot = firestore
+            .collection("users")
+            .document(userId)
+            .get()
+            .await()
 
-    return Users(
-        name = snapshot.getString("name") ?: "",
-    )
+        return Users(
+            name = snapshot.getString("name") ?: "",
+        )
 
-}
+    }
 
-suspend fun getUserQuote(): String? {
-    val uid = auth.currentUser?.uid ?: return null
-    val snapshot = firestore
-        .collection("users")
-        .document(uid)
-        .get()
-        .await()
+    suspend fun getUserQuote(): String? {
+        val uid = auth.currentUser?.uid ?: return null
+        val snapshot = firestore
+            .collection("users")
+            .document(uid)
+            .get()
+            .await()
 
-    return snapshot.getString("quote")
-}
+        return snapshot.getString("quote")
+    }
 
-    fun mapFirestoreException(e: FirebaseFirestoreException): DomainError {
-        return when (e.code) {
-            FirebaseFirestoreException.Code.UNAVAILABLE,
-            FirebaseFirestoreException.Code.DEADLINE_EXCEEDED -> DomainError.NetworkError
-            FirebaseFirestoreException.Code.PERMISSION_DENIED -> DomainError.PermissionDenied
-            FirebaseFirestoreException.Code.FAILED_PRECONDITION -> DomainError.PreconditionFailed
-            FirebaseFirestoreException.Code.RESOURCE_EXHAUSTED -> DomainError.RateLimited
-            else -> DomainError.UnknownError
+    suspend fun isStockFilled(datekey: String): Boolean {
+        return try {
+            val snapshot = db.collection("stock")
+                .document(datekey)
+                .get()
+                .await()
+            snapshot.exists()
+        } catch (e: Exception) {
+            false
         }
     }
 
-suspend fun addUser(user: Users) {
-    firestore.collection("users").document(user.uid).set(user).await()
-}
+    suspend fun resetStockForDate(datekey: String) {
+        try {
+            db.collection("stock")
+                .document(datekey)
+                .delete()
+                .await()
+        } catch (e: Exception) {
+            throw e
+        }
+    }
 
-suspend fun addStock(stock: Stock) {
-    firestore.collection("stocks").add(stock).await()
-}
+    suspend fun resetCashForDate(datekey: String) {
+        try {
+            db.collection("cash")
+                .document(datekey)
+                .delete()
+                .await()
+        } catch (e: Exception) {
+            throw e
+        }
+    }
 
-suspend fun addReport(report: Report) {
-    firestore.collection("reports").add(report).await()
-}
+    suspend fun getOrdersForDate(datekey: String): Result<List<Order>> {
+        return try {
+            val snap = db.collection("orders")
+                .document(datekey)
+                .collection("transactions")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
 
-suspend fun addMonthlyStats(monthlyStats: MonthlyStats) {
-    firestore.collection("monthly_stats").add(monthlyStats).await()
-}
+            val list = snap.documents.mapNotNull { it.toObject(Order::class.java) }
+            Result.Success(list)
+        } catch (e: Exception) {
+            when (e) {
+                is com.google.firebase.firestore.FirebaseFirestoreException ->
+                    Result.Error(ErrorMapper.mapFirestoreException(e))
+                else -> Result.Error(DomainError.UnknownError)
+            }
+        }
+    }
 
-suspend fun getStocksByDate(date: String): List<Stock> {
-    val snapshot = firestore.collection("stocks")
-        .whereEqualTo("date", date)
-        .get()
-        .await()
-    return snapshot.toObjects(Stock::class.java)
-}
+    suspend fun addUser(user: Users) {
+        firestore.collection("users").document(user.uid).set(user).await()
+    }
+
+    suspend fun addStock(stock: Stock) {
+        firestore.collection("stocks").add(stock).await()
+    }
+
+    suspend fun addReport(report: Report) {
+        firestore.collection("reports").add(report).await()
+    }
+
+    suspend fun addMonthlyStats(monthlyStats: MonthlyStats) {
+        firestore.collection("monthly_stats").add(monthlyStats).await()
+    }
+
+    suspend fun getStocksByDate(date: String): List<Stock> {
+        val snapshot = firestore.collection("stocks")
+            .whereEqualTo("date", date)
+            .get()
+            .await()
+        return snapshot.toObjects(Stock::class.java)
+    }
 
 }

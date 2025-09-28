@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.auth.login
 
+import android.util.Log
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,17 +24,6 @@ class LoginViewModel : ViewModel() {
     private val _loginState = MutableStateFlow<Result<Boolean>?>(null)
     val loginState: StateFlow<Result<Boolean>?> = _loginState.asStateFlow()
 
-    fun login(email: String, password: String) {
-        _loginState.value = null
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
-                _loginState.value = Result.success(true)
-            }
-            .addOnFailureListener { e ->
-                _loginState.value = Result.failure(e)
-            }
-    }
-
     fun loginUser(
         email: String,
         password: String,
@@ -52,6 +42,7 @@ class LoginViewModel : ViewModel() {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val uid = auth.currentUser?.uid
+                    Log.d("LoginViewModel", "Login success, currentUser = $uid")
                     if (uid != null) {
                         firestore.collection("users")
                             .document(uid)
