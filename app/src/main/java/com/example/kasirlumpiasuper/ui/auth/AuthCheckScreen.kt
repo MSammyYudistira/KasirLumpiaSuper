@@ -26,14 +26,9 @@ fun AuthCheckScreen(navController: NavHostController, viewModel: AuthViewModel =
             }
             is AuthState.LoggedIn -> {
                 val role = (state as AuthState.LoggedIn).role
-                if (role == "admin") {
-                    navController.navigate(NavRoutes.DashboardAdmin.route) {
-                        popUpTo(0)
-                    }
-                } else {
-                    navController.navigate(NavRoutes.DashboardKasir.route) {
-                        popUpTo(0)
-                    }
+                val route = if (role == "admin") NavRoutes.DashboardAdmin.route else NavRoutes.DashboardKasir.route
+                navController.navigate(route) {
+                    popUpTo(0)
                 }
             }
             AuthState.Loading -> {}

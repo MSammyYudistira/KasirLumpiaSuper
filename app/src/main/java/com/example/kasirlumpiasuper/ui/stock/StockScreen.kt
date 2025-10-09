@@ -1,6 +1,7 @@
 package com.example.kasirlumpiasuper.ui.stock
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,29 +19,44 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.kasirlumpiasuper.data.model.StockInputItem
+import com.example.kasirlumpiasuper.data.model.StockMeta
 import com.example.kasirlumpiasuper.ui.components.CustomActionButton
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.components.StockGridStatic
+import com.example.kasirlumpiasuper.ui.kasir.KasirViewModel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
+import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Surface
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StockScreen(navController: NavHostController) {
-    val stok = listOf("Lumpia", "Tahu", "Siomay", "Siomay Basah", "Mihun", "Singkong", "Kacang Merah", "Aqua")
-    var uangKas by remember { mutableStateOf(0) }
+fun StockScreen(
+    navController: NavHostController,
+    recapViewModel: RecapViewModel
+) {
+    val kasirViewModel: KasirViewModel = viewModel()
+    val context = LocalContext.current
+    val stok = listOf("Lumpia", "Tahu Lumpia", "Siomay", "Siomay Basah", "Mihun", "Singkong Goreng", "Kacang Merah", "Aqua")
+
+    val initialStocks = remember { mutableStateMapOf<String, Int>() }
+    val damagedStocks = remember { mutableStateMapOf<String, Int>() }
+    var uangKas by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -72,11 +88,25 @@ fun StockScreen(navController: NavHostController) {
                     Column {
                         Text(
                             "Stok Awal",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.displaySmall,
                             modifier = Modifier
                                 .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
-                        StockGridStatic(items = stok)
+                        stok.forEach { product ->
+                            var value by remember { mutableStateOf("")}
+                            OutlinedTextField(
+                                value = value,
+                                onValueChange = {
+                                    value = it.filter ( Char::isDigit )
+                                    initialStocks[product] = value.toIntOrNull() ?: 0
+                                },
+                                label = { Text(product) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -92,11 +122,25 @@ fun StockScreen(navController: NavHostController) {
                     Column {
                         Text(
                             "Stok Rusak / Retur",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.displaySmall,
                             modifier = Modifier
                                 .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
-                        StockGridStatic(items = stok)
+                        stok.forEach { product ->
+                            var value by remember { mutableStateOf("") }
+                            OutlinedTextField(
+                                value = value,
+                                onValueChange = {
+                                    value = it.filter(Char::isDigit)
+                                    damagedStocks[product] = value.toIntOrNull() ?: 0
+                                },
+                                label = { Text(product) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -112,25 +156,18 @@ fun StockScreen(navController: NavHostController) {
                     Column{
                         Text(
                             "Uang Yang Dibawa",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.displaySmall,
                             modifier = Modifier
                                 .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
 
                         OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            value = if (uangKas == 0) "0" else uangKas.toString(),
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            value = uangKas,
+                            onValueChange = { uangKas = it.filter(Char::isDigit) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            onValueChange = { newInput ->
-                                // filter hanya angka
-                                uangKas = newInput.toInt()
-                            },
-                            textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
-                            colors = TextFieldDefaults.colors(
-                                unfocusedContainerColor = Surface,
-                            ),
+                            textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
+                            colors = TextFieldDefaults.colors(unfocusedContainerColor = Surface),
                         )
                     }
                 }
@@ -138,18 +175,32 @@ fun StockScreen(navController: NavHostController) {
 
             item {
                 CustomActionButton(
-                    onClicked = { },
+                    onClicked = {
+                        val items = stok.map {
+                            StockInputItem(
+                                productId = it,
+                                name = it,
+                                initialStock = initialStocks[it] ?: 0,
+                                damagedStock = damagedStocks[it] ?: 0
+                            )
+                        }
+                        val meta = StockMeta(cashOpening = uangKas.toIntOrNull() ?: 0)
+                        recapViewModel.saveStockInput(
+                            items = items,
+                            meta = meta,
+                            onSuccess = {
+                                Toast.makeText(context, "Stok berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                                kasirViewModel.isStockFilledToday(true)
+                                navController.popBackStack()
+                            },
+                            onError = { err ->
+                                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
                     text = "Simpan Perubahan"
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true, device = Devices.TABLET)
-@Composable
-private fun StockScreenPreview() {
-    KasirLumpiaSuperTheme {
-        StockScreen(navController = rememberNavController())
     }
 }

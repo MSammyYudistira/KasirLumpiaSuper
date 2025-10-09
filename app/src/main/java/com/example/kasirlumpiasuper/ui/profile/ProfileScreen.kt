@@ -78,7 +78,7 @@ fun ProfileScreen(
             ) {
                 ProfilePicture()
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Nama
                 OutlinedTextField(
@@ -100,7 +100,7 @@ fun ProfileScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Email
                 OutlinedTextField(
@@ -117,7 +117,7 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Quote
                 OutlinedTextField(
@@ -198,7 +198,8 @@ fun ProfileScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 321.dp),
+                .padding(horizontal = 321.dp)
+                .padding(bottom = 24.dp),
             enabled = hasChanges
         ) {
             Text("Simpan Perubahan", style = MaterialTheme.typography.titleMedium)

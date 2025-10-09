@@ -160,7 +160,7 @@ fun CustomActionButton(onClicked: () -> Unit, text: String) {
     Button(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp)
+//            .padding(start = 24.dp, end = 24.dp)
             .padding(bottom = 24.dp),
         shape = RoundedCornerShape(8.dp),
         onClick = onClicked

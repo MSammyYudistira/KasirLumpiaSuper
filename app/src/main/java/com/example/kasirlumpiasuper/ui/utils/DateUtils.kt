@@ -16,36 +16,15 @@ object DateUtils {
         return dateFormat.format(cal.time)
     }
 
-    /** KEY untuk Firestore path: yyyy-MM-dd (contoh: 2025-09-29) */
-    fun getBusinessDateKey(): String {
-        val cal = Calendar.getInstance() // reset 00:00 otomatis oleh sistem
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        return dateFormat.format(cal.time)
-    }
-
-    fun labelFromKey(key: String): String {
-        val inFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val outFormat = SimpleDateFormat("dd MMMM yyyy", idLocale)
-        return try {
-            outFormat.format(inFormat.parse(key)!!)
-        } catch (_: ParseException) {
-            key
-        }
-    }
-
-    fun keyFromLabel(label: String): String? {
-        return try {
-            val inFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-            val outFormat = SimpleDateFormat("dd MMMM yyyy", idLocale)
-            outFormat.format(inFormat.parse(label)!!)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
     fun timeLabel(millis: Long?): String {
         if (millis == null || millis <= 0) return "-"
         val format = SimpleDateFormat("HH:mm", idLocale)
+        return format.format(Date(millis))
+    }
+
+    fun dateLabel(millis: Long?): String {
+        if (millis == null || millis <= 0) return "-"
+        val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
         return format.format(Date(millis))
     }
 
@@ -56,4 +35,13 @@ object DateUtils {
         return "Rp ${numberFormat.format(amount)}"
     }
 
+    fun prevBusinessDateLabel(currentLabel: String): String? {
+        return try {
+            val inFmt = SimpleDateFormat("dd MMMM yyyy", idLocale)
+            val outFmt = SimpleDateFormat("dd MMMM yyyy", idLocale)
+            val date = inFmt.parse(currentLabel) ?: return null
+            val cal = Calendar.getInstance().apply { time = date; add(Calendar.DAY_OF_MONTH, -1) }
+            outFmt.format(cal.time)
+        } catch (_: Exception) { null }
+    }
 }

@@ -41,6 +41,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.components.CustomTextField
+import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Background
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Surface
@@ -153,8 +154,8 @@ fun SignupScreen(
                         )
                         {
                             Toast.makeText(context, "Signup berhasil!", Toast.LENGTH_SHORT).show()
-                            navController.navigate("login") {
-                                popUpTo("signup") { inclusive = true }
+                            navController.navigate(NavRoutes.Login.route) {
+                                popUpTo(NavRoutes.Signup.route) { inclusive = true }
                             }
                         }
                     }
@@ -180,8 +181,8 @@ fun SignupScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 TextButton(onClick = {
-                    navController.navigate("login") {
-                        popUpTo("signup") { inclusive = true }
+                    navController.navigate(NavRoutes.Login.route) {
+                        popUpTo(NavRoutes.Signup.route) { inclusive = true }
                     }
                 }) {
                     Text("Already have an account? Login")

@@ -1,13 +1,19 @@
 package com.example.kasirlumpiasuper.ui.history
 
+import android.R.attr.onClick
+import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
+import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,24 +22,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,20 +51,26 @@ import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.Order
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
+import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
 import com.example.kasirlumpiasuper.ui.utils.DateUtils.timeLabel
 import com.example.kasirlumpiasuper.ui.utils.PrintHelper
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HistoryScreen(
     navController: NavHostController,
     viewModel: HistoryViewModel = viewModel()
 ) {
+    val recapViewModel: RecapViewModel = viewModel()
+    var hasInputRecap by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     val context = LocalContext.current
     val dateKey by viewModel.selectedDateKey.collectAsState()
@@ -69,6 +80,13 @@ fun HistoryScreen(
     val receiptCount by viewModel.receiptCount.collectAsState()
     val grandTotal by viewModel.grandTotal.collectAsState()
 
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(dateKey) {
+        val result = recapViewModel.hasRecapInput(dateKey)
+        hasInputRecap = result
+    }
+
     LaunchedEffect(dateKey) {
         viewModel.fetchOrders(dateKey)
     }
@@ -77,135 +95,262 @@ fun HistoryScreen(
         viewModel.initLoadIfNeeded()
     }
 
-    Scaffold { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(horizontal = 72.dp)
-                .padding(top = 16.dp)
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    shadowElevation = 4.dp,
-                    onClick = {
-                        showDatePicker(
-                            context = context,
-                            currentKey = dateKey,
-                            onPick = { viewModel.setSelectedDateKey(it) }
-                        )
-                    }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-
+    Scaffold {
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Primary)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(top = 24.dp)
+                    .padding(horizontal = 72.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        shadowElevation = 4.dp,
+                        onClick = {
+                            showDatePicker(
+                                context = context,
+                                currentKey = dateKey,
+                                onPick = { viewModel.setSelectedDateKey(it) }
+                            )
+                        }
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_date_range_24),
-                            contentDescription = "date picker"
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = dateKey,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_date_range_24),
+                                contentDescription = "date picker"
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = dateKey,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
                     }
                 }
-            }
 
-            item {
-                when {
-                    isLoading -> {
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                item {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text("Cari Struk atau Item...") },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick =  { searchQuery = "" }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.baseline_close_24),
+                                        contentDescription = "Hapus pencarian"
+                                    )
+                                }
+                            }
+                        },
+                        placeholder = { Text("contoh: #5 atau Lumpia 2") },
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                    )
+                }
+
+                item {
+                    val filterOrders = remember(searchQuery, orders) {
+                        if (searchQuery.isBlank()) {
+                            orders
+                        } else {
+                            val q = searchQuery.trim().lowercase()
+
+                            orders.filter { order ->
+                                val queueMatch = q.startsWith("#") && order.queueNumber.toString() == q.removePrefix("#")
+                                val itemMatch = order.items.any { item ->
+                                    val nameMatch = item.name.lowercase().contains(q)
+                                    val qtyMatch = "${item.name.lowercase()} ${item.qty}".contains(q)
+                                    nameMatch || qtyMatch
+                                }
+                                queueMatch || itemMatch
+                            }
                         }
                     }
 
-                    error != null -> {
-                        Text(
-                            text = error ?: "Terjadi kesalahan",
-                            color = Color.Red,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                    when {
+                        error != null -> {
+                            Text(
+                                text = error ?: "Terjadi kesalahan",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
 
-                    orders.isEmpty() -> {
-                        Text(
-                            "Belum ada transaksi untuk tanggal ini",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                        orders.isEmpty() -> {
+                            Text(
+                                "Belum ada transaksi untuk tanggal ini",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
 
-                    else -> {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            shadowElevation = 4.dp,
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                        filterOrders.isEmpty() && searchQuery.isNotBlank() -> {
+                            Text(
+                                "Tidak ada hasil untuk \"$searchQuery\"",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
+                        else -> {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                shadowElevation = 4.dp,
                             ) {
-                                Text(
-                                    "Transaksi Hari Ini",
-                                    style = MaterialTheme.typography.titleLarge
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                // 🔹 Daftar transaksi
-                                orders.forEach { order ->
-                                    HistoryListItem(order) {
-                                        try {
-                                            PrintHelper.printReceipt(context, order)
-                                        } catch (e: Exception) {
-                                            Toast.makeText(
-                                                context,
-                                                "Gagal print: ${e.message}",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                Column(
+                                    modifier = Modifier
+                                        .padding(horizontal = 24.dp, vertical = 16.dp)
                                 ) {
-                                    Column {
-                                        Text(
-                                            "Grand Total",
-                                            style = MaterialTheme.typography.titleMedium
-                                        )
-                                        Text(
-                                            "$receiptCount Total Struk",
-                                            style = MaterialTheme.typography.bodySmall
+                                    Text(
+                                        "Transaksi Hari Ini",
+                                        style = MaterialTheme.typography.displaySmall
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 🔹 Daftar transaksi
+                                    filterOrders.forEach { order ->
+                                        HistoryListItem(
+                                            order,
+                                            onPrint = {
+                                                scope.launch {
+                                                    try {
+                                                        PrintHelper.printReceipt(context, order)
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Gagal print: ${e.message}",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                            },
+                                            onClick = {
+                                                navController.navigate("${NavRoutes.OrderDetail.route}/${dateKey}/${order.queueNumber}")
+                                            }
                                         )
                                     }
-                                    Text(
-                                        DateUtils.rupiah(grandTotal),
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = Primary
-                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                "Grand Total",
+                                                style = MaterialTheme.typography.titleLarge
+                                            )
+                                            Text(
+                                                "$receiptCount Total Struk",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                        Text(
+                                            DateUtils.rupiah(grandTotal),
+                                            style = MaterialTheme.typography.displaySmall,
+                                            color = Primary
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        if (!hasInputRecap) {
+                            Text(
+                                "Kamu belum isi data rekapan hari ini!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Red
+                            )
+                        }
+                    }
 
-                Button(
-                    onClick = {
-                        navController.navigate(NavRoutes.InputRecap.route)
-                    },
-                    enabled = orders.isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Buat Rekapan")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Surface(
+                            onClick = {
+                                scope.launch {
+                                    navController.navigate(
+                                        "${NavRoutes.InputRecap.route}/${
+                                            Uri.encode(
+                                                dateKey
+                                            )
+                                        }"
+                                    )
+                                }
+                            },
+                            enabled = orders.isNotEmpty(),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Transparent
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.outline_edit_square_24),
+                                    contentDescription = "Isi Data Rekapan",
+                                    tint = Primary
+                                )
+
+                                Spacer(Modifier.width(6.dp))
+
+                                Text(
+                                    "Isi Data Rekapan",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Primary
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                navController.navigate(
+                                    "${NavRoutes.DetailRecap.route}/${
+                                        Uri.encode(
+                                            dateKey
+                                        )
+                                    }"
+                                )
+                            }
+
+                        },
+                        enabled = hasInputRecap,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Lihat Rekapan", style = MaterialTheme.typography.titleMedium)
+                    }
+
                 }
             }
         }
@@ -215,12 +360,14 @@ fun HistoryScreen(
 @Composable
 private fun HistoryListItem(
     order: Order,
-    onPrint: () -> Unit
+    onPrint: () -> Unit,
+    onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(horizontal = 8.dp)
+            .clickable{ onClick() }
     ) {
         // Header: Struk #xxx + total
         Row(
@@ -246,7 +393,8 @@ private fun HistoryListItem(
                     Text(
                         "Struk #${order.queueNumber}",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+//                        color = PrimaryBold
                     )
 
                     Row(
@@ -260,7 +408,7 @@ private fun HistoryListItem(
 
                         // Waktu
                         Text(
-                            text = " ${timeLabel(order.createdAt)}",
+                            text = ", ${timeLabel(order.createdAt)}",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -269,17 +417,18 @@ private fun HistoryListItem(
 
             Text(
                 DateUtils.rupiah(order.total),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.displaySmall,
                 color = Primary
             )
 
             Spacer(modifier = Modifier.width(8.dp))
 
             // Action bar
-            IconButton(onClick = { onPrint }) {
+            IconButton(onClick = { onPrint() }) {
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = Primary
+//                    modifier = Modifier.width(60.dp),
+                    shape = RoundedCornerShape(6.dp),
+                    color = Primary,
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.baseline_print_24),

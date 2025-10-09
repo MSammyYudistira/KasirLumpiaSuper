@@ -48,9 +48,6 @@ class KasirViewModel(
     private val _isLoadingCustomerCount = MutableStateFlow(false)
     val isLoadingCustomerCount: StateFlow<Boolean> = _isLoadingCustomerCount
 
-    fun setStockFilled(filled: Boolean) {
-        _stockFilledToday.value = filled
-    }
 
     fun fetchTodayRevenue() {
         val dateKey = DateUtils.getBusinessDateLabel() // format: "29 September 2025"
@@ -81,15 +78,11 @@ class KasirViewModel(
     }
 
     // ✅ Cek apakah stok sudah diisi hari ini
-    fun checkStockForToday() {
+    fun isStockFilledToday(isStockFilled: Boolean) {
         viewModelScope.launch {
-            try {
-                val dateKey = DateUtils.getBusinessDateLabel()
-                val filled = repository.isStockFilled(dateKey)
-                _stockFilledToday.value = filled
-            } catch (e: Exception) {
-                _stockFilledToday.value = false
-            }
+            val today = DateUtils.getBusinessDateLabel()
+            val filled = repository.isStockFilled(today)
+            _stockFilledToday.value = filled
         }
     }
 

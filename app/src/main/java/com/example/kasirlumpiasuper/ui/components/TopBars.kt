@@ -68,7 +68,7 @@ fun CustomTopBar(
         ) {
             Text(
                 text = "Dashboard Kasir",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.displaySmall,
                 color = Primary,
                 modifier = Modifier.weight(1f)
             )
@@ -183,7 +183,7 @@ fun CustomTopBarWithBackAction(
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.displaySmall,
                 color = Primary,
             )
         }

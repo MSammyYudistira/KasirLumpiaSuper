@@ -211,8 +211,7 @@ class TransactionViewModel(
         change: Int? = null,
         nonCashAmount: Int? = null
     ): Order {
-        val businessDate = DateUtils.getBusinessDateLabel()
-        val now = System.currentTimeMillis()
+        val businessDate = getBusinessDateLabel()
 
         val itemsFlat = cups.value.flatMap { (cupIndex, items) ->
             items.map { item ->
@@ -221,11 +220,13 @@ class TransactionViewModel(
                     item.copy(
                         originalUnitPrice = item.unitPrice, // simpan harga asli
                         unitPrice = 0,                      // ubah harga efektif jadi 0
+                        isFree = true,
                         cupIndex = cupIndex                 // pastikan cupIndex ikut
                     )
                 } else {
                     item.copy(
                         originalUnitPrice = item.unitPrice, // harga normal
+                        isFree = false,
                         cupIndex = cupIndex
                     )
                 }

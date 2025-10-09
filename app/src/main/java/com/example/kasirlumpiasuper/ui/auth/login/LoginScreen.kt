@@ -45,6 +45,7 @@ import com.example.kasirlumpiasuper.ui.components.CustomTextField
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Background
 import com.example.kasirlumpiasuper.ui.theme.Surface
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
@@ -53,11 +54,10 @@ fun LoginScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val loginState by loginViewModel.loginState.collectAsState()
+    val context = LocalContext.current
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
-    val context = LocalContext.current
 
     LaunchedEffect(loginViewModel.errorMessage) {
         loginViewModel.errorMessage?.let { text ->
@@ -68,10 +68,9 @@ fun LoginScreen(
     LaunchedEffect(loginState) {
         loginState?.let { result ->
             if (result.isSuccess) {
-//                authViewModel.checkAuthStatus()
-                    navController.navigate(NavRoutes.AuthCheck.route) {
-                        popUpTo(0)
-                    }
+                navController.navigate(NavRoutes.AuthCheck.route) {
+                    popUpTo(0)
+                }
             } else {
                 loginViewModel.errorMessage
             }
@@ -164,31 +163,38 @@ fun LoginScreen(
                     onClick = {
                         loginViewModel.loginUser(email, password) { success, role, username ->
                             if (success) {
-                                if (role == "kasir") {
+                                authViewModel.checkAuthStatus()
+                                Toast.makeText(
+                                    context,
+                                    "Selamat datang $username!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+//                                if (role == "kasir") {
+//                                    navController.navigate(NavRoutes.AuthCheck.route) {
+//                                        popUpTo(0)
+//                                    }
+//                                    Toast.makeText(
+//                                        context,
+//                                        "Selamat datang kasir $username!",
+//                                        Toast.LENGTH_SHORT
+//                                    ).show()
+//                                } else if (role == "admin") {
                                     navController.navigate(NavRoutes.AuthCheck.route) {
                                         popUpTo(0)
                                     }
-                                    Toast.makeText(
-                                        context,
-                                        "Selamat datang kasir $username!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else if (role == "admin") {
-                                    navController.navigate(NavRoutes.AuthCheck.route) {
-                                        popUpTo(0)
-                                    }
-                                    Toast.makeText(
-                                        context,
-                                        "Selamat datang Admin!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }else {
-                                    Toast.makeText(
-                                        context,
-                                        loginViewModel.errorMessage ?: "Login gagal",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+//                                    Toast.makeText(
+//                                        context,
+//                                        "Selamat datang Admin!",
+//                                        Toast.LENGTH_SHORT
+//                                    ).show()
+//                                } else {
+//                                    Toast.makeText(
+//                                        context,
+//                                        loginViewModel.errorMessage ?: "Login gagal",
+//                                        Toast.LENGTH_SHORT
+//                                    ).show()
+//                                }
                             }
                         }
                     },
@@ -216,8 +222,8 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TextButton(onClick = {
-                    navController.navigate("signup") {
-                        popUpTo("login") { inclusive = true }
+                    navController.navigate(NavRoutes.Signup.route) {
+                        popUpTo(NavRoutes.Login.route) { inclusive = true }
                     }
                 }) {
                     Text("Don't an account? Sign up")

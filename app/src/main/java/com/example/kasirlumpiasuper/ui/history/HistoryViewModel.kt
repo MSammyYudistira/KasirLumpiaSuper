@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 class HistoryViewModel() : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
+    private val repository: FirestoreRepository = FirestoreRepository()
 
     /** 🔹 Tanggal aktif — pakai format label "29 September 2025" */
     private val _selectedDateKey = MutableStateFlow(DateUtils.getBusinessDateLabel())
@@ -23,6 +24,9 @@ class HistoryViewModel() : ViewModel() {
     /** 🔹 Daftar transaksi */
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
     val orders: StateFlow<List<Order>> = _orders
+
+    private val _selectedOrder = MutableStateFlow<Order?>(null)
+    val selectedOrder: StateFlow<Order?> = _selectedOrder
 
     /** 🔹 Loading indicator */
     private val _isLoading = MutableStateFlow(false)
@@ -86,6 +90,20 @@ class HistoryViewModel() : ViewModel() {
                     _errorMessage.value = e.message ?: "Gagal memuat data"
                     _isLoading.value = false
                 }
+        }
+    }
+
+    fun loadOrderByQueue(dateKey: String, queueNumber: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val order = repository.getOrderByQueue(dateKey, queueNumber)
+                _selectedOrder.value = order
+            } catch (e: Exception) {
+                _selectedOrder.value = null
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 }

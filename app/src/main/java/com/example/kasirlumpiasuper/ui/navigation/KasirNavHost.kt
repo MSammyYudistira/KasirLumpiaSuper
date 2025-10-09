@@ -3,17 +3,25 @@ package com.example.kasirlumpiasuper.ui.navigation
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
 import com.example.kasirlumpiasuper.ui.admin.AdminDashboard
@@ -23,6 +31,8 @@ import com.example.kasirlumpiasuper.ui.auth.signup.SignupScreen
 import com.example.kasirlumpiasuper.ui.components.CustomTopBar
 import com.example.kasirlumpiasuper.ui.components.TopBarMenu
 import com.example.kasirlumpiasuper.ui.history.HistoryScreen
+import com.example.kasirlumpiasuper.ui.history.HistoryViewModel
+import com.example.kasirlumpiasuper.ui.history.OrderDetailScreen
 import com.example.kasirlumpiasuper.ui.kasir.KasirDashboard
 import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentViewModel
@@ -35,8 +45,9 @@ import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
+import com.example.kasirlumpiasuper.ui.utils.DateUtils
 
-@SuppressLint("UnrememberedGetBackStackEntry")
+@SuppressLint("UnrememberedGetBackStackEntry", "StateFlowValueCalledInComposition")
 @Composable
 fun KasirNavHost() {
     val navController = rememberNavController()
@@ -114,21 +125,56 @@ fun KasirNavHost() {
                 }
             }
 
-            composable(NavRoutes.Stock.route) { StockScreen(navController) }
-
-            composable(NavRoutes.InputRecap.route) { backStackEntry ->
+            composable(NavRoutes.Stock.route) { backStackEntry ->
                 val recapViewModel: RecapViewModel = viewModel(backStackEntry)
+                StockScreen(
+                navController,
+                recapViewModel = recapViewModel
+            ) }
+
+            composable(
+                route = "${NavRoutes.InputRecap.route}/{dateLabel}"
+            ) { backStackEntry ->
+                val recapViewModel: RecapViewModel = viewModel()
+                val dateLabel = backStackEntry.arguments?.getString("dateLabel") ?: ""
+
                 InputRecapScreen(
                     navController = navController,
-                    recapViewModel = recapViewModel
+                    recapViewModel = recapViewModel,
+                    dateLabel = dateLabel
                 )
             }
 
-            composable(NavRoutes.DetailRecap.route) { backStackEntry ->
-                val recapViewModel: RecapViewModel = viewModel(backStackEntry)
+            composable(
+                route = "${NavRoutes.DetailRecap.route}/{dateLabel}"
+            ) { backStackEntry ->
+                val recapViewModel: RecapViewModel = viewModel()
+                val dateLabel = backStackEntry.arguments?.getString("dateLabel") ?: ""
+
                 DetailRecapScreen(
                     navController = navController,
-                    recapViewModel = recapViewModel
+                    recapViewModel = recapViewModel,
+                    dateLabel = dateLabel
+                )
+            }
+
+            composable(
+                route = "${NavRoutes.OrderDetail.route}/{dateKey}/{queueNumber}"
+            ) { backStackEntry ->
+                val dateKey = backStackEntry.arguments?.getString("dateKey") ?: return@composable
+                val queueNumber = backStackEntry.arguments?.getString("queueNumber")?.toIntOrNull() ?: return@composable
+
+                // 🔹 Ambil HistoryViewModel dari parentEntry "main"
+                val parentEntry = remember(navController) {
+                    navController.getBackStackEntry("main")
+                }
+                val historyViewModel: HistoryViewModel = viewModel(parentEntry)
+
+                OrderDetailScreen(
+                    navController = navController,
+                    dateKey = dateKey,
+                    queueNumber = queueNumber,
+                    viewModel = historyViewModel
                 )
             }
 

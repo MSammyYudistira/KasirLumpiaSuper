@@ -67,7 +67,7 @@ val AppTypography = Typography(
     titleLarge = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp
+        fontSize = 18.sp
     ),
     titleMedium = TextStyle(
         fontFamily = InterFont,

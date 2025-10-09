@@ -1,5 +1,7 @@
 package com.example.kasirlumpiasuper.data.model
 
+import com.google.firebase.firestore.PropertyName
+
 enum class PaymentMethod {
     CASH, CASHLESS
 }
@@ -39,6 +41,7 @@ data class OrderItem(
     val originalUnitPrice: Int = 0,
     val qty: Int = 1,
     val cupIndex: Int = 1, // Cup-1, Cup-2 ...
-    val isFree: Boolean = false,
+    @get:PropertyName("free") @set:PropertyName("free")
+    var isFree: Boolean = false,
     val imageRes: Int = 0
 )

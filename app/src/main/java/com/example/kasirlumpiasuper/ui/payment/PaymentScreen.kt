@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -31,11 +32,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,6 +69,7 @@ import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
 import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
 import com.example.kasirlumpiasuper.ui.utils.PrintHelper
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -76,7 +82,7 @@ fun PaymentScreen(
     context: Context = LocalContext.current
 ) {
 
-    val subtotal by transactionViewModel.subtotal.collectAsState()
+//    val subtotal by transactionViewModel.subtotal.collectAsState()
     val total by transactionViewModel.total.collectAsState()
     val queuePreview by transactionViewModel.queuePreview.collectAsState()
     val cups by transactionViewModel.cups.collectAsState()
@@ -88,8 +94,47 @@ fun PaymentScreen(
     val selectedMethod by paymentViewModel.selectedPaymentMethod.collectAsState()
     val change by paymentViewModel.change.collectAsState()
 
+    var isPrinterConnected by remember { mutableStateOf(false) }
+    var showPrinterWarning by remember { mutableStateOf(false) }
+
     LaunchedEffect(total) {
         paymentViewModel.setTotalOrder(total)
+    }
+
+    LaunchedEffect(selectedMethod) {
+        if (selectedMethod == PaymentMethod.CASHLESS) {
+            paymentViewModel.setInputAmount(total.toString())
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        isPrinterConnected = PrintHelper.initPrinter(context)
+    }
+
+    if (showPrinterWarning) {
+        AlertDialog(
+            onDismissRequest = { showPrinterWarning = false},
+            title = { Text("Printer Belum Tersambung")},
+            text = {Text("Printer kamu belum tersambung. Yakin ingin lanjut transaksi tanpa mencetak struk?")},
+            confirmButton = {
+                TextButton(onClick = {
+                    showPrinterWarning = false
+                    commitTransactionAnyway(
+                        context,
+                        transactionViewModel,
+                        paymentViewModel
+                    )
+                    Toast.makeText(context, "Transaksi berhasil.", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("Lanjutkan", color = Primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPrinterWarning = false }) {
+                    Text("Batal")
+                }
+            }
+        )
     }
 
     LaunchedEffect(state) {
@@ -97,7 +142,7 @@ fun PaymentScreen(
             is Result.Success -> {
                 // 🔹 Ambil order terakhir
                 val order = transactionViewModel.getLastOrder()
-                if (order != null) {
+                if (order != null && isPrinterConnected) {
                     try {
                         PrintHelper.printReceipt(context, order)
                     } catch (e: Exception) {
@@ -105,8 +150,8 @@ fun PaymentScreen(
                     }
                 }
 
-                Toast.makeText(context, "Transaksi berhasil & struk dicetak", Toast.LENGTH_SHORT)
-                    .show()
+                delay(1000L)
+
                 // Reset form setelah sukses
                 transactionViewModel.resetTransaction()
                 paymentViewModel.reset()
@@ -165,8 +210,8 @@ fun PaymentScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Detail Pesanan", style = MaterialTheme.typography.titleLarge)
-                        Text("#${queueLabel(queuePreview)}")
+                        Text("Detail Pesanan", style = MaterialTheme.typography.displaySmall)
+                        Text("#${queueLabel(queuePreview)}", style = MaterialTheme.typography.displaySmall)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -192,9 +237,9 @@ fun PaymentScreen(
                             Spacer(Modifier.height(8.dp))
 
                             Text(
-                                "Cup $cupIndex",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PrimaryBold
+                                "Cup ke - $cupIndex",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Primary
                             )
 
                             Spacer(Modifier.height(8.dp))
@@ -224,66 +269,38 @@ fun PaymentScreen(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-
                     Divider(thickness = 2.dp)
-
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Subtotal", style = MaterialTheme.typography.titleLarge)
-                        Text("Rp $subtotal", style = MaterialTheme.typography.titleLarge)
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Discount", style = MaterialTheme.typography.bodyMedium, color = Success)
+                            Text(
+                                text = "Rp ($discount)",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Success
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Total", style = MaterialTheme.typography.displaySmall)
+                            Text("Rp $total", style = MaterialTheme.typography.displaySmall)
+                        }
                     }
                 }
             }
         }
-
-//        item {
-//            PaymentMethodSection(
-//                selectedMethod = selectedMethod,
-//                inputAmount = inputAmount,
-//                discount = discount,
-//                total = total,
-//                change = change,
-//                onSelectMethod = paymentViewModel::setPaymentMethod,
-//                onAmountChange = paymentViewModel::setInputAmount,
-//                onConfirm = {
-//                    val error = TransactionValidator.validateTransaction(
-//                        items = transactionViewModel.cups.value,
-//                        total = transactionViewModel.total.value,
-//                        queueNumber = transactionViewModel.queuePreview.value,
-//                        paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH,
-//                        cashReceived = paymentViewModel.inputAmount.value,
-//                        nonCashAmount = paymentViewModel.inputAmount.value
-//                    )
-//                    if (error != null) {
-//                        Toast.makeText(
-//                            context,
-//                            (error as? DomainError.InvalidInput)?.reason ?: "Input tidak valid",
-//                            Toast.LENGTH_LONG
-//                        ).show()
-//                        return@PaymentMethodSection
-//                    }
-//
-//                    val queueNumber = transactionViewModel.queuePreview.value ?: 1
-//                    val order = transactionViewModel.buildOrderForCommit(
-//                        cashierId = "kasir123",
-//                        queueNumber = queueNumber,
-//                        paymentMethod = selectedMethod ?: PaymentMethod.CASH,
-//                        cashReceived = paymentViewModel.inputAmount.value,
-//                        change = paymentViewModel.change.value,
-//                        nonCashAmount = if (selectedMethod != PaymentMethod.CASH)
-//                            paymentViewModel.inputAmount.value else null
-//                    )
-//                    transactionViewModel.setLastOrder(order)
-//                    transactionViewModel.commitTransaction(order)
-//                }
-//            )
-//        }
 
         item {
             Surface(
@@ -298,7 +315,7 @@ fun PaymentScreen(
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    Text("Pilih Metode Pembayaran", style = MaterialTheme.typography.titleLarge)
+                    Text("Pilih Metode Pembayaran", style = MaterialTheme.typography.displaySmall)
 
                     Row {
                         Surface(
@@ -430,7 +447,16 @@ fun PaymentScreen(
                     ) {
                         // =========== CASHLESS ===================
                         if (selectedMethod == PaymentMethod.CASHLESS) {
-                            val quickAmounts = listOf(10_000, 20_000, 30_000, 50_000, 70_000, 80_000, 90_000, 100_000)
+                            val quickAmounts = listOf(
+                                10_000,
+                                20_000,
+                                30_000,
+                                50_000,
+                                70_000,
+                                80_000,
+                                90_000,
+                                100_000
+                            )
                             val isExact = inputAmount == total
 
                             Column(
@@ -440,7 +466,7 @@ fun PaymentScreen(
                             ) {
                                 Text(
                                     "Nominal Pembayaran (Non-Tunai)",
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.displaySmall
                                 )
                                 Spacer(Modifier.height(24.dp))
 
@@ -449,7 +475,7 @@ fun PaymentScreen(
                                     onValueChange = { paymentViewModel.setInputAmount(it) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth(),
-                                    textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
+                                    textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                     colors = TextFieldDefaults.colors(
                                         unfocusedContainerColor = Surface,
                                     ),
@@ -457,12 +483,14 @@ fun PaymentScreen(
 
                                 Spacer(Modifier.height(16.dp))
 
-                                FlowRow{
+                                FlowRow {
                                     Button(
-                                        onClick = { paymentViewModel.setInputAmount(total.toString())},
+                                        onClick = { paymentViewModel.setInputAmount(total.toString()) },
                                         shape = RoundedCornerShape(36.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (isExact) Primary else Color(0xFFE1EEFE)
+                                            containerColor = if (isExact) Primary else Color(
+                                                0xFFE1EEFE
+                                            )
                                         )
                                     ) {
                                         Text(
@@ -475,10 +503,12 @@ fun PaymentScreen(
                                     quickAmounts.forEach { amount ->
                                         val isSelected = inputAmount == amount
                                         Button(
-                                            onClick = { paymentViewModel.setInputAmount(amount.toString())},
+                                            onClick = { paymentViewModel.setInputAmount(amount.toString()) },
                                             shape = RoundedCornerShape(36.dp),
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = if (isSelected) Primary else Color(0xFFE1EEFE)
+                                                containerColor = if (isSelected) Primary else Color(
+                                                    0xFFE1EEFE
+                                                )
                                             )
                                         ) {
                                             Text(
@@ -490,21 +520,6 @@ fun PaymentScreen(
                                 }
 
                                 Spacer(Modifier.height(16.dp))
-                                // Rincian perhitungan
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Discount", style = MaterialTheme.typography.bodyMedium)
-                                    Text(
-                                        text = "Rp ($discount)",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Success
-                                    )
-                                }
-
-                                Spacer(Modifier.height(8.dp))
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -521,17 +536,6 @@ fun PaymentScreen(
                                     )
                                 }
 
-                                Spacer(Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Total", style = MaterialTheme.typography.bodyMedium)
-                                    Text("Rp $total", style = MaterialTheme.typography.titleMedium)
-                                }
-
                                 Spacer(Modifier.height(16.dp))
                                 Divider(thickness = 1.dp)
                                 Spacer(Modifier.height(16.dp))
@@ -541,10 +545,10 @@ fun PaymentScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Kembalian", style = MaterialTheme.typography.bodyLarge)
+                                    Text("Kembalian", style = MaterialTheme.typography.displaySmall, color = Primary)
                                     Text(
                                         text = "Rp $change",
-                                        style = MaterialTheme.typography.titleLarge,
+                                        style = MaterialTheme.typography.displaySmall,
                                         color = Primary
                                     )
                                 }
@@ -554,39 +558,18 @@ fun PaymentScreen(
                                 Button(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
+                                    enabled = inputAmount > 0,
                                     onClick = {
 
-                                        val error = TransactionValidator.validateTransaction(
-                                            items = transactionViewModel.cups.value,
-                                            total = transactionViewModel.total.value,
-                                            queueNumber = transactionViewModel.queuePreview.value,
-                                            paymentMethod = PaymentMethod.CASHLESS,
-                                            cashReceived = paymentViewModel.inputAmount.value,
-                                            nonCashAmount = paymentViewModel.inputAmount.value
-                                        )
-
-                                        if (error != null) {
-                                            Toast.makeText(
-                                                context,
-                                                (error as? DomainError.InvalidInput)?.reason
-                                                    ?: "Input tidak valid",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            return@Button
+                                        if (!isPrinterConnected) {
+                                            showPrinterWarning = true
+                                        } else {
+                                            commitTransactionAnyway(
+                                                context = context,
+                                                transactionViewModel = transactionViewModel,
+                                                paymentViewModel = paymentViewModel
+                                            )
                                         }
-
-                                        val queueNumber =
-                                            transactionViewModel.queuePreview.value ?: 1
-                                        val order = transactionViewModel.buildOrderForCommit(
-                                            cashierId = "kasir123",
-                                            queueNumber = queueNumber,
-                                            paymentMethod = PaymentMethod.CASHLESS,
-                                            cashReceived = paymentViewModel.inputAmount.value,
-                                            change = paymentViewModel.change.value,
-                                            nonCashAmount = paymentViewModel.inputAmount.value
-                                        )
-                                        transactionViewModel.setLastOrder(order)
-                                        transactionViewModel.commitTransaction(order)
                                     }
                                 ) {
                                     Text("Cetak Struk")
@@ -595,7 +578,16 @@ fun PaymentScreen(
 
                             // =========== CASH ===================
                         } else if (selectedMethod == PaymentMethod.CASH) {
-                            val quickAmounts = listOf(10_000, 20_000, 30_000, 50_000, 70_000, 80_000, 90_000, 100_000)
+                            val quickAmounts = listOf(
+                                10_000,
+                                20_000,
+                                30_000,
+                                50_000,
+                                70_000,
+                                80_000,
+                                90_000,
+                                100_000
+                            )
                             val isExact = inputAmount == total
 
                             Column(
@@ -605,7 +597,7 @@ fun PaymentScreen(
                             ) {
                                 Text(
                                     "Jumlah Uang Diterima",
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.displaySmall
                                 )
                                 Spacer(Modifier.height(24.dp))
 
@@ -614,7 +606,7 @@ fun PaymentScreen(
                                     onValueChange = { paymentViewModel.setInputAmount(it) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth(),
-                                    textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
+                                    textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                     colors = TextFieldDefaults.colors(
                                         unfocusedContainerColor = Surface,
                                     ),
@@ -622,12 +614,14 @@ fun PaymentScreen(
 
                                 Spacer(Modifier.height(16.dp))
 
-                                FlowRow{
+                                FlowRow {
                                     Button(
-                                        onClick = { paymentViewModel.setInputAmount(total.toString())},
+                                        onClick = { paymentViewModel.setInputAmount(total.toString()) },
                                         shape = RoundedCornerShape(36.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (isExact) Primary else Color(0xFFE1EEFE)
+                                            containerColor = if (isExact) Primary else Color(
+                                                0xFFE1EEFE
+                                            )
                                         )
                                     ) {
                                         Text(
@@ -640,10 +634,12 @@ fun PaymentScreen(
                                     quickAmounts.forEach { amount ->
                                         val isSelected = inputAmount == amount
                                         Button(
-                                            onClick = { paymentViewModel.setInputAmount(amount.toString())},
+                                            onClick = { paymentViewModel.setInputAmount(amount.toString()) },
                                             shape = RoundedCornerShape(36.dp),
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = if (isSelected) Primary else Color(0xFFE1EEFE)
+                                                containerColor = if (isSelected) Primary else Color(
+                                                    0xFFE1EEFE
+                                                )
                                             )
                                         ) {
                                             Text(
@@ -655,21 +651,6 @@ fun PaymentScreen(
                                 }
 
                                 Spacer(Modifier.height(16.dp))
-                                // Rincian perhitungan
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Discount", style = MaterialTheme.typography.bodyMedium)
-                                    Text(
-                                        text = "Rp ($discount)",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Success
-                                    )
-                                }
-
-                                Spacer(Modifier.height(8.dp))
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -686,17 +667,6 @@ fun PaymentScreen(
                                     )
                                 }
 
-                                Spacer(Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Total", style = MaterialTheme.typography.bodyMedium)
-                                    Text("Rp $total", style = MaterialTheme.typography.titleMedium)
-                                }
-
                                 Spacer(Modifier.height(16.dp))
                                 Divider(thickness = 1.dp)
                                 Spacer(Modifier.height(16.dp))
@@ -706,10 +676,10 @@ fun PaymentScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Kembalian", style = MaterialTheme.typography.bodyLarge)
+                                    Text("Kembalian", style = MaterialTheme.typography.displaySmall, color = Primary)
                                     Text(
                                         text = "Rp $change",
-                                        style = MaterialTheme.typography.titleLarge,
+                                        style = MaterialTheme.typography.displaySmall,
                                         color = Primary
                                     )
                                 }
@@ -719,41 +689,18 @@ fun PaymentScreen(
                                 Button(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
+                                    enabled = inputAmount > 0,
                                     onClick = {
 
-                                        val error = TransactionValidator.validateTransaction(
-                                            items = transactionViewModel.cups.value,
-                                            total = transactionViewModel.total.value,
-                                            queueNumber = transactionViewModel.queuePreview.value,
-                                            paymentMethod = paymentViewModel.selectedPaymentMethod.value
-                                                ?: PaymentMethod.CASH,
-                                            cashReceived = paymentViewModel.inputAmount.value,
-                                            nonCashAmount = paymentViewModel.inputAmount.value
-                                        )
-
-                                        if (error != null) {
-                                            Toast.makeText(
-                                                context,
-                                                (error as? DomainError.InvalidInput)?.reason
-                                                    ?: "Input tidak valid",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            return@Button
+                                        if (!isPrinterConnected) {
+                                            showPrinterWarning = true
+                                        } else {
+                                            commitTransactionAnyway(
+                                                context = context,
+                                                transactionViewModel = transactionViewModel,
+                                                paymentViewModel = paymentViewModel
+                                            )
                                         }
-
-                                        val queueNumber =
-                                            transactionViewModel.queuePreview.value ?: 1
-                                        val order = transactionViewModel.buildOrderForCommit(
-                                            cashierId = "kasir123",
-                                            queueNumber = queueNumber,
-                                            paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH,
-                                            cashReceived = paymentViewModel.inputAmount.value,
-                                            change = paymentViewModel.change.value,
-                                            nonCashAmount = if (paymentViewModel.selectedPaymentMethod.value != PaymentMethod.CASH)
-                                                paymentViewModel.inputAmount.value else null
-                                        )
-                                        transactionViewModel.setLastOrder(order)
-                                        transactionViewModel.commitTransaction(order)
                                     }
                                 ) {
                                     Text("Cetak Struk")
@@ -768,7 +715,7 @@ fun PaymentScreen(
                             ) {
                                 Text(
                                     text = "Silahkan Pilih Metode Pembayaran",
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.displaySmall,
                                     color = HintText
                                 )
                             }
@@ -778,6 +725,44 @@ fun PaymentScreen(
             }
         }
     }
+}
+
+fun commitTransactionAnyway(
+    context: Context,
+    transactionViewModel: TransactionViewModel,
+    paymentViewModel: PaymentViewModel
+) {
+    val error = TransactionValidator.validateTransaction(
+        items = transactionViewModel.cups.value,
+        total = transactionViewModel.total.value,
+        queueNumber = transactionViewModel.queuePreview.value,
+        paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH,
+        cashReceived = paymentViewModel.inputAmount.value,
+        nonCashAmount = paymentViewModel.inputAmount.value
+    )
+
+    if (error != null) {
+        Toast.makeText(
+            context,
+            (error as? DomainError.InvalidInput)?.reason ?: "Input tidak valid",
+            Toast.LENGTH_LONG
+        ).show()
+        return
+    }
+
+    val queueNumber = transactionViewModel.queuePreview.value ?: 1
+    val order = transactionViewModel.buildOrderForCommit(
+        cashierId = "kasir123",
+        queueNumber = queueNumber,
+        paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH,
+        cashReceived = paymentViewModel.inputAmount.value,
+        change = paymentViewModel.change.value,
+        nonCashAmount = if (paymentViewModel.selectedPaymentMethod.value != PaymentMethod.CASH)
+            paymentViewModel.inputAmount.value else null
+    )
+
+    transactionViewModel.setLastOrder(order)
+    transactionViewModel.commitTransaction(order)
 }
 
 

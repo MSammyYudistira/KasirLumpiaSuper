@@ -28,53 +28,81 @@ class AuthViewModel : ViewModel() {
     private val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         val user = firebaseAuth.currentUser
         if (user == null) {
+            Log.d("AuthDebug", "No current user → LoggedOut")
             _authState.value = AuthState.LoggedOut
-            Log.d("AuthDebug", "CurrentUser: ${auth.currentUser?.uid}")
         } else {
-            firestore.collection("users").document(user.uid)
-                .get()
-                .addOnSuccessListener { doc ->
-                    val role = doc.getString("role") ?: "kasir"
-                    _authState.value = AuthState.LoggedIn(role)
-                    Log.d("AuthDebug", "User Restored: ${user.uid}, role: $role")
-                }
-                .addOnFailureListener {
-                    _authState.value = AuthState.LoggedOut
-                }
+            Log.d("AuthDebug", "User detected → fetch role for ${user.uid}")
+            fetchUserRole(user.uid)
         }
     }
+
+//    fun checkAuthStatus() {
+//        val user = auth.currentUser
+//        if (user == null) {
+//            _authState.value = AuthState.LoggedOut
+//            Log.d("AuthDebug", "CurrentUser: ${auth.currentUser?.uid}")
+//        } else {
+//            firestore.collection("users").document(user.uid)
+//                .get()
+//                .addOnSuccessListener { doc ->
+//                    val role = doc.getString("role") ?: "kasir"
+//                    _authState.value = AuthState.LoggedIn(role)
+//                }
+//                .addOnFailureListener {
+//                    _authState.value = AuthState.LoggedOut
+//                }
+//        }
+//    }
 
     fun checkAuthStatus() {
         val user = auth.currentUser
         if (user == null) {
+            Log.d("AuthDebug", "No current user → LoggedOut")
             _authState.value = AuthState.LoggedOut
-            Log.d("AuthDebug", "CurrentUser: ${auth.currentUser?.uid}")
         } else {
-            firestore.collection("users").document(user.uid)
-                .get()
-                .addOnSuccessListener { doc ->
-                    val role = doc.getString("role") ?: "kasir"
-                    _authState.value = AuthState.LoggedIn(role)
-                }
-                .addOnFailureListener {
-                    _authState.value = AuthState.LoggedOut
-                }
+            Log.d("AuthDebug", "User detected → fetch role for ${user.uid}")
+            fetchUserRole(user.uid)
         }
     }
 
     fun logout() {
         auth.signOut()
+        Log.d("AuthDebug", "Logout → LoggedOut")
         _authState.value = AuthState.LoggedOut
     }
 
     init {
+        Log.d("AuthDebug", "AuthViewModel init → attach listener")
         auth.addAuthStateListener(authListener)
-        Log.d("AuthDebug", "AuthListener attached")
+
+        // 🧩 Tambahkan pengecekan cepat untuk currentUser
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            Log.d("AuthDebug", "Init restore user: ${currentUser.uid}")
+            fetchUserRole(currentUser.uid)
+        } else {
+            Log.d("AuthDebug", "Init no user → LoggedOut")
+            _authState.value = AuthState.LoggedOut
+        }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        auth.removeAuthStateListener(authListener)
+    private fun fetchUserRole(uid: String) {
+        firestore.collection("users").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val role = doc.getString("role") ?: "kasir"
+                Log.d("AuthDebug", "User Restored: $uid, role: $role")
+                _authState.value = AuthState.LoggedIn(role)
+            }
+            .addOnFailureListener { e ->
+                Log.e("AuthDebug", "Failed fetch role: ${e.message}")
+                _authState.value = AuthState.LoggedOut
+            }
     }
+
+//    override fun onCleared() {
+//        super.onCleared()
+//        auth.removeAuthStateListener(authListener)
+//    }
 }
 

@@ -1,11 +1,7 @@
 package com.example.kasirlumpiasuper.data.repository
 
-import android.util.Log
 import com.example.kasirlumpiasuper.data.Result
-import com.example.kasirlumpiasuper.data.model.MonthlyStats
 import com.example.kasirlumpiasuper.data.model.Order
-import com.example.kasirlumpiasuper.data.model.Report
-import com.example.kasirlumpiasuper.data.model.Stock
 import com.example.kasirlumpiasuper.data.model.Users
 import com.example.kasirlumpiasuper.domain.error.DomainError
 import com.example.kasirlumpiasuper.domain.error.ErrorMapper
@@ -70,45 +66,6 @@ class FirestoreRepository(
         }
     }
 
-
-    suspend fun createOrder(order: Order): Boolean {
-        return try {
-            val docRef = ordersCollection.document()
-            val map = hashMapOf(
-                "id" to docRef.id,
-                "queueNumber" to order.queueNumber,
-                "businessDate" to order.businessDate,
-                "createdAt" to FieldValue.serverTimestamp(),
-                "cashierId" to order.cashierId,
-                "customerName" to order.customerName,
-                "notes" to order.notes,
-
-                "items" to order.items.map {
-                    mapOf(
-                        "productId" to it.productId,
-                        "name" to it.name,
-                        "unitPrice" to it.unitPrice,
-                        "qty" to it.qty,
-                        "cupIndex" to it.cupIndex
-                    )
-                },
-
-                "subtotal" to order.subtotal,
-                "discount" to order.discount,
-                "nonCashAmount" to order.nonCashAmount,
-                "cashReceived" to order.cashReceived,
-                "change" to order.change,
-                "total" to order.total,
-                "paymentMethod" to order.paymentMethod.name,
-                "status" to order.status.name
-            )
-            docRef.set(map).await()
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
     suspend fun getUserName(): Users? {
         val userId = auth.currentUser?.uid ?: return null
         val snapshot = firestore
@@ -134,27 +91,31 @@ class FirestoreRepository(
         return snapshot.getString("quote")
     }
 
-    suspend fun isStockFilled(datekey: String): Boolean {
+    suspend fun isStockFilled(dateKey: String): Boolean {
         return try {
-            val snapshot = db.collection("stock")
-                .document(datekey)
-                .get()
-                .await()
-            snapshot.exists()
+            val parent = db.collection("stock_inputs").document(dateKey).get().await()
+            if (parent.exists()) return true
+
+            val itemsAny = db.collection("stock_inputs").document(dateKey)
+                .collection("items").limit(1).get().await()
+            val metaDoc = db.collection("stock_inputs").document(dateKey)
+                .collection("meta").document("default").get().await()
+
+            (itemsAny.size() > 0) || metaDoc.exists()
         } catch (e: Exception) {
             false
         }
     }
 
-    suspend fun resetStockForDate(datekey: String) {
-        try {
-            db.collection("stock")
-                .document(datekey)
-                .delete()
-                .await()
-        } catch (e: Exception) {
-            throw e
-        }
+    suspend fun resetStockForDate(dateKey: String) {
+        val parent = db.collection("stock_inputs").document(dateKey)
+        // hapus items
+        val itemsSnap = parent.collection("items").get().await()
+        itemsSnap.documents.forEach { it.reference.delete().await() }
+        // hapus meta
+        parent.collection("meta").document("default").delete().await()
+        // terakhir hapus doc induk
+        parent.delete().await()
     }
 
     suspend fun resetCashForDate(datekey: String) {
@@ -168,48 +129,23 @@ class FirestoreRepository(
         }
     }
 
-    suspend fun getOrdersForDate(datekey: String): Result<List<Order>> {
+    suspend fun getOrderByQueue(dateKey: String, queueNumber: Int): Order? {
         return try {
-            val snap = db.collection("orders")
-                .document(datekey)
+            val docRef = db.collection("orders")
+                .document(dateKey)
                 .collection("transactions")
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .get()
-                .await()
+                .document(queueNumber.toString())
 
-            val list = snap.documents.mapNotNull { it.toObject(Order::class.java) }
-            Result.Success(list)
-        } catch (e: Exception) {
-            when (e) {
-                is com.google.firebase.firestore.FirebaseFirestoreException ->
-                    Result.Error(ErrorMapper.mapFirestoreException(e))
-                else -> Result.Error(DomainError.UnknownError)
+            val snapshot = docRef.get().await()
+
+            if (snapshot.exists()) {
+                snapshot.toObject(Order::class.java)
+            } else {
+                null
             }
+        } catch (e: Exception) {
+            println("❌ getOrderByQueue error: ${e.message}")
+            null
         }
     }
-
-    suspend fun addUser(user: Users) {
-        firestore.collection("users").document(user.uid).set(user).await()
-    }
-
-    suspend fun addStock(stock: Stock) {
-        firestore.collection("stocks").add(stock).await()
-    }
-
-    suspend fun addReport(report: Report) {
-        firestore.collection("reports").add(report).await()
-    }
-
-    suspend fun addMonthlyStats(monthlyStats: MonthlyStats) {
-        firestore.collection("monthly_stats").add(monthlyStats).await()
-    }
-
-    suspend fun getStocksByDate(date: String): List<Stock> {
-        val snapshot = firestore.collection("stocks")
-            .whereEqualTo("date", date)
-            .get()
-            .await()
-        return snapshot.toObjects(Stock::class.java)
-    }
-
 }

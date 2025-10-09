@@ -60,7 +60,7 @@ fun PaymentMethodSection(
     ) {
         Text(
             "Pilih Metode Pembayaran",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.displaySmall
         )
 
         // 🔘 PILIHAN METODE PEMBAYARAN
@@ -185,7 +185,7 @@ fun CashPaymentSection(
             .padding(24.dp)
             .fillMaxWidth()
     ) {
-        Text("Jumlah Uang Diterima", style = MaterialTheme.typography.titleLarge)
+        Text("Jumlah Uang Diterima", style = MaterialTheme.typography.displaySmall)
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
@@ -193,7 +193,7 @@ fun CashPaymentSection(
             onValueChange = onAmountChange,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
-            textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
+            textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
             colors = TextFieldDefaults.colors(
                 unfocusedContainerColor = Surface
             ),
