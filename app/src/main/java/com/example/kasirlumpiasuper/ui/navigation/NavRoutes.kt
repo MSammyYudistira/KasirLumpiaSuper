@@ -4,8 +4,8 @@ sealed class NavRoutes(val route: String) {
     object Login : NavRoutes("login")
     object Signup : NavRoutes("signup")
     object Profile : NavRoutes("profile")
-    object DashboardAdmin : NavRoutes("dashboard_admin")
-    object DashboardKasir : NavRoutes("dashboard_kasir")
+//    object DashboardAdmin : NavRoutes("dashboard_admin")
+//    object DashboardKasir : NavRoutes("dashboard_kasir")
     object History : NavRoutes("history")
     object Statistic : NavRoutes("statistic")
     object Splash : NavRoutes("splash")
@@ -14,10 +14,7 @@ sealed class NavRoutes(val route: String) {
     object Transaction : NavRoutes("transaction")
     object Payment : NavRoutes("payment")
     object InputRecap : NavRoutes("input_recap")
-    object DetailRecap{
-        const val route = "detail_recap"
-    }
-    object OrderDetail {
-        const val route = "order_detail"
-    }
+    object DetailRecap : NavRoutes("detail_recap")
+    object OrderDetail : NavRoutes("order_detail")
+    object Dashboard : NavRoutes("dashboard")
 }

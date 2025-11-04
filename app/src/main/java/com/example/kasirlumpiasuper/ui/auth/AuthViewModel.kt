@@ -1,15 +1,18 @@
 package com.example.kasirlumpiasuper.ui.auth
 
+import android.content.Context
 import android.util.Log
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.Firebase
+import com.example.kasirlumpiasuper.ui.utils.DataStoreKeys
+import com.example.kasirlumpiasuper.ui.utils.datastore
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 sealed class AuthState {
@@ -18,7 +21,7 @@ sealed class AuthState {
     data class LoggedIn(val role: String) : AuthState()
 }
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(private val context: Context) : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
@@ -28,81 +31,102 @@ class AuthViewModel : ViewModel() {
     private val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         val user = firebaseAuth.currentUser
         if (user == null) {
-            Log.d("AuthDebug", "No current user → LoggedOut")
-            _authState.value = AuthState.LoggedOut
+            Log.d("AuthDebug", "AuthStateListener → LoggedOut")
+            // Jangan langsung ubah ke LoggedOut, tunggu fallback DataStore dulu
+            viewModelScope.launch {
+                val prefs = context.datastore.data.first()
+                val savedUid = prefs[DataStoreKeys.User_UID]
+                val savedRole = prefs[DataStoreKeys.User_ROLE]   // ⬅️ ambil role cached
+
+                if (savedUid != null && !savedRole.isNullOrBlank()) {
+                    // ⬅️ Langsung anggap logged in berdasarkan cache
+                    _authState.value = AuthState.LoggedIn(savedRole)
+
+                    // (Opsional) verifikasi ke Firestore di background
+                    fetchUserRole(savedUid)
+                } else if (savedUid != null) {
+                    // fallback lama: coba fetch role dari Firestore
+                    fetchUserRole(savedUid)
+                } else {
+                    _authState.value = AuthState.LoggedOut
+                }
+            }
         } else {
-            Log.d("AuthDebug", "User detected → fetch role for ${user.uid}")
+            Log.d("AuthDebug", "AuthStateListener → LoggedIn, fetch role for ${user.uid}")
             fetchUserRole(user.uid)
         }
-    }
-
-//    fun checkAuthStatus() {
-//        val user = auth.currentUser
-//        if (user == null) {
-//            _authState.value = AuthState.LoggedOut
-//            Log.d("AuthDebug", "CurrentUser: ${auth.currentUser?.uid}")
-//        } else {
-//            firestore.collection("users").document(user.uid)
-//                .get()
-//                .addOnSuccessListener { doc ->
-//                    val role = doc.getString("role") ?: "kasir"
-//                    _authState.value = AuthState.LoggedIn(role)
-//                }
-//                .addOnFailureListener {
-//                    _authState.value = AuthState.LoggedOut
-//                }
-//        }
-//    }
-
-    fun checkAuthStatus() {
-        val user = auth.currentUser
-        if (user == null) {
-            Log.d("AuthDebug", "No current user → LoggedOut")
-            _authState.value = AuthState.LoggedOut
-        } else {
-            Log.d("AuthDebug", "User detected → fetch role for ${user.uid}")
-            fetchUserRole(user.uid)
-        }
-    }
-
-    fun logout() {
-        auth.signOut()
-        Log.d("AuthDebug", "Logout → LoggedOut")
-        _authState.value = AuthState.LoggedOut
     }
 
     init {
         Log.d("AuthDebug", "AuthViewModel init → attach listener")
+        Log.d("AuthDebug", "init: currentUser = ${auth.currentUser?.email}")
         auth.addAuthStateListener(authListener)
-
-        // 🧩 Tambahkan pengecekan cepat untuk currentUser
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            Log.d("AuthDebug", "Init restore user: ${currentUser.uid}")
-            fetchUserRole(currentUser.uid)
-        } else {
-            Log.d("AuthDebug", "Init no user → LoggedOut")
-            _authState.value = AuthState.LoggedOut
-        }
     }
 
     private fun fetchUserRole(uid: String) {
+        Log.d("AuthDebug", "fetchUserRole() dipanggil untuk UID: $uid")
+
+        _authState.value = AuthState.Loading // 🔹 Tambahan: beri tahu UI sedang ambil data
+
         firestore.collection("users").document(uid)
             .get()
             .addOnSuccessListener { doc ->
-                val role = doc.getString("role") ?: "kasir"
-                Log.d("AuthDebug", "User Restored: $uid, role: $role")
-                _authState.value = AuthState.LoggedIn(role)
+                if (doc.exists()) {
+                    val role = doc.getString("role") ?: "kasir"
+                    Log.d("AuthDebug", "Firestore success → role: $role")
+
+                    // 🔹 Log semua field penting
+                    val name = doc.getString("name") ?: "(tidak ada nama)"
+                    val email = doc.getString("email") ?: "(tidak ada email)"
+                    Log.d(
+                        "AuthDebug",
+                        "UserData: name=$name, email=$email, role=$role"
+                    )
+
+                    _authState.value = AuthState.LoggedIn(role)
+                    Log.d("AuthDebug", "_authState diubah ke LoggedIn($role)")
+                } else {
+                    Log.w("AuthDebug", "Dokumen user tidak ditemukan di Firestore (uid=$uid)")
+                    _authState.value = AuthState.LoggedOut
+                }
             }
             .addOnFailureListener { e ->
-                Log.e("AuthDebug", "Failed fetch role: ${e.message}")
+                Log.e("AuthDebug", "Gagal ambil role dari Firestore: ${e.message}", e)
                 _authState.value = AuthState.LoggedOut
             }
     }
 
-//    override fun onCleared() {
-//        super.onCleared()
-//        auth.removeAuthStateListener(authListener)
-//    }
-}
 
+    fun logoutUser() {
+        viewModelScope.launch {
+            Log.d("AuthDebug", "Logout user dan bersihkan cache")
+
+            // 🔹 Bersihkan DataStore dulu
+            context.datastore.edit { prefs ->
+                prefs.remove(DataStoreKeys.User_UID)
+                prefs.remove(DataStoreKeys.User_ROLE)
+                prefs.remove(DataStoreKeys.User_NAME)
+            }
+
+            // 🔹 Cek dulu apakah ada Firebase user sebelum signOut
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                try {
+                    auth.signOut()
+                    Log.d("AuthDebug", "FirebaseAuth signOut() berhasil")
+                } catch (e: Exception) {
+                    Log.e("AuthDebug", "Gagal signOut Firebase: ${e.message}")
+                }
+            } else {
+                Log.w("AuthDebug", "Tidak ada user Firebase untuk signOut, lewati")
+            }
+
+            _authState.value = AuthState.LoggedOut
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        auth.removeAuthStateListener(authListener)
+    }
+}

@@ -27,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -48,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -62,6 +64,7 @@ import com.example.kasirlumpiasuper.ui.components.AddButtonTransaction
 import com.example.kasirlumpiasuper.ui.components.queueLabel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Outline
+import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
@@ -71,9 +74,12 @@ import com.example.kasirlumpiasuper.ui.theme.Surface
 @Composable
 fun TransactionScreen(
     navController: NavHostController,
-    transactionViewModel: TransactionViewModel
+    transactionViewModel: TransactionViewModel,
+    dateKey: String? = null,
+    queueNumber: Int? = null
 ) {
 
+    var showEmpty by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
     val subtotal by transactionViewModel.subtotal.collectAsState()
@@ -84,15 +90,26 @@ fun TransactionScreen(
     val cups by transactionViewModel.cups.collectAsState()
     val currentItems = cups[currentCup] ?: emptyList()
     val notes by transactionViewModel.notes.collectAsState()
+    val isLoading by transactionViewModel.isLoading.collectAsState()
 
     val allItems = cups.values.flatten()
     val isValid = allItems.isNotEmpty()
+    val isEditMode = !dateKey.isNullOrBlank() && queueNumber != null
 
     val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        transactionViewModel.fetchQueuePreview()
+    LaunchedEffect(dateKey, queueNumber) {
+        if (!dateKey.isNullOrBlank() && queueNumber != null) {
+            transactionViewModel.loadOrderForEdit(dateKey, queueNumber)
+        } else {
+            transactionViewModel.fetchQueuePreview()
+        }
     }
+
+//    LaunchedEffect(Unit) {
+//        transactionViewModel.fetchQueuePreview()
+//    }
+
 
     Row(
         modifier = Modifier
@@ -210,7 +227,7 @@ fun TransactionScreen(
             Box(Modifier.fillMaxSize()) {
                 // ==== HEADER: full-bleed, tidak kena padding ====
                 val headerHeight = 64.dp
-                Column() {
+                Column {
                     Surface(
                         shape = RoundedCornerShape(
                             topStart = 16.dp, topEnd = 16.dp,
@@ -273,7 +290,11 @@ fun TransactionScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(50.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2FF))
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(
+                                            0xFFE0F2FF
+                                        )
+                                    )
                                 ) {
 
                                     Row(
@@ -313,7 +334,6 @@ fun TransactionScreen(
                                             },
                                             modifier = Modifier
                                                 .menuAnchor(),
-//                                                .height(60.dp),
                                             textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
                                         )
                                         ExposedDropdownMenu(
@@ -357,7 +377,7 @@ fun TransactionScreen(
                                             Image(
                                                 modifier = Modifier
                                                     .padding(16.dp),
-                                                painter = painterResource(item.imageRes),
+                                                painter = painterResource(id = if (item.imageRes != 0) item.imageRes else R.drawable.lumper_logo),
                                                 contentDescription = null
                                             )
                                         }
@@ -409,7 +429,7 @@ fun TransactionScreen(
                             Spacer(Modifier.height(8.dp))
 
                             OutlinedTextField(
-                                value = if (discountInput.toString().isNotEmpty()) "(${discountInput})" else "",
+                                value = if (showEmpty && discountInput == 0) "()" else "(${discountInput})",
                                 onValueChange = { input ->
                                     // filter hanya angka
                                     val onlyDigits = input.filter { it.isDigit() }
@@ -420,7 +440,16 @@ fun TransactionScreen(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 textStyle = LocalTextStyle.current.copy(color = Success),
                                 modifier = Modifier
-                                    .fillMaxWidth(),
+                                    .fillMaxWidth()
+                                    .onFocusChanged { focusState ->
+                                        if (focusState.isFocused) {
+                                            // Saat diklik, kosongkan tampilan kalau nilainya 0
+                                            showEmpty = true
+                                        } else {
+                                            // Saat kehilangan fokus, kembalikan angka jika kosong
+                                            if (discountInput == 0) showEmpty = false
+                                        }
+                                    },
                                 prefix = { Text("Rp ", color = Success) },
                             )
 
@@ -455,22 +484,48 @@ fun TransactionScreen(
 
                             Button(
                                 onClick = {
-                                    if (isValid) {
-                                        navController.navigate(NavRoutes.Payment.route)
+                                    if (isEditMode) {
+                                        transactionViewModel.commitEditedOrder(
+                                            dateKey!!,
+                                            queueNumber!!,
+                                            onSuccess = {
+                                                Toast.makeText(context, "Perubahan disimpan", Toast.LENGTH_SHORT).show()
+                                                navController.popBackStack() // kembali ke OrderDetailScreen
+                                            },
+                                            onError = { e ->
+                                                Toast.makeText(context, "Gagal: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
                                     } else {
-                                        Toast.makeText(context, "Lengkapi pesanan & nama customer terlebih dahulu", Toast.LENGTH_SHORT).show()
+                                        // mode transaksi baru → lanjut ke pembayaran
+                                        if (isValid) {
+                                            navController.navigate(NavRoutes.Payment.route)
+                                        } else {
+                                            Toast.makeText(context, "Lengkapi pesanan & nama customer terlebih dahulu", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 },
                                 enabled = isValid,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Pilih Metode Pembayaran")
+                                Text(if (isEditMode) "Simpan Perubahan" else "Pilih Metode Pembayaran")
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White.copy(alpha = 0.6f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Primary)
         }
     }
 }

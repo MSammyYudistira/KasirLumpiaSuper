@@ -11,8 +11,9 @@ data class StockInputItem(
 )
 
 data class StockMeta(
-    val cashOpening: Int = 0
-)
+    val cashOpening: Int = 0,
+    val createdAt: Long = System.currentTimeMillis(),
+    val createdBy: Map<String, String>? = null)
 
 data class RecapInput(
     val bigCash: Int = 0,
@@ -52,7 +53,7 @@ data class GrossSection(
     val nonCash: Int = 0,       // total transaksi non tunai
     val expenseToday: Int = 0,  // dari ExpenseSummary.sum
     val sum2: Int = 0,          // sum1 - nonCash - expenseToday (laba bersih tunai)
-    val sum3: Int = 0,          // sum 2 - cashOpening = sum3
+    val sum3: Int = 0,          // sum 2 + cashOpening = sum3
     val cashOpening: Int = 0    // dari StockMeta hari pertama, atau dari “Uang Kecil” hari kemarin
 )
 
@@ -61,12 +62,15 @@ data class CashAtRegister(
     val smallCash: Int = 0,
     val extraCash: Int = 0,
     val sum: Int = 0,
-    val diff: Int = 0           // sum - sum2
+    val diff: Int = 0           // sum3 - sumCash
 )
 
 data class DailyRecap(
     val dateLabel: String = "",
     val location: String = "",
+    val cashierId: String = "",
+    val userName: String = "",
+    val notes: String = "",
     val productRows: List<ProductRecapRow> = emptyList(),
     val freeSummary: FreeSummary = FreeSummary(),
     val expenseSummary: ExpenseSummary = ExpenseSummary(),

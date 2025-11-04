@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.transaction
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kasirlumpiasuper.data.Result
@@ -9,8 +10,10 @@ import com.example.kasirlumpiasuper.data.model.PaymentMethod
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.example.kasirlumpiasuper.domain.error.DomainError
 import com.example.kasirlumpiasuper.domain.error.ErrorMapper
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.example.kasirlumpiasuper.ui.utils.DateUtils.getBusinessDateLabel
+import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager.getBusinessDateLabel
+import com.example.kasirlumpiasuper.ui.utils.OrderCalculator
+import com.example.kasirlumpiasuper.ui.utils.OrderMapper
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -160,17 +163,6 @@ class TransactionViewModel(
 
     fun getLastOrder(): Order? = _lastOrder.value
 
-    suspend fun saveOrder(order: Order): Result<Unit> {
-            return try {
-                repository.saveOrder(order)
-                Result.Success(Unit)
-            } catch (e: FirebaseFirestoreException) {
-                Result.Error(ErrorMapper.mapFirestoreException(e))
-            } catch (e: Exception) {
-                Result.Error(DomainError.UnknownError)
-            }
-    }
-
     fun clearSaveOrderState() {
         _saveOrderState.value = null
     }
@@ -181,6 +173,7 @@ class TransactionViewModel(
             is Result.Success -> {
                 _queuePreview.value = result.data // ✅ Ambil data Int di dalam Result
             }
+
             is Result.Error -> {
                 // Kalau gagal ambil queue number, fallback ke 1 (biar gak crash)
                 _queuePreview.value = 1
@@ -204,7 +197,6 @@ class TransactionViewModel(
     }
 
     fun buildOrderForCommit(
-        cashierId: String,
         queueNumber: Int,
         paymentMethod: PaymentMethod,
         cashReceived: Int? = null,
@@ -215,7 +207,6 @@ class TransactionViewModel(
 
         val itemsFlat = cups.value.flatMap { (cupIndex, items) ->
             items.map { item ->
-                // mapping tiap item agar harga efektif sesuai status isFree
                 if (item.isFree) {
                     item.copy(
                         originalUnitPrice = item.unitPrice, // simpan harga asli
@@ -237,13 +228,20 @@ class TransactionViewModel(
         val disc = discountInput.value
         val tot = total.value
 
+        val cashierId = FirebaseAuth.getInstance().currentUser?.uid ?: "unknown"
+        val safeId = when (queueNumber) {
+            is Int -> queueNumber
+            is String -> queueNumber.toIntOrNull() ?: 0
+            else -> 0
+        }
+
         return Order(
+            id = safeId,
             queueNumber = queueNumber,
             createdAt = System.currentTimeMillis(),
             businessDate = businessDate,
             cashierId = cashierId,
-            customerName = customerName.value,
-            items = itemsFlat,   // ⬅️ penting biar struk ada isinya
+            items = itemsFlat,
             subtotal = sub,
             discount = disc,
             total = tot,
@@ -251,9 +249,113 @@ class TransactionViewModel(
             change = change,
             nonCashAmount = nonCashAmount,
             paymentMethod = paymentMethod,
-            cupsRaw = cups.value.map { (idx, items) -> mapOf("index" to idx, "items" to items) },
-            itemsAggRaw = emptyList(),
             notes = notes.value
         )
+    }
+
+    fun loadOrderForEdit(dateKey: String, queueNumber: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                // Ambil data order dari repository
+                val order = repository.getOrderByQueue(dateKey, queueNumber)
+                if (order == null) {
+                    _errorMessage.value = "Transaksi tidak ditemukan"
+                    _isLoading.value = false
+                    return@launch
+                }
+
+                // Ambil juga daftar item-nya
+                val items = repository.getOrderItems(dateKey, queueNumber)
+
+                // 🔹 Setel state ViewModel dari data Firestore
+                // 🔹 Kelompokkan item berdasarkan cupIndex
+                val groupedByCup = items.groupBy { it.cupIndex }.toSortedMap()
+
+                // 🔹 Simpan ke state
+                _cups.value = groupedByCup // supaya urut 1, 2, dst
+                _notes.value = order.notes ?: ""
+                _discountInput.value = order.discount ?: 0
+                _queuePreview.value = order.queueNumber
+                _lastOrder.value = order
+                _isLoading.value = false
+
+                Log.d("TransactionVM", "✅ Berhasil load transaksi #${order.queueNumber}")
+            } catch (e: Exception) {
+                Log.e("TransactionVM", "Gagal load transaksi: ${e.message}", e)
+                _errorMessage.value = e.message
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun commitEditedOrder(
+        dateKey: String,
+        queueNumber: Int,
+        onSuccess: (() -> Unit)? = null,
+        onError: ((Throwable) -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                val cupsData = _cups.value
+                val items = cupsData.values.flatten().map { item ->
+                    if (item.isFree) {
+                        item.copy(
+                            originalUnitPrice = item.unitPrice, // simpan harga asli
+                            unitPrice = 0                       // harga efektif 0
+                        )
+                    } else {
+                        item.copy(
+                            originalUnitPrice = item.unitPrice, // harga normal
+                        )
+                    }
+                }
+
+                val itemsMap = OrderMapper.itemsToMapList(items)
+                val subtotal = OrderCalculator.subtotal(items)
+                val discount = _discountInput.value
+                val total = OrderCalculator.total(subtotal, discount)
+                val lastOrder = _lastOrder.value
+
+                val updatedData = mapOf(
+                    "id" to queueNumber,
+                    "businessDate" to dateKey,
+                    "cashierId" to (lastOrder?.cashierId ?: "unknown"),
+                    "createdAt" to (lastOrder?.createdAt ?: System.currentTimeMillis()),
+                    "queueNumber" to queueNumber,
+                    "items" to itemsMap,
+                    "subtotal" to subtotal,
+                    "discount" to discount,
+                    "total" to total,
+                    "paymentMethod" to (lastOrder?.paymentMethod ?: "CASH"),
+                    "notes" to _notes.value,
+                    "status" to (lastOrder?.status ?: "PAID"),
+                    "cashReceived" to (lastOrder?.cashReceived ?: 0),
+                    "change" to (lastOrder?.change ?: 0),
+                    "nonCashAmount" to (lastOrder?.nonCashAmount ?: 0), // ✅ tambahkan agar tetap ada
+                )
+
+                val success = repository.updateOrder(dateKey, queueNumber, updatedData)
+                _isLoading.value = false
+
+                if (success) {
+                    _isSuccess.value = true
+                    onSuccess?.invoke()
+                } else {
+                    _isSuccess.value = false
+                    onError?.invoke(Exception("Gagal menyimpan perubahan"))
+                }
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _errorMessage.value = e.message
+                _isSuccess.value = false
+                onError?.invoke(e)
+            }
+        }
     }
 }

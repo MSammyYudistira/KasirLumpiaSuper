@@ -31,7 +31,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kasirlumpiasuper.R
+import com.example.kasirlumpiasuper.data.model.Users
 import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
@@ -43,18 +45,14 @@ enum class TopBarMenu {
 
 @Composable
 fun CustomTopBar(
-    viewModel: FirestoreViewModel,
     onHomeClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onStatsClick: (() -> Unit)? = null,
     onProfileClick: () -> Unit,
-    onSelectedMenu: TopBarMenu
+    title: String,
+    onSelectedMenu: TopBarMenu,
+    users: Users?
 ) {
-    val user by viewModel.user.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.loadUser()
-    }
 
     Surface(
         shadowElevation = 4.dp
@@ -67,7 +65,7 @@ fun CustomTopBar(
             horizontalArrangement = Arrangement.Absolute.SpaceBetween
         ) {
             Text(
-                text = "Dashboard Kasir",
+                text = title,
                 style = MaterialTheme.typography.displaySmall,
                 color = Primary,
                 modifier = Modifier.weight(1f)
@@ -149,7 +147,7 @@ fun CustomTopBar(
 
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = user?.name ?: "",
+                        text = users?.name ?: "",
                         style = if (onSelectedMenu == TopBarMenu.PROFILE)MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.labelMedium,
                         color = if (onSelectedMenu == TopBarMenu.PROFILE) Primary else Color.Black
                     )

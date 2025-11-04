@@ -77,10 +77,10 @@ object ReceiptFormatter {
     }
 }
 
-fun rightAlign(label: String, value: String, width: Int = 31): String {
-    val line = "$label $value"
-    return if (line.length >= width) line else line.padStart(width, ' ')
-}
+//fun rightAlign(label: String, value: String, width: Int = 31): String {
+//    val line = "$label $value"
+//    return if (line.length >= width) line else line.padStart(width, ' ')
+//}
 
 fun rightAlignLabelValue(label: String, value: String, width: Int = 32): String {
     val labelWidth = 19 // blok kiri (label + " : ")

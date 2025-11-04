@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.auth.login
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,10 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,17 +42,24 @@ import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.auth.AuthViewModel
 import com.example.kasirlumpiasuper.ui.components.CustomTextField
+import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Background
 import com.example.kasirlumpiasuper.ui.theme.Surface
-import kotlinx.coroutines.delay
 
+@SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
 fun LoginScreen(
     navController: NavHostController,
     loginViewModel: LoginViewModel = viewModel(),
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel,
+    dashboardViewModel: DashboardViewModel = viewModel(navController.getBackStackEntry("main"))
 ) {
+//    val parentEntry = remember(navController) {
+//        navController.getBackStackEntry(NavRoutes.AuthCheck.route)
+//    }
+//    val authViewModel: AuthViewModel = viewModel(parentEntry)
+
     val loginState by loginViewModel.loginState.collectAsState()
     val context = LocalContext.current
 
@@ -76,6 +83,7 @@ fun LoginScreen(
             }
         }
     }
+
 
     Box(
         modifier = Modifier
@@ -161,40 +169,22 @@ fun LoginScreen(
 
                 Button(
                     onClick = {
-                        loginViewModel.loginUser(email, password) { success, role, username ->
+                        loginViewModel.loginUser(email, password, context) { success, role, username ->
                             if (success) {
-                                authViewModel.checkAuthStatus()
                                 Toast.makeText(
                                     context,
                                     "Selamat datang $username!",
                                     Toast.LENGTH_SHORT
                                 ).show()
-
-//                                if (role == "kasir") {
-//                                    navController.navigate(NavRoutes.AuthCheck.route) {
-//                                        popUpTo(0)
-//                                    }
-//                                    Toast.makeText(
-//                                        context,
-//                                        "Selamat datang kasir $username!",
-//                                        Toast.LENGTH_SHORT
-//                                    ).show()
-//                                } else if (role == "admin") {
-                                    navController.navigate(NavRoutes.AuthCheck.route) {
-                                        popUpTo(0)
-                                    }
-//                                    Toast.makeText(
-//                                        context,
-//                                        "Selamat datang Admin!",
-//                                        Toast.LENGTH_SHORT
-//                                    ).show()
-//                                } else {
-//                                    Toast.makeText(
-//                                        context,
-//                                        loginViewModel.errorMessage ?: "Login gagal",
-//                                        Toast.LENGTH_SHORT
-//                                    ).show()
-//                                }
+                                navController.navigate(NavRoutes.AuthCheck.route) {
+                                    popUpTo(0)
+                                }
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    loginViewModel.errorMessage ?: "Login gagal",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     },

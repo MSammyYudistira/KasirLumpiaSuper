@@ -1,19 +1,20 @@
 package com.example.kasirlumpiasuper.ui.navigation
 
+import android.R.attr.type
 import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -23,17 +24,20 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.example.kasirlumpiasuper.data.PreferencesManager
 import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
-import com.example.kasirlumpiasuper.ui.admin.AdminDashboard
 import com.example.kasirlumpiasuper.ui.auth.AuthCheckScreen
+import com.example.kasirlumpiasuper.ui.auth.AuthViewModel
+import com.example.kasirlumpiasuper.ui.auth.AuthViewModelFactory
 import com.example.kasirlumpiasuper.ui.auth.login.LoginScreen
 import com.example.kasirlumpiasuper.ui.auth.signup.SignupScreen
 import com.example.kasirlumpiasuper.ui.components.CustomTopBar
 import com.example.kasirlumpiasuper.ui.components.TopBarMenu
+import com.example.kasirlumpiasuper.ui.dashboard.DashboardScreen
+import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
 import com.example.kasirlumpiasuper.ui.history.HistoryScreen
 import com.example.kasirlumpiasuper.ui.history.HistoryViewModel
 import com.example.kasirlumpiasuper.ui.history.OrderDetailScreen
-import com.example.kasirlumpiasuper.ui.kasir.KasirDashboard
 import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentViewModel
 import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
@@ -45,18 +49,29 @@ import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @SuppressLint("UnrememberedGetBackStackEntry", "StateFlowValueCalledInComposition")
 @Composable
-fun KasirNavHost() {
-    val navController = rememberNavController()
+fun KasirNavHost(
+    navController: NavHostController,
+    authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(LocalContext.current))
+) {
+//    val navController = rememberNavController()
+
+    // ViewModel global untuk Firestore user (bisa diakses dari mana saja)
     val firestoreViewModel: FirestoreViewModel = viewModel()
+
+    // ViewModel yang akan menampung role admin/kasir (di-scope ke "main")
+    // Dibuat di luar NavHost supaya Compose tidak re-create tiap navigasi
+    val dashboardViewModel: DashboardViewModel = viewModel()
 
     NavHost(
         navController = navController,
         startDestination = NavRoutes.Splash.route,
     ) {
+
+        // === SPLASH / AUTH SECTION ===
         composable(NavRoutes.Splash.route) {
             SplashScreen {
                 navController.navigate(NavRoutes.AuthCheck.route) {
@@ -65,84 +80,69 @@ fun KasirNavHost() {
             }
         }
 
-        composable(NavRoutes.AuthCheck.route) { AuthCheckScreen(navController) }
-        composable(NavRoutes.Login.route) { LoginScreen(navController) }
+        composable(NavRoutes.AuthCheck.route) { AuthCheckScreen(navController, authViewModel) }
+        composable(NavRoutes.Login.route) {
+            LoginScreen(
+                navController = navController,
+                dashboardViewModel = dashboardViewModel,
+                authViewModel = authViewModel
+            )
+        }
         composable(NavRoutes.Signup.route) { SignupScreen(navController) }
 
+        // === MAIN SECTION (setelah login) ===
         navigation(
-            startDestination = NavRoutes.DashboardKasir.route,
+            startDestination = NavRoutes.Dashboard.route,
             route = "main"
         ) {
 
-            composable(NavRoutes.DashboardKasir.route) {
+            composable(NavRoutes.Dashboard.route) {
+                val context = LocalContext.current
+                val prefs = remember { PreferencesManager(context) }
+                val dashboardViewModel: DashboardViewModel = viewModel()
                 MainScaffold(
                     navController = navController,
                     viewModel = firestoreViewModel
                 ) { innerPadding ->
                     Box(Modifier.padding(innerPadding)) {
-                        KasirDashboard(navController)
+                        DashboardScreen(
+                            navController = navController,
+                            viewModel = dashboardViewModel,
+                            prefs = prefs
+                        )
                     }
                 }
             }
-            composable(NavRoutes.DashboardAdmin.route) {
-                MainScaffold(
-                    navController = navController,
-                    viewModel = firestoreViewModel
-                ) { innerPadding ->
-                    Box(Modifier.padding(innerPadding)) {
-                        AdminDashboard(navController = navController)
-                    }
-                }
-            }
+
             composable(NavRoutes.Profile.route) {
-                MainScaffold(
-                    navController = navController,
-                    viewModel = firestoreViewModel
-                ) { innerPadding ->
-                    Box(Modifier.padding(innerPadding)) {
-                        ProfileScreen(navController)
-                    }
+                MainScaffold(navController = navController, viewModel = firestoreViewModel) {
+                    Box(Modifier.padding(it)) { ProfileScreen(navController, authViewModel = authViewModel) }
                 }
             }
+
             composable(NavRoutes.History.route) {
-                MainScaffold(
-                    navController = navController,
-                    viewModel = firestoreViewModel
-                ) { innerPadding ->
-                    Box(Modifier.padding(innerPadding)) {
-                        HistoryScreen(navController)
-                    }
+                MainScaffold(navController = navController, viewModel = firestoreViewModel) {
+                    Box(Modifier.padding(it)) { HistoryScreen(navController) }
                 }
             }
+
             composable(NavRoutes.Statistic.route) {
-                MainScaffold(
-                    navController = navController,
-                    viewModel = firestoreViewModel
-                ) { innerPadding ->
-                    Box(Modifier.padding(innerPadding)) {
-                        StatisticScreen(navController)
-                    }
+                MainScaffold(navController = navController, viewModel = firestoreViewModel) {
+                    Box(Modifier.padding(it)) { StatisticScreen(navController) }
                 }
             }
 
             composable(NavRoutes.Stock.route) { backStackEntry ->
                 val recapViewModel: RecapViewModel = viewModel(backStackEntry)
-                StockScreen(
-                navController,
-                recapViewModel = recapViewModel
-            ) }
+                StockScreen(navController, recapViewModel = recapViewModel)
+            }
 
             composable(
                 route = "${NavRoutes.InputRecap.route}/{dateLabel}"
             ) { backStackEntry ->
                 val recapViewModel: RecapViewModel = viewModel()
                 val dateLabel = backStackEntry.arguments?.getString("dateLabel") ?: ""
-
-                InputRecapScreen(
-                    navController = navController,
-                    recapViewModel = recapViewModel,
-                    dateLabel = dateLabel
-                )
+                InputRecapScreen(navController, recapViewModel, dateLabel)
             }
 
             composable(
@@ -150,39 +150,66 @@ fun KasirNavHost() {
             ) { backStackEntry ->
                 val recapViewModel: RecapViewModel = viewModel()
                 val dateLabel = backStackEntry.arguments?.getString("dateLabel") ?: ""
-
-                DetailRecapScreen(
-                    navController = navController,
-                    recapViewModel = recapViewModel,
-                    dateLabel = dateLabel
-                )
+                DetailRecapScreen(navController, recapViewModel, dateLabel)
             }
 
             composable(
                 route = "${NavRoutes.OrderDetail.route}/{dateKey}/{queueNumber}"
             ) { backStackEntry ->
                 val dateKey = backStackEntry.arguments?.getString("dateKey") ?: return@composable
-                val queueNumber = backStackEntry.arguments?.getString("queueNumber")?.toIntOrNull() ?: return@composable
+                val queueNumber = backStackEntry.arguments?.getString("queueNumber")?.toIntOrNull()
+                    ?: return@composable
 
-                // 🔹 Ambil HistoryViewModel dari parentEntry "main"
+                // Pastikan aman dari crash jika "main" tidak ada
                 val parentEntry = remember(navController) {
-                    navController.getBackStackEntry("main")
+                    try {
+                        navController.getBackStackEntry("main")
+                    } catch (e: IllegalArgumentException) {
+                        null
+                    }
                 }
-                val historyViewModel: HistoryViewModel = viewModel(parentEntry)
+
+                val historyViewModel: HistoryViewModel =
+                    if (parentEntry != null) viewModel(parentEntry)
+                    else viewModel()
+
+                // 👉 Ambil role dari FirestoreViewModel root milik KasirNavHost
+                val user by firestoreViewModel.user.collectAsState()
+                val isAdmin = user?.role == "admin"
 
                 OrderDetailScreen(
                     navController = navController,
                     dateKey = dateKey,
                     queueNumber = queueNumber,
-                    viewModel = historyViewModel
+                    viewModel = historyViewModel,
+                    isAdmin = isAdmin
                 )
             }
 
-            composable(NavRoutes.Transaction.route) { backStackEntry ->
+            composable(
+                route = "transaction?dateKey={dateKey}&queueNumber={queueNumber}",
+                arguments = listOf(
+                    navArgument("dateKey") {
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("queueNumber") {
+                        type = NavType.IntType
+                        defaultValue = -1
+                    }
+                )
+            ) { backStackEntry ->
+                val dateKey = backStackEntry.arguments?.getString("dateKey")
+                val queueArg = backStackEntry.arguments?.getInt("queueNumber")
+                val queueNumber = if (queueArg == -1) null else queueArg
+
                 val transactionViewModel: TransactionViewModel = viewModel(backStackEntry)
+
                 TransactionScreen(
                     navController = navController,
-                    transactionViewModel = transactionViewModel
+                    transactionViewModel = transactionViewModel,
+                    dateKey = dateKey,
+                    queueNumber = queueNumber
                 )
             }
 
@@ -190,15 +217,12 @@ fun KasirNavHost() {
                 val transactionViewModel: TransactionViewModel =
                     viewModel(navController.getBackStackEntry(NavRoutes.Transaction.route))
                 val paymentViewModel: PaymentViewModel = viewModel(backStackEntry)
-                PaymentScreen(
-                    navController = navController,
-                    paymentViewModel = paymentViewModel,
-                    transactionViewModel = transactionViewModel
-                )
+                PaymentScreen(navController, paymentViewModel, transactionViewModel)
             }
         }
     }
 }
+
 
 @Composable
 fun MainScaffold(
@@ -209,23 +233,38 @@ fun MainScaffold(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val user by viewModel.user.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadUser()
+    }
+
+//    val dashboardViewModel: DashboardViewModel = viewModel()
+//    val isAdmin by dashboardViewModel.isAdmin.collectAsState()
+//    val userName by dashboardViewModel.userName.collectAsState()
+
     val selectedMenu = when (currentRoute) {
-        NavRoutes.DashboardKasir.route -> TopBarMenu.DASHBOARD
+        NavRoutes.Dashboard.route -> TopBarMenu.DASHBOARD
         NavRoutes.History.route -> TopBarMenu.HISTORY
         NavRoutes.Statistic.route -> TopBarMenu.STATS
         NavRoutes.Profile.route -> TopBarMenu.PROFILE
         else -> TopBarMenu.DASHBOARD
     }
 
+    val userRole = user?.role == "admin"
+
     Scaffold(
         topBar = {
             CustomTopBar(
-                onHomeClick = { navController.navigateSingleTopTo(NavRoutes.DashboardKasir.route) },
+                onHomeClick = { navController.navigateSingleTopTo(NavRoutes.Dashboard.route) },
                 onHistoryClick = { navController.navigateSingleTopTo(NavRoutes.History.route) },
                 onProfileClick = { navController.navigateSingleTopTo(NavRoutes.Profile.route) },
-                onStatsClick = { navController.navigateSingleTopTo(NavRoutes.Statistic.route) },
+                onStatsClick = if (userRole) {
+                    { navController.navigateSingleTopTo(NavRoutes.Statistic.route) }
+                } else null,
                 onSelectedMenu = selectedMenu,
-                viewModel = viewModel
+                users = user,
+                title = if (userRole) "Admin Dashboard" else "Kasir Dashboard"
             )
         }
     ) { innerPadding ->

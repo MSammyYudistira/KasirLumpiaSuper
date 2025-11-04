@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.payment
 
+import android.R.attr.textStyle
 import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.Toast
@@ -40,9 +41,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -94,8 +97,10 @@ fun PaymentScreen(
     val selectedMethod by paymentViewModel.selectedPaymentMethod.collectAsState()
     val change by paymentViewModel.change.collectAsState()
 
+    var showEmpty by remember { mutableStateOf(false) }
     var isPrinterConnected by remember { mutableStateOf(false) }
     var showPrinterWarning by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(total) {
         paymentViewModel.setTotalOrder(total)
@@ -113,9 +118,9 @@ fun PaymentScreen(
 
     if (showPrinterWarning) {
         AlertDialog(
-            onDismissRequest = { showPrinterWarning = false},
-            title = { Text("Printer Belum Tersambung")},
-            text = {Text("Printer kamu belum tersambung. Yakin ingin lanjut transaksi tanpa mencetak struk?")},
+            onDismissRequest = { showPrinterWarning = false },
+            title = { Text("Printer Belum Tersambung") },
+            text = { Text("Printer kamu belum tersambung. Yakin ingin lanjut transaksi tanpa mencetak struk?") },
             confirmButton = {
                 TextButton(onClick = {
                     showPrinterWarning = false
@@ -157,7 +162,7 @@ fun PaymentScreen(
                 paymentViewModel.reset()
 
                 // Navigasi ke dashboard kasir
-                navController.navigate(NavRoutes.DashboardKasir.route)
+                navController.navigate(NavRoutes.Dashboard.route)
 
                 // Reset state supaya efek ini tidak ke-trigger ulang
                 transactionViewModel.clearSaveOrderState()
@@ -211,7 +216,10 @@ fun PaymentScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Detail Pesanan", style = MaterialTheme.typography.displaySmall)
-                        Text("#${queueLabel(queuePreview)}", style = MaterialTheme.typography.displaySmall)
+                        Text(
+                            "#${queueLabel(queuePreview)}",
+                            style = MaterialTheme.typography.displaySmall
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -273,20 +281,27 @@ fun PaymentScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Column {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Discount", style = MaterialTheme.typography.bodyMedium, color = Success)
-                            Text(
-                                text = "Rp ($discount)",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Success
-                            )
+
+                        if (discount != 0) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    "Diskon",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Success
+                                )
+                                Text(
+                                    text = "Rp ($discount)",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Success
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
                         }
-                        Spacer(Modifier.height(8.dp))
 
                         Row(
                             modifier = Modifier
@@ -471,10 +486,22 @@ fun PaymentScreen(
                                 Spacer(Modifier.height(24.dp))
 
                                 OutlinedTextField(
+
                                     value = if (inputAmount == 0) "0" else inputAmount.toString(),
-                                    onValueChange = { paymentViewModel.setInputAmount(it) },
+                                    onValueChange = { newValue ->
+                                        val filtered = newValue.filter { it.isDigit() }
+                                        paymentViewModel.setInputAmount(filtered)
+                                    },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused && inputAmount == 0) {
+                                                paymentViewModel.setInputAmount("")
+                                            } else if (!focusState.isFocused && inputAmount == -1) {
+                                                paymentViewModel.setInputAmount("0")
+                                            }
+                                        },
                                     textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                     colors = TextFieldDefaults.colors(
                                         unfocusedContainerColor = Surface,
@@ -545,7 +572,11 @@ fun PaymentScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Kembalian", style = MaterialTheme.typography.displaySmall, color = Primary)
+                                    Text(
+                                        "Kembalian",
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = Primary
+                                    )
                                     Text(
                                         text = "Rp $change",
                                         style = MaterialTheme.typography.displaySmall,
@@ -553,26 +584,78 @@ fun PaymentScreen(
                                     )
                                 }
 
-                                Spacer(Modifier.height(24.dp))
+                                Spacer(Modifier.height(16.dp))
 
-                                Button(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    enabled = inputAmount > 0,
-                                    onClick = {
+                                Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Button(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        enabled = inputAmount > 0,
+                                        onClick = {
+                                            val queueNumber =
+                                                transactionViewModel.queuePreview.value
+                                            if (queueNumber != null) {
+                                                scope.launch {
+                                                    PrintHelper.printQueueNumber(
+                                                        context,
+                                                        queueNumber
+                                                    )
+                                                }
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Nomor antrian tidak tersedia",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.baseline_receipt_24),
+                                                contentDescription = "Cetak Nomor Antrian"
+                                            )
 
-                                        if (!isPrinterConnected) {
-                                            showPrinterWarning = true
-                                        } else {
-                                            commitTransactionAnyway(
-                                                context = context,
-                                                transactionViewModel = transactionViewModel,
-                                                paymentViewModel = paymentViewModel
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Cetak Nomor Antrian",
+                                                style = MaterialTheme.typography.titleMedium
                                             )
                                         }
                                     }
-                                ) {
-                                    Text("Cetak Struk")
+
+                                    Spacer(Modifier.width(24.dp))
+
+                                    Button(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        enabled = inputAmount > 0,
+                                        onClick = {
+
+                                            if (!isPrinterConnected) {
+                                                showPrinterWarning = true
+                                            } else {
+                                                commitTransactionAnyway(
+                                                    context = context,
+                                                    transactionViewModel = transactionViewModel,
+                                                    paymentViewModel = paymentViewModel
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.baseline_print_24),
+                                                contentDescription = "Cetak Struk"
+                                            )
+
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Cetak Struk",
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -602,11 +685,24 @@ fun PaymentScreen(
                                 Spacer(Modifier.height(24.dp))
 
                                 OutlinedTextField(
-                                    value = if (inputAmount == 0) "0" else inputAmount.toString(),
-                                    onValueChange = { paymentViewModel.setInputAmount(it) },
+                                    value = if (showEmpty && inputAmount == 0) "" else inputAmount.toString(),
+                                    onValueChange = { newValue ->
+                                        val filtered = newValue.filter { it.isDigit() }
+                                        paymentViewModel.setInputAmount(filtered)
+                                    },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.fillMaxWidth(),
                                     textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused) {
+                                                // Saat diklik, kosongkan tampilan kalau nilainya 0
+                                                showEmpty = true
+                                            } else {
+                                                // Saat kehilangan fokus, kembalikan angka jika kosong
+                                                if (inputAmount == 0) showEmpty = false
+                                            }
+                                        },
                                     colors = TextFieldDefaults.colors(
                                         unfocusedContainerColor = Surface,
                                     ),
@@ -676,7 +772,11 @@ fun PaymentScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Kembalian", style = MaterialTheme.typography.displaySmall, color = Primary)
+                                    Text(
+                                        "Kembalian",
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = Primary
+                                    )
                                     Text(
                                         text = "Rp $change",
                                         style = MaterialTheme.typography.displaySmall,
@@ -686,24 +786,76 @@ fun PaymentScreen(
 
                                 Spacer(Modifier.height(24.dp))
 
-                                Button(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    enabled = inputAmount > 0,
-                                    onClick = {
+                                Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Button(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        enabled = isPrinterConnected,
+                                        onClick = {
+                                            val queueNumber =
+                                                transactionViewModel.queuePreview.value
+                                            if (queueNumber != null) {
+                                                scope.launch {
+                                                    PrintHelper.printQueueNumber(
+                                                        context,
+                                                        queueNumber
+                                                    )
+                                                }
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Nomor antrian tidak tersedia",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.baseline_receipt_24),
+                                                contentDescription = "Cetak Nomor Antrian"
+                                            )
 
-                                        if (!isPrinterConnected) {
-                                            showPrinterWarning = true
-                                        } else {
-                                            commitTransactionAnyway(
-                                                context = context,
-                                                transactionViewModel = transactionViewModel,
-                                                paymentViewModel = paymentViewModel
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Cetak Nomor Antrian",
+                                                style = MaterialTheme.typography.titleMedium
                                             )
                                         }
                                     }
-                                ) {
-                                    Text("Cetak Struk")
+
+                                    Spacer(Modifier.width(24.dp))
+
+                                    Button(
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        enabled = true,
+                                        onClick = {
+
+                                            if (!isPrinterConnected) {
+                                                showPrinterWarning = true
+                                            } else {
+                                                commitTransactionAnyway(
+                                                    context = context,
+                                                    transactionViewModel = transactionViewModel,
+                                                    paymentViewModel = paymentViewModel
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.baseline_print_24),
+                                                contentDescription = "Cetak Struk"
+                                            )
+
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                "Cetak Struk",
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         } else {
@@ -752,7 +904,7 @@ fun commitTransactionAnyway(
 
     val queueNumber = transactionViewModel.queuePreview.value ?: 1
     val order = transactionViewModel.buildOrderForCommit(
-        cashierId = "kasir123",
+//        cashierId = "kasir123",
         queueNumber = queueNumber,
         paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH,
         cashReceived = paymentViewModel.inputAmount.value,

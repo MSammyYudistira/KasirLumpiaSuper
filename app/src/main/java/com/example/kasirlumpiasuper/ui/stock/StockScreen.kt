@@ -3,9 +3,7 @@ package com.example.kasirlumpiasuper.ui.stock
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -27,21 +26,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.data.model.StockInputItem
 import com.example.kasirlumpiasuper.data.model.StockMeta
 import com.example.kasirlumpiasuper.ui.components.CustomActionButton
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
-import com.example.kasirlumpiasuper.ui.components.StockGridStatic
-import com.example.kasirlumpiasuper.ui.kasir.KasirViewModel
+import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
-import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Surface
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,13 +44,27 @@ fun StockScreen(
     navController: NavHostController,
     recapViewModel: RecapViewModel
 ) {
-    val kasirViewModel: KasirViewModel = viewModel()
+    val kasirViewModel: DashboardViewModel = viewModel()
     val context = LocalContext.current
-    val stok = listOf("Lumpia", "Tahu Lumpia", "Siomay", "Siomay Basah", "Mihun", "Singkong Goreng", "Kacang Merah", "Aqua")
+    val stok = listOf(
+        "Lumpia",
+        "Tahu Lumpia",
+        "Siomay",
+        "Siomay Basah",
+        "Mihun",
+        "Singkong Goreng",
+        "Es Kacang Merah",
+        "Air Mineral"
+    )
 
     val initialStocks = remember { mutableStateMapOf<String, Int>() }
     val damagedStocks = remember { mutableStateMapOf<String, Int>() }
     var uangKas by remember { mutableStateOf("") }
+    val hasAnyStockInput = remember {
+        derivedStateOf {
+            initialStocks.values.any { it > 0 } || damagedStocks.values.any { it > 0 }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -93,15 +101,16 @@ fun StockScreen(
                                 .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
                         stok.forEach { product ->
-                            var value by remember { mutableStateOf("")}
+                            var value by remember { mutableStateOf("") }
                             OutlinedTextField(
                                 value = value,
                                 onValueChange = {
-                                    value = it.filter ( Char::isDigit )
+                                    value = it.filter(Char::isDigit)
                                     initialStocks[product] = value.toIntOrNull() ?: 0
                                 },
                                 label = { Text(product) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -136,6 +145,7 @@ fun StockScreen(
                                 },
                                 label = { Text(product) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -153,16 +163,18 @@ fun StockScreen(
                     shape = RoundedCornerShape(8.dp),
                     shadowElevation = 4.dp
                 ) {
-                    Column{
+                    Column {
                         Text(
-                            "Uang Yang Dibawa",
+                            "Uang Bawaan (Kas)",
                             style = MaterialTheme.typography.displaySmall,
                             modifier = Modifier
                                 .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
 
                         OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
                             value = uangKas,
                             onValueChange = { uangKas = it.filter(Char::isDigit) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -174,8 +186,19 @@ fun StockScreen(
             }
 
             item {
+                val isButtonEnabled = hasAnyStockInput.value || uangKas.isNotBlank()
+
                 CustomActionButton(
                     onClicked = {
+                        if (uangKas.isBlank()) {
+                            Toast.makeText(
+                                context,
+                                "Harap isi uang bawaan terlebih dahulu!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@CustomActionButton
+                        }
+
                         val items = stok.map {
                             StockInputItem(
                                 productId = it,
@@ -184,13 +207,16 @@ fun StockScreen(
                                 damagedStock = damagedStocks[it] ?: 0
                             )
                         }
-                        val meta = StockMeta(cashOpening = uangKas.toIntOrNull() ?: 0)
                         recapViewModel.saveStockInput(
                             items = items,
-                            meta = meta,
+                            cashOpening = uangKas.toIntOrNull() ?: 0,
                             onSuccess = {
-                                Toast.makeText(context, "Stok berhasil disimpan!", Toast.LENGTH_SHORT).show()
-                                kasirViewModel.isStockFilledToday(true)
+                                Toast.makeText(
+                                    context,
+                                    "Stok berhasil disimpan!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                kasirViewModel.isStockFilledToday(isStockFilled = true)
                                 navController.popBackStack()
                             },
                             onError = { err ->
@@ -198,7 +224,8 @@ fun StockScreen(
                             }
                         )
                     },
-                    text = "Simpan Perubahan"
+                    text = "Simpan Perubahan",
+                    enabled = isButtonEnabled
                 )
             }
         }

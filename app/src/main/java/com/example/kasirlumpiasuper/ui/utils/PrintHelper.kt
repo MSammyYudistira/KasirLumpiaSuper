@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.utils
 
+import android.R.attr.order
 import android.content.Context
 import android.widget.Toast
 import com.example.kasirlumpiasuper.data.model.Order
@@ -8,6 +9,9 @@ import com.dantsu.escposprinter.connection.DeviceConnection
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object PrintHelper {
 
@@ -63,6 +67,58 @@ object PrintHelper {
             e.printStackTrace()
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Gagal mencetak: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+            printerConnection = null
+        }
+    }
+
+    suspend fun printQueueNumber(context: Context, queueNumber: Int) = withContext(Dispatchers.IO) {
+        try {
+            // 🔹 Cek koneksi printer Bluetooth
+            if (printerConnection == null) {
+                printerConnection = BluetoothPrintersConnections.selectFirstPaired()
+            }
+
+            if (printerConnection == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Printer tidak ditemukan", Toast.LENGTH_SHORT).show()
+                }
+                return@withContext
+            }
+
+            // 🔹 Inisialisasi printer
+            val printer = EscPosPrinter(printerConnection, 203, 40f, 32)
+
+            // 🔹 Format teks antrian (hanya nomor antrian)
+            val queueText = buildString {
+                append("[C]<b>Lumpia Super</b>\n")
+                append("[C]Jl. Ahmad Yani I No. B10\n")
+                append("[C](Ruko di belakang Lab Prodia)\n\n")
+
+                val dateStr = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("id", "ID"))
+                    .format(Date())
+                append("[C]$dateStr\n")
+                append("[C]Nomor Antrian\n")
+                append("[C]<font size='big'><b>${String.format(Locale.getDefault(), "%03d", queueNumber)}</b></font>\n\n")
+            }
+
+            // 🔹 Cetak teks
+            printer.printFormattedText(queueText)
+
+            // Delay sejenak sebelum disconnect
+            Thread.sleep(1000L)
+
+            printer.disconnectPrinter()
+            printerConnection = null
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Nomor antrian #$queueNumber berhasil dicetak", Toast.LENGTH_SHORT).show()
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Gagal mencetak antrian: ${e.message}", Toast.LENGTH_LONG).show()
             }
             printerConnection = null
         }

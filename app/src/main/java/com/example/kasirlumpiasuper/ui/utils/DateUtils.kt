@@ -10,11 +10,17 @@ import java.util.Locale
 object DateUtils {
     private val idLocale = Locale("id", "ID")
 
-    fun getBusinessDateLabel(): String {
-        val cal = Calendar.getInstance() // Selalu ambil tanggal hari ini
-        val dateFormat = SimpleDateFormat("dd MMMM yyyy", idLocale)
-        return dateFormat.format(cal.time)
-    }
+//    fun setManualDate(date: String) {
+//        manualDateLabel = date
+//    }
+//
+//    fun getBusinessDateLabel(): String {
+//        manualDateLabel?.let { return it } // ✅ pakai tanggal manual kalau ada
+//
+//        val cal = Calendar.getInstance()
+//        val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+//        return dateFormat.format(cal.time)
+//    }
 
     fun timeLabel(millis: Long?): String {
         if (millis == null || millis <= 0) return "-"
@@ -34,14 +40,23 @@ object DateUtils {
         numberFormat.maximumFractionDigits = 0
         return "Rp ${numberFormat.format(amount)}"
     }
+}
 
-    fun prevBusinessDateLabel(currentLabel: String): String? {
-        return try {
-            val inFmt = SimpleDateFormat("dd MMMM yyyy", idLocale)
-            val outFmt = SimpleDateFormat("dd MMMM yyyy", idLocale)
-            val date = inFmt.parse(currentLabel) ?: return null
-            val cal = Calendar.getInstance().apply { time = date; add(Calendar.DAY_OF_MONTH, -1) }
-            outFmt.format(cal.time)
-        } catch (_: Exception) { null }
-    }
+object BusinessDateManager {
+    private var lockedDateLabel: String? = null
+    private val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+
+    fun getBusinessDateLabel(): String =
+        lockedDateLabel ?: dateFormat.format(Calendar.getInstance().time)
+
+    fun getCurrentSystemDateLabel(): String =
+        dateFormat.format(Calendar.getInstance().time)
+
+    fun lockTo(dateLabel: String) { lockedDateLabel = dateLabel }
+
+    fun releaseLock() { lockedDateLabel = null }
+
+    fun isLocked(): Boolean = lockedDateLabel != null
+
+    fun getLockedDate(): String? = lockedDateLabel
 }

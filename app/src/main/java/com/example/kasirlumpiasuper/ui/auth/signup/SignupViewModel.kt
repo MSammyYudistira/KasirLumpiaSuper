@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.auth.signup
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,6 +9,7 @@ import com.example.kasirlumpiasuper.data.model.Users
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 
@@ -32,24 +34,42 @@ class SignupViewModel(
         role: String,
         onSuccess: () -> Unit
     ) {
+        // 🔹 Validasi input
         if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
             errorMessage = "Isi semua field!"
             return
         }
 
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            errorMessage = "Format email tidak valid!"
+            return
+        }
+
+        if (password.length < 6) {
+            errorMessage = "Password minimal 6 karakter!"
+            return
+        }
+
         if (password != confirmPassword) {
-            errorMessage = "Password dan Confirm Password tidak sama!"
+            errorMessage = "Password dan Konfirmasi Password tidak sama!"
             return
         }
 
         isLoading = true
         errorMessage = null
 
+        // 🔹 Buat akun di Firebase Auth
         auth.createUserWithEmailAndPassword(email.trim(), password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val uid = task.result?.user?.uid ?: return@addOnCompleteListener
+                    val uid = auth.currentUser?.uid
+                    if (uid == null) {
+                        isLoading = false
+                        errorMessage = "Gagal mengambil UID pengguna."
+                        return@addOnCompleteListener
+                    }
 
+                    // 🔹 Buat model user baru
                     val newUser = Users(
                         uid = uid,
                         name = username.trim(),
@@ -59,6 +79,7 @@ class SignupViewModel(
                         createdAt = Timestamp.now()
                     )
 
+                    // 🔹 Simpan ke Firestore
                     firestore.collection("users")
                         .document(uid)
                         .set(newUser)
@@ -67,13 +88,17 @@ class SignupViewModel(
                             onSuccess()
                         }
                         .addOnFailureListener { e ->
-                            isLoading = false
+                            // ❗ Jika gagal simpan data, rollback akun Auth agar tidak orphan
                             auth.currentUser?.delete()
+                            isLoading = false
                             errorMessage = "Gagal menyimpan data user: ${e.message}"
+                            Log.e("SignupError", "Firestore set failed: ${e.message}", e)
                         }
                 } else {
+                    // 🔹 Jika gagal membuat akun
                     isLoading = false
-                    errorMessage = task.exception?.message ?: "Signup gagal"
+                    errorMessage = "Pendaftaran gagal: ${task.exception?.message ?: "Terjadi kesalahan tak diketahui"}"
+                    Log.e("SignupError", "Auth failed: ${task.exception?.message}", task.exception)
                 }
             }
     }

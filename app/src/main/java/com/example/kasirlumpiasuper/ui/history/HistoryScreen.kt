@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
 import android.net.Uri
+import android.view.ContextThemeWrapper
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,6 +55,7 @@ import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary
+import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
 import com.example.kasirlumpiasuper.ui.utils.DateUtils.timeLabel
 import com.example.kasirlumpiasuper.ui.utils.PrintHelper
@@ -131,38 +133,15 @@ fun HistoryScreen(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.baseline_date_range_24),
-                                contentDescription = "date picker"
+                                contentDescription = "date picker",
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = dateKey,
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
                             )
                         }
                     }
-                }
-
-                item {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        label = { Text("Cari Struk atau Item...") },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick =  { searchQuery = "" }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.baseline_close_24),
-                                        contentDescription = "Hapus pencarian"
-                                    )
-                                }
-                            }
-                        },
-                        placeholder = { Text("contoh: #5 atau Lumpia 2") },
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        singleLine = true,
-                    )
                 }
 
                 item {
@@ -200,14 +179,14 @@ fun HistoryScreen(
                             )
                         }
 
-                        filterOrders.isEmpty() && searchQuery.isNotBlank() -> {
-                            Text(
-                                "Tidak ada hasil untuk \"$searchQuery\"",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(vertical = 16.dp)
-                            )
-                        }
+//                        filterOrders.isEmpty() && searchQuery.isNotBlank() -> {
+//                            Text(
+//                                "Tidak ada hasil untuk \"$searchQuery\"",
+//                                style = MaterialTheme.typography.bodyMedium,
+//                                color = Color.Gray,
+//                                modifier = Modifier.padding(vertical = 16.dp)
+//                            )
+//                        }
                         else -> {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -223,8 +202,42 @@ fun HistoryScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
 
+                                    if (filterOrders.isEmpty() && searchQuery.isNotBlank()) {
+                                        Text(
+                                            text = "Tidak ada hasil untuk \"$searchQuery\"",
+                                            color = Color.Red.copy(alpha = 0.8f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                    }
+
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { searchQuery = it },
+                                        label = { Text("Cari Struk atau Item...") },
+                                        trailingIcon = {
+                                            if (searchQuery.isNotEmpty()) {
+                                                IconButton(onClick =  { searchQuery = "" }) {
+                                                    Icon(
+                                                        painter = painterResource(R.drawable.baseline_close_24),
+                                                        contentDescription = "Hapus pencarian"
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        placeholder = { Text("contoh: #5 atau Lumpia 2") },
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        shape = RoundedCornerShape(8.dp),
+                                        singleLine = true,
+                                    )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
                                     // 🔹 Daftar transaksi
-                                    filterOrders.forEach { order ->
+                                    filterOrders
+                                        .sortedByDescending { it.queueNumber }
+                                        .forEach { order ->
                                         HistoryListItem(
                                             order,
                                             onPrint = {
@@ -394,21 +407,23 @@ private fun HistoryListItem(
                         "Struk #${order.queueNumber}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-//                        color = PrimaryBold
                     )
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Detail ringkas per cup
-                        val desc = order.items.joinToString(", ") { item ->
-                            "${item.name} ${item.qty} ${if (item.isFree) " (FREE)" else ""}"
+                        // Detail ringkas per cup + metode pembayaran
+                        val desc = buildString {
+                            append(
+                                order.items.joinToString(", ") { item ->
+                                    "${item.name} ${item.qty}${if (item.isFree) " (Free)" else ""}"
+                                }
+                            )
+                            append(" • ${order.paymentMethod.name}") // tambahkan metode pembayaran di akhir
                         }
-                        Text(desc, style = MaterialTheme.typography.bodySmall)
 
-                        // Waktu
                         Text(
-                            text = ", ${timeLabel(order.createdAt)}",
+                            desc,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -426,7 +441,6 @@ private fun HistoryListItem(
             // Action bar
             IconButton(onClick = { onPrint() }) {
                 Surface(
-//                    modifier = Modifier.width(60.dp),
                     shape = RoundedCornerShape(6.dp),
                     color = Primary,
                 ) {
@@ -455,8 +469,11 @@ fun showDatePicker(
     } catch (_: Exception) {
     }
 
+    // 🔹 Bungkus context dengan tema biru AppCompat
+    val themedContext = ContextThemeWrapper(context, R.style.BlueDatePickerTheme)
+
     DatePickerDialog(
-        context,
+        themedContext,
         { _, year, month, day ->
             val pickedCal = Calendar.getInstance().apply {
                 set(year, month, day)

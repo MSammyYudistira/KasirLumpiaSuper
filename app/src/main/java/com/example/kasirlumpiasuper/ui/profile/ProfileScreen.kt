@@ -3,6 +3,7 @@ package com.example.kasirlumpiasuper.ui.profile
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,17 +42,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
+import com.example.kasirlumpiasuper.ui.auth.AuthViewModel
+import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavHostController,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(),
+    authViewModel: AuthViewModel
 ) {
     val context = LocalContext.current
     val user by viewModel.user.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     // state input sementara (biar bisa bandingin dengan data asli)
     var editedName by remember(user) { mutableStateOf(user.name) }
@@ -148,10 +153,11 @@ fun ProfileScreen(
                 ) {
                     Surface(
                         onClick = {
-                            logoutUser(
-                                navController = navController,
-                                context = context
-                                )
+                            authViewModel.logoutUser()
+                            Toast.makeText(context, "Logout berhasil", Toast.LENGTH_SHORT).show()
+                            navController.navigate(NavRoutes.AuthCheck.route) {
+                                popUpTo(0)
+                            }
                         },
                         shape = RoundedCornerShape(8.dp)
                     ) {
@@ -177,16 +183,29 @@ fun ProfileScreen(
             }
         }
 
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Primary)
+            }
+        }
+
         // Tombol Simpan
         Button(
             colors = ButtonDefaults.buttonColors(Primary),
             shape = RoundedCornerShape(8.dp),
             onClick = {
-                val updatedUser = user.copy(
-                    name = editedName,
-                    quote = editedQuote
-                )
-                viewModel.updateUser(updatedUser) { success ->
+                if (editedName.isBlank()) {
+                    Toast.makeText(context, "Nama lengkap tidak boleh kosong.", Toast.LENGTH_SHORT)
+                        .show()
+                    return@Button
+                }
+
+                viewModel.updateUser(name = editedName, quote = editedQuote) { success ->
                     if (success) {
                         Toast.makeText(context, "Perubahan berhasil disimpan", Toast.LENGTH_SHORT)
                             .show()
@@ -200,7 +219,7 @@ fun ProfileScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 321.dp)
                 .padding(bottom = 24.dp),
-            enabled = hasChanges
+            enabled = hasChanges && !isLoading
         ) {
             Text("Simpan Perubahan", style = MaterialTheme.typography.titleMedium)
         }

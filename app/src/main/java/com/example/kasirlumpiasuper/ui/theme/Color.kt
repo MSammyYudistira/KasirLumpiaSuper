@@ -30,3 +30,7 @@ val Outline = Color(0xFFF5F6F7)         // Warna garis pemisah / border ringan
 
 // Success / Positive Feedback
 val Success = Color(0xFF22C55E)         // Warna hijau untuk validasi benar atau sukses
+
+val Warning = Color(0xFFff9a00)
+
+val Danger = Color.Red

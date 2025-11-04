@@ -13,6 +13,7 @@ import com.example.kasirlumpiasuper.data.model.ProductRecapRow
 import com.example.kasirlumpiasuper.data.model.RecapInput
 import com.example.kasirlumpiasuper.data.model.StockInputItem
 import com.example.kasirlumpiasuper.data.model.StockMeta
+import com.google.firebase.auth.FirebaseAuth
 import kotlin.collections.filter
 import kotlin.collections.flatMap
 import kotlin.collections.map
@@ -78,11 +79,11 @@ object RecapUtils {
             "Lumpia",
             "Tahu Lumpia",
             "Siomay",
-            "Siomay Basah",
             "Singkong Goreng",
             "Mihun",
             "Es Kacang Merah",
-            "Air Mineral"
+            "Air Mineral",
+            "Siomay Basah"
         )
 
         // Produk yang sudah ada di daftar
@@ -118,7 +119,7 @@ object RecapUtils {
         )
 
         // 🔹 Hitung total pendapatan dari seluruh produk
-        val sum1 = inputs.orders.sumOf { it.total }
+        val sum1 = revenueAgg.values.sum()
 
         // 🔹 Total transaksi non tunai (QRIS / CASHLESS)
         val nonCash = inputs.orders
@@ -131,7 +132,7 @@ object RecapUtils {
         // 🔹 Laba bersih tunai
         val sum2 = sum1 - nonCash - expense.sum
 
-        val sum3 = sum2 - cashOpening
+        val sum3 = sum2 + cashOpening
 
         val gross = GrossSection(
             sum1 = sum1,
@@ -148,7 +149,8 @@ object RecapUtils {
         val smallCash = recapIn?.smallCash ?: 0
         val extraCash = recapIn?.extraCash ?: 0
         val sumCash = bigCash + smallCash + extraCash
-        val diff = sumCash - sum2
+        val diff = sum3 - sumCash
+        val currentCashierId = FirebaseAuth.getInstance().currentUser?.uid ?: "unknown"
 
         val cash = CashAtRegister(
             bigCash = bigCash,
@@ -162,6 +164,9 @@ object RecapUtils {
         return DailyRecap(
             dateLabel = inputs.dateLabel,
             location = inputs.recapInput?.location.orEmpty(),
+            cashierId = currentCashierId,
+            userName = "",
+            notes = inputs.recapInput?.notes.orEmpty(),
             productRows = sortedRows,
             freeSummary = free,
             expenseSummary = expense,
@@ -186,20 +191,14 @@ object RecapUtils {
     private fun aggregateRevenue(orders: List<Order>): Map<String, Int> {
         val map = mutableMapOf<String, Int>()
         orders.forEach { order ->
-            val totalItemPrice = order.items.filter { !it.isFree }.sumOf { it.unitPrice * it.qty }
-            val discount = order.discount ?: 0
-
             order.items.forEach { item ->
-                if (!item.isFree) {
-                    val proportion = if (totalItemPrice > 0)
-                        (item.unitPrice * item.qty).toDouble() / totalItemPrice.toDouble()
-                    else 0.0
-                    val itemDiscount = (discount * proportion).toInt()
-                    val itemRevenue = (item.unitPrice * item.qty) - itemDiscount
-
-                    val key = item.name
-                    map[key] = (map[key] ?: 0) + itemRevenue
-                }
+                val basePrice = when {
+                    item.isFree && item.originalUnitPrice != null -> item.originalUnitPrice
+                    item.isFree -> item.unitPrice
+                    else -> item.unitPrice
+                } ?: 0
+                val itemRevenue = basePrice * item.qty
+                map[item.name] = (map[item.name] ?: 0) + itemRevenue
             }
         }
         return map
@@ -225,5 +224,7 @@ object RecapUtils {
             totalNominal = totalNominal
         )
     }
+
+
 
 }
