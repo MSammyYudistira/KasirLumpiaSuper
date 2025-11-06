@@ -38,6 +38,7 @@ import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
 import com.example.kasirlumpiasuper.ui.history.HistoryScreen
 import com.example.kasirlumpiasuper.ui.history.HistoryViewModel
 import com.example.kasirlumpiasuper.ui.history.OrderDetailScreen
+import com.example.kasirlumpiasuper.ui.midtrans.MidtransWebViewScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentViewModel
 import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
@@ -218,6 +219,23 @@ fun KasirNavHost(
                     viewModel(navController.getBackStackEntry(NavRoutes.Transaction.route))
                 val paymentViewModel: PaymentViewModel = viewModel(backStackEntry)
                 PaymentScreen(navController, paymentViewModel, transactionViewModel)
+            }
+
+            composable(NavRoutes.MidtransWebView.route) { backStackEntry ->
+                val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+
+                val url = java.net.URLDecoder.decode(encodedUrl, Charsets.UTF_8.name())
+
+                val context = LocalContext.current
+
+                MidtransWebViewScreen(
+                    url = url,
+                    onClose = {navController.popBackStack()},
+                    onFinishSuccess = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }

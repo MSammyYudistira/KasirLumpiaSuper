@@ -17,4 +17,15 @@ sealed class NavRoutes(val route: String) {
     object DetailRecap : NavRoutes("detail_recap")
     object OrderDetail : NavRoutes("order_detail")
     object Dashboard : NavRoutes("dashboard")
+
+    object MidtransWebView {
+        const val route = "midtrans_webview/{encodedUrl}/{orderId}"
+        fun build(encodedUrl: String, orderId: String) = "midtrans_webview/$encodedUrl/$orderId"
+    }
+
+    object QrisScreen {
+        const val route = "qris_screen/{orderId}"
+        fun build(orderId: String) = "qris_screen/$orderId"
+    }
+
 }
