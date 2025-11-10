@@ -152,6 +152,25 @@ class FirestoreRepository(
         }
     }
 
+    /** 🔹 Ambil total pendapatan dari semua transaksi di tanggal tertentu */
+    suspend fun getDailyRevenue(dateKey: String): Int {
+        return try {
+            val userId = currentUserId()
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("orders")
+                .document(dateKey)
+                .collection("entries")
+                .get()
+                .await()
+
+            snapshot.documents.sumOf { it.getLong("total")?.toInt() ?: 0 }
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "getDailyRevenue error: ${e.message}", e)
+            0 // kalau gagal, kembalikan 0 supaya tidak crash
+        }
+    }
+
     // =============================================================
     //  USER DATA
     // =============================================================
@@ -217,4 +236,6 @@ class FirestoreRepository(
             Log.e("FirestoreRepo", "resetCashForDate error: ${e.message}", e)
         }
     }
+
+
 }

@@ -7,20 +7,15 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+data class WeekRange(
+    val label: String,
+    val startDate: String,
+    val endDate: String,
+    val dateKeys: List<String>
+)
+
 object DateUtils {
     private val idLocale = Locale("id", "ID")
-
-//    fun setManualDate(date: String) {
-//        manualDateLabel = date
-//    }
-//
-//    fun getBusinessDateLabel(): String {
-//        manualDateLabel?.let { return it } // ✅ pakai tanggal manual kalau ada
-//
-//        val cal = Calendar.getInstance()
-//        val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
-//        return dateFormat.format(cal.time)
-//    }
 
     fun timeLabel(millis: Long?): String {
         if (millis == null || millis <= 0) return "-"
@@ -40,6 +35,52 @@ object DateUtils {
         numberFormat.maximumFractionDigits = 0
         return "Rp ${numberFormat.format(amount)}"
     }
+
+    fun generateWeeksOfMonth(year: Int, month: Int): List<WeekRange> {
+        val cal = Calendar.getInstance(Locale("id", "ID"))
+        cal.set(year, month, 1)
+
+        val result = mutableListOf<WeekRange>()
+        val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+        val displayFormat = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+
+        var weekIndex = 1
+        while (cal.get(Calendar.MONTH) == month) {
+            val start = cal.time
+            val dateKeys = mutableListOf<String>()
+            repeat(7) {
+                if (cal.get(Calendar.MONTH) != month) return@repeat
+                dateKeys.add(dateFormat.format(cal.time))
+                cal.add(Calendar.DAY_OF_MONTH, 1)
+            }
+
+            val end = displayFormat.parse(dateKeys.last()) ?: start
+            val label = "Minggu ke-$weekIndex"
+            result.add(
+                WeekRange(
+                    label = label,
+                    startDate = displayFormat.format(start),
+                    endDate = displayFormat.format(end),
+                    dateKeys = dateKeys
+                )
+            )
+            weekIndex++
+        }
+
+        return result
+    }
+
+    fun getDayName(dateString: String): String {
+        return try {
+            val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
+            val date = format.parse(dateString)
+            val dayFormat = SimpleDateFormat("EEE", idLocale) // contoh output: "Sen", "Sel", "Rab"
+            dayFormat.format(date ?: Date())
+        } catch (e: Exception) {
+            "-"
+        }
+    }
+
 }
 
 object BusinessDateManager {
@@ -60,3 +101,5 @@ object BusinessDateManager {
 
     fun getLockedDate(): String? = lockedDateLabel
 }
+
+

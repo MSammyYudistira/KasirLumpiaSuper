@@ -88,7 +88,13 @@ import org.gradle.kotlin.dsl.implementation
         // OkHttp logging (optional)
         implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+        //Insert Images
         implementation("io.coil-kt:coil-compose:2.6.0")
+
+        //Chart
+        implementation ("com.patrykandpatrick.vico:compose-m3:2.3.0")
+        implementation ("com.patrykandpatrick.vico:core:2.3.0")
+
 
 
 
