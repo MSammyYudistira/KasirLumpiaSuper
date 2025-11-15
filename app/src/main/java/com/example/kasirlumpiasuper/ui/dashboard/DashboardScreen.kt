@@ -47,6 +47,7 @@ import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager.getBusinessDateLabel
+import com.example.kasirlumpiasuper.ui.utils.DateUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -67,7 +68,7 @@ fun DashboardScreen(
     val manualResetRequired by viewModel.manualResetRequired.collectAsState()
     val isLoading by viewModel.isLoadingCustomerCount.collectAsState()
     val businessDate by viewModel.businessDate.collectAsState()
-//    val totalRevenue by viewModel.grandTotalToday.collectAsState()
+    val totalRevenue by viewModel.grandTotalToday.collectAsState()
 //    val quotes by viewModel.quote.collectAsState()
 
     val currentSystemDate = BusinessDateManager.getCurrentSystemDateLabel()
@@ -157,81 +158,81 @@ fun DashboardScreen(
                 item {
                     // Ringkasan Hari Ini
 
-                    Surface(
-                        onClick = {
-                            showDatePicker(
-                                context = context,
-                                currentKey = selectedBusinessDate,
-                                onPick = { pickedDate ->
-                                    val todayLabel = BusinessDateManager.getCurrentSystemDateLabel()
-                                    val sdf = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
-
-                                    try {
-                                        val picked = sdf.parse(pickedDate)
-                                        val today = sdf.parse(todayLabel)
-
-                                        if (picked != null && today != null) {
-                                            // Normalisasi ke tengah malam (jam 00:00)
-                                            val calPicked = Calendar.getInstance().apply {
-                                                time = picked
-                                                set(Calendar.HOUR_OF_DAY, 0)
-                                                set(Calendar.MINUTE, 0)
-                                                set(Calendar.SECOND, 0)
-                                                set(Calendar.MILLISECOND, 0)
-                                            }
-                                            val calToday = Calendar.getInstance().apply {
-                                                time = today
-                                                set(Calendar.HOUR_OF_DAY, 0)
-                                                set(Calendar.MINUTE, 0)
-                                                set(Calendar.SECOND, 0)
-                                                set(Calendar.MILLISECOND, 0)
-                                            }
-
-                                            when {
-                                                calPicked.after(calToday) -> {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Tidak bisa memilih tanggal melebihi hari ini!",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                                else -> {
-                                                    // ✅ boleh tanggal hari ini atau sebelumnya
-                                                    viewModel.updateBusinessDate(pickedDate, prefs)
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Tanggal bisnis diubah ke $pickedDate",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Format tanggal tidak valid", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            )
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Primary
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.baseline_date_range_24),
-                                contentDescription = null,
-                                tint = Color.White
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = businessDate,
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                    }
+//                    Surface(
+//                        onClick = {
+//                            showDatePicker(
+//                                context = context,
+//                                currentKey = selectedBusinessDate,
+//                                onPick = { pickedDate ->
+//                                    val todayLabel = BusinessDateManager.getCurrentSystemDateLabel()
+//                                    val sdf = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+//
+//                                    try {
+//                                        val picked = sdf.parse(pickedDate)
+//                                        val today = sdf.parse(todayLabel)
+//
+//                                        if (picked != null && today != null) {
+//                                            // Normalisasi ke tengah malam (jam 00:00)
+//                                            val calPicked = Calendar.getInstance().apply {
+//                                                time = picked
+//                                                set(Calendar.HOUR_OF_DAY, 0)
+//                                                set(Calendar.MINUTE, 0)
+//                                                set(Calendar.SECOND, 0)
+//                                                set(Calendar.MILLISECOND, 0)
+//                                            }
+//                                            val calToday = Calendar.getInstance().apply {
+//                                                time = today
+//                                                set(Calendar.HOUR_OF_DAY, 0)
+//                                                set(Calendar.MINUTE, 0)
+//                                                set(Calendar.SECOND, 0)
+//                                                set(Calendar.MILLISECOND, 0)
+//                                            }
+//
+//                                            when {
+//                                                calPicked.after(calToday) -> {
+//                                                    Toast.makeText(
+//                                                        context,
+//                                                        "Tidak bisa memilih tanggal melebihi hari ini!",
+//                                                        Toast.LENGTH_SHORT
+//                                                    ).show()
+//                                                }
+//                                                else -> {
+//                                                    // ✅ boleh tanggal hari ini atau sebelumnya
+//                                                    viewModel.updateBusinessDate(pickedDate, prefs)
+//                                                    Toast.makeText(
+//                                                        context,
+//                                                        "Tanggal bisnis diubah ke $pickedDate",
+//                                                        Toast.LENGTH_SHORT
+//                                                    ).show()
+//                                                }
+//                                            }
+//                                        }
+//                                    } catch (e: Exception) {
+//                                        Toast.makeText(context, "Format tanggal tidak valid", Toast.LENGTH_SHORT).show()
+//                                    }
+//                                }
+//                            )
+//                        },
+//                        shape = RoundedCornerShape(8.dp),
+//                        color = Primary
+//                    ) {
+//                        Row(
+//                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+//                            verticalAlignment = Alignment.CenterVertically
+//                        ) {
+//                            Icon(
+//                                painter = painterResource(R.drawable.baseline_date_range_24),
+//                                contentDescription = null,
+//                                tint = Color.White
+//                            )
+//                            Spacer(Modifier.width(8.dp))
+//                            Text(
+//                                text = businessDate,
+//                                color = Color.White,
+//                                style = MaterialTheme.typography.titleMedium
+//                            )
+//                        }
+//                    }
 
                     Surface(
                         modifier = Modifier
@@ -329,7 +330,7 @@ fun DashboardScreen(
                                         )
                                         Text(
 //                                            DateUtils.rupiah(totalRevenue)
-                                            text = "-",
+                                            text = DateUtils.rupiah(totalRevenue),
                                             style = MaterialTheme.typography.displayMedium,
                                             color = Color(0xFF22C55E)
                                         )
@@ -403,88 +404,13 @@ fun DashboardScreen(
                 }
 
                 item {
-                    if (showDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showDialog = false },
-                            title = { Text("Stok Sudah Diisi") },
-                            text = { Text("Apakah kamu ingin mengatur ulang stok?") },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    showDialog = false
-                                    navController.navigate(NavRoutes.Stock.route)
-                                }) {
-                                    Text("Ya")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = {
-                                    showDialog = false
-                                }) {
-                                    Text("Tidak")
-                                }
-                            }
-                        )
-                    }
-
-                    // Atur stok
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        shadowElevation = 4.dp,
-                        modifier = Modifier.fillMaxWidth(),
-                        color = if (!stockFilledToday) Color(0xFFFFD4D4) else MaterialTheme.colorScheme.surface
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp, horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = if (!stockFilledToday) "Kamu Belum Atur Stok" else "Stok Hari Ini Sudah Diatur",
-                                    style = MaterialTheme.typography.displaySmall,
-                                    color = if (!stockFilledToday) Color.Red else Color.Black
-                                )
-                                Text(
-                                    text = if (!stockFilledToday) "Segera atur stok sebelum melakukan transaksi" else "Kamu bisa mengubah stok kapan saja",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (!stockFilledToday) Color.Red else Color.Black
-                                )
-                            }
-                            TextButton(
-                                onClick = {
-                                if (stockFilledToday) {
-                                    showDialog = true
-                                } else {
-                                    navController.navigate(NavRoutes.Stock.route)
-                                }
-                            }
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.outline_management_stockout),
-                                    contentDescription = "Atur Stock",
-                                    modifier = Modifier.size(30.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    "Atur stok kamu disini",
-                                    style = MaterialTheme.typography.displaySmall,
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                }
-
-                item {
                     // Buat pesanan baru
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         shadowElevation = 4.dp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 32.dp)
+                            .padding(bottom = 24.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -529,7 +455,139 @@ fun DashboardScreen(
                         }
                     }
                 }
+
+                item {
+                    if (showDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDialog = false },
+                            title = { Text("Stok Sudah Diisi") },
+                            text = { Text("Apakah kamu ingin mengatur ulang stok?") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showDialog = false
+                                    navController.navigate(NavRoutes.Stock.route)
+                                }) {
+                                    Text("Ya")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = {
+                                    showDialog = false
+                                }) {
+                                    Text("Tidak")
+                                }
+                            }
+                        )
+                    }
+
+                    // Atur stok
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp)
+                        ,
+                        color = if (!stockFilledToday) Color(0xFFFFD4D4) else MaterialTheme.colorScheme.surface
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp, horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = if (!stockFilledToday) "Kamu Belum Atur Stok" else "Stok Hari Ini Sudah Diatur",
+                                    style = MaterialTheme.typography.displaySmall,
+                                    color = if (!stockFilledToday) Color.Red else Color.Black
+                                )
+                                Text(
+                                    text = if (!stockFilledToday) "Segera atur stok sebelum melakukan transaksi" else "Kamu bisa mengubah stok kapan saja",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (!stockFilledToday) Color.Red else Color.Black
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                if (stockFilledToday) {
+                                    showDialog = true
+                                } else {
+                                    navController.navigate(NavRoutes.Stock.route)
+                                }
+                            }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.outline_management_stockout),
+                                    contentDescription = "Atur Stock",
+                                    modifier = Modifier.size(30.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "Atur stok kamu disini",
+                                    style = MaterialTheme.typography.displaySmall,
+                                )
+                            }
+                        }
+                    }
+//                    Spacer(Modifier.height(24.dp))
+                }
+
+                item {
+                    // Tampilkan hanya untuk admin
+//                    if (viewModel.isAdmin.collectAsState().value) {
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 24.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp, horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        "Kelola Menu",
+                                        style = MaterialTheme.typography.displaySmall
+                                    )
+                                    Text(
+                                        "Kamu bisa tambah atau ubah daftar produk disini",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+
+                                TextButton(onClick = {
+                                    navController.navigate(NavRoutes.MenuManagement.route)
+                                }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.outline_food_menu_24),
+                                        contentDescription = "Kelola Menu",
+                                        modifier = Modifier.size(30.dp),
+                                        tint = Primary
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        "Kelola Menu",
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = Primary
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                }
+
+
             }
         }
     }
-}
+//}

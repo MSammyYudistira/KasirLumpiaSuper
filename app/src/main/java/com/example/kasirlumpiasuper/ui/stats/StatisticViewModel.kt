@@ -3,15 +3,27 @@ package com.example.kasirlumpiasuper.ui.stats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
+import com.example.kasirlumpiasuper.data.repository.RecapRepository
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
+import com.example.kasirlumpiasuper.ui.utils.RecapUtils
 import com.example.kasirlumpiasuper.ui.utils.WeekRange
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class StatisticViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
 ) : ViewModel() {
+
+    private val _isLoadingChart = MutableStateFlow(false)
+    val isLoadingChart: StateFlow<Boolean> = _isLoadingChart
+
+    private val _isLoadingGrowth = MutableStateFlow(false)
+    val isLoadingGrowth: StateFlow<Boolean> = _isLoadingGrowth
 
     private val _weeksOfMonth = MutableStateFlow<List<WeekRange>>(emptyList())
     val weeksOfMonth: StateFlow<List<WeekRange>> = _weeksOfMonth
@@ -30,6 +42,118 @@ class StatisticViewModel(
 
     private val _growthPercent = MutableStateFlow<Float?>(null)
     val growthPercent: StateFlow<Float?> = _growthPercent
+
+    //Dual Bar Chart
+    private val _incomeData = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val incomeData: StateFlow<Map<String, Int>> = _incomeData
+
+    private val _cashData = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val cashData: StateFlow<Map<String, Int>> = _cashData
+
+    fun loadRevenueAndExpenseRange(
+        startDate: Date,
+        onResult: (Map<String, Int>, Map<String, Int>) -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoadingChart.value = true
+
+            val repo = RecapRepository()
+            val keys = DateUtils.get7DayKeysFrom(startDate)
+
+            val income = mutableMapOf<String, Int>()
+            val expense = mutableMapOf<String, Int>()
+
+            for (key in keys) {
+                try {
+                    // Ambil semua data dari Firestore
+                    val orders = repo.getOrdersByDate(key)
+                    val stockItems = repo.getStockItemsByDate(key)
+                    val stockMeta = repo.getStockMetaByDate(key)
+                    val recapInput = repo.getRecapInputByDate(key)
+
+                    // Hitung DailyRecap lengkap
+                    val dailyRecap = RecapUtils.compute(
+                        RecapUtils.Inputs(
+                            dateLabel = key,
+                            orders = orders,
+                            stockItems = stockItems,
+                            stockMeta = stockMeta,
+                            recapInput = recapInput
+                        )
+                    )
+
+                    // Ambil total pendapatan & pengeluaran (ExpenseSummary.sum)
+                    income[key] = dailyRecap.grossSection.sum1
+                    expense[key] = dailyRecap.expenseSummary.sum
+
+                } catch (e: Exception) {
+                    income[key] = 0
+                    expense[key] = 0
+                }
+            }
+
+            _isLoadingChart.value = false
+            onResult(income, expense)
+        }
+    }
+
+
+
+
+    fun loadGrowthData(periodDays: Int, onResult: (Map<String, Float>) -> Unit) {
+        viewModelScope.launch {
+            _isLoadingGrowth.value = true
+
+            val repo = RecapRepository()
+            // ✅ kunci perbaikan: pilih sumber keys yang benar
+            val keys = if (periodDays == 30)
+                DateUtils.get30DayKeysOfCurrentMonth()
+            else
+                DateUtils.getLastNDaysKeys(periodDays)
+
+            val growthMap = mutableMapOf<String, Float>()
+            var prevRevenue: Int? = null  // biar titik pertama selalu 0%
+
+            for (key in keys) {
+                try {
+                    val orders = repo.getOrdersByDate(key)
+                    val stockItems = repo.getStockItemsByDate(key)
+                    val stockMeta = repo.getStockMetaByDate(key)
+                    val recapInput = repo.getRecapInputByDate(key)
+
+                    val recap = RecapUtils.compute(
+                        RecapUtils.Inputs(
+                            dateLabel = key,
+                            orders = orders,
+                            stockItems = stockItems,
+                            stockMeta = stockMeta,
+                            recapInput = recapInput
+                        )
+                    )
+
+                    val currentRevenue = recap.grossSection.sum1
+
+                    // ✅ Hitung pertumbuhan harian dengan perlakuan netral jika belum ada transaksi
+                    val growth = when {
+                        prevRevenue == null || prevRevenue == 0 -> 0f
+                        currentRevenue == 0 -> 0f // belum ada transaksi → netral
+                        else -> ((currentRevenue - prevRevenue!!) / prevRevenue!!.toFloat()) * 100f
+                    }
+
+                    growthMap[key] = growth
+                    prevRevenue = currentRevenue
+                } catch (_: Exception) {
+                    growthMap[key] = 0f
+                }
+            }
+
+            _isLoadingGrowth.value = false
+            onResult(growthMap.toSortedMap()) // urut lama → baru (cocok untuk sumbu X)
+        }
+    }
+
+
+
 
 
     /** 🔹 Generate daftar minggu dalam bulan tertentu */

@@ -237,5 +237,46 @@ class FirestoreRepository(
         }
     }
 
+    suspend fun getDailyCashAtRegister(dateKey: String): Int {
+        return try {
+            val userId = currentUserId()
+            val snap = db.collection("users")
+                .document(userId)
+                .collection("recap_inputs")
+                .document(dateKey)
+                .get()
+                .await()
+
+            val big = snap.getLong("uangBesar")?.toInt() ?: 0
+            val small = snap.getLong("uangKecil")?.toInt() ?: 0
+            val extra = snap.getLong("uangLebihan")?.toInt() ?: 0
+            big + small + extra
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    suspend fun getDailyExpense(dateKey: String): Int {
+        return try {
+            val userId = currentUserId()
+            val snap = db.collection("users")
+                .document(userId)
+                .collection("recap_inputs")
+                .document(dateKey)
+                .get()
+                .await()
+
+            val mineralWater = snap.getLong("mineralWaterExpense")?.toInt() ?: 0
+            val otherExpense = snap.getLong("otherExpense")?.toInt() ?: 0
+            val freeNominal = snap.getLong("freeNominal")?.toInt() ?: 0  // opsional kalau mau tambah free cost
+
+            mineralWater + otherExpense
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "getDailyExpense error: ${e.message}")
+            0
+        }
+    }
+
+
 
 }

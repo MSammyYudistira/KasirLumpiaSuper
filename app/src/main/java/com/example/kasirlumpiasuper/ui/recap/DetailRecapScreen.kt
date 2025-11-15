@@ -136,25 +136,6 @@ fun DetailRecapScreen(
                     // 🔹 1. Header Info (Tanggal + Lokasi)
                     item {
                         HeaderInfo(recap!!)
-//                        Row(
-//                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            Icon(
-//                                painter = painterResource(R.drawable.baseline_date_range_24),
-//                                contentDescription = "Tanggal"
-//                            )
-//                            Text(recap!!.dateLabel, style = MaterialTheme.typography.titleMedium)
-//
-//                            if (recap!!.location.isNotBlank()) {
-//                                Spacer(Modifier.width(16.dp))
-//                                Icon(
-//                                    painter = painterResource(R.drawable.baseline_location_pin_24),
-//                                    contentDescription = null
-//                                )
-//                                Text(recap!!.location, style = MaterialTheme.typography.titleMedium)
-//                            }
-//                        }
                     }
 
                     // 🔹 2. Tabel Rekapan Jumlah Makanan

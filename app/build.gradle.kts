@@ -42,6 +42,10 @@ import org.gradle.kotlin.dsl.implementation
             viewBinding = true
         }
 
+//        composeOptions {
+//            kotlinCompilerExtensionVersion = "1.5.15"
+//        }
+
         packagingOptions {
             resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
@@ -66,14 +70,13 @@ import org.gradle.kotlin.dsl.implementation
         debugImplementation(libs.androidx.ui.tooling)
         debugImplementation(libs.androidx.ui.test.manifest)
 
-        implementation("androidx.navigation:navigation-compose:2.9.3")
+        implementation("androidx.navigation:navigation-compose:2.9.6")
         implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
 
         implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
         implementation("com.google.firebase:firebase-auth-ktx")
         implementation("com.google.firebase:firebase-firestore-ktx")
 
-        implementation("io.coil-kt:coil-compose:2.4.0")
         implementation(libs.escpos.thermalprinter.android)
         implementation("androidx.datastore:datastore-preferences:1.1.1")
         implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
@@ -92,8 +95,12 @@ import org.gradle.kotlin.dsl.implementation
         implementation("io.coil-kt:coil-compose:2.6.0")
 
         //Chart
-        implementation ("com.patrykandpatrick.vico:compose-m3:2.3.0")
-        implementation ("com.patrykandpatrick.vico:core:2.3.0")
+//        implementation ("com.patrykandpatrick.vico:compose-m3:2.3.0")
+//        implementation ("com.patrykandpatrick.vico:core:2.3.0")
+
+        //Chart 2
+        implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
 
 
 

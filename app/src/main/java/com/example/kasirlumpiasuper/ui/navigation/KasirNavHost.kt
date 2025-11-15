@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +39,9 @@ import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
 import com.example.kasirlumpiasuper.ui.history.HistoryScreen
 import com.example.kasirlumpiasuper.ui.history.HistoryViewModel
 import com.example.kasirlumpiasuper.ui.history.OrderDetailScreen
+import com.example.kasirlumpiasuper.ui.menu.MenuDetailScreen
+import com.example.kasirlumpiasuper.ui.menu.MenuManagementScreen
+import com.example.kasirlumpiasuper.ui.menu.MenuViewModel
 import com.example.kasirlumpiasuper.ui.midtrans.MidtransWebViewScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentViewModel
@@ -50,6 +54,7 @@ import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
+import java.net.URLDecoder
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @SuppressLint("UnrememberedGetBackStackEntry", "StateFlowValueCalledInComposition")
@@ -117,7 +122,12 @@ fun KasirNavHost(
 
             composable(NavRoutes.Profile.route) {
                 MainScaffold(navController = navController, viewModel = firestoreViewModel) {
-                    Box(Modifier.padding(it)) { ProfileScreen(navController, authViewModel = authViewModel) }
+                    Box(Modifier.padding(it)) {
+                        ProfileScreen(
+                            navController,
+                            authViewModel = authViewModel
+                        )
+                    }
                 }
             }
 
@@ -225,17 +235,31 @@ fun KasirNavHost(
                 val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
                 val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
 
-                val url = java.net.URLDecoder.decode(encodedUrl, Charsets.UTF_8.name())
+                val url = URLDecoder.decode(encodedUrl, Charsets.UTF_8.name())
 
                 val context = LocalContext.current
 
                 MidtransWebViewScreen(
                     url = url,
-                    onClose = {navController.popBackStack()},
+                    onClose = { navController.popBackStack() },
                     onFinishSuccess = {
                         navController.popBackStack()
                     }
                 )
+            }
+
+            // Kelola Menu (Admin Only)
+            composable(NavRoutes.MenuManagement.route) { backStackEntry ->
+                val menuViewModel: MenuViewModel = viewModel(backStackEntry)
+                MenuManagementScreen(
+                    navController = navController,
+                    viewModel = menuViewModel
+                )
+            }
+
+            composable(NavRoutes.MenuDetail.route) { backStackEntry ->
+                val productId = backStackEntry.arguments?.getString("productId") ?: "new"
+                MenuDetailScreen(navController, productId)
             }
         }
     }

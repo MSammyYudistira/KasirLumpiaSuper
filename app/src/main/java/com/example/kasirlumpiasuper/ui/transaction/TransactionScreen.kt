@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.OrderItem
@@ -69,6 +73,7 @@ import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
+import androidx.compose.foundation.lazy.grid.items
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +83,7 @@ fun TransactionScreen(
     dateKey: String? = null,
     queueNumber: Int? = null
 ) {
+    val productViewModel: ProductListViewModel = viewModel()
 
     var showEmpty by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
@@ -91,6 +97,9 @@ fun TransactionScreen(
     val currentItems = cups[currentCup] ?: emptyList()
     val notes by transactionViewModel.notes.collectAsState()
     val isLoading by transactionViewModel.isLoading.collectAsState()
+
+    val products by productViewModel.productList.collectAsState()
+
 
     val allItems = cups.values.flatten()
     val isValid = allItems.isNotEmpty()
@@ -115,7 +124,6 @@ fun TransactionScreen(
         modifier = Modifier
             .fillMaxSize()
     ) {
-
         // =========================
         // KIRI - DAFTAR PRODUK
         // =========================
@@ -152,58 +160,68 @@ fun TransactionScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            val products = listOf(
-                Triple("Lumpia", 9000, R.drawable.lumpia),
-                Triple("Tahu Lumpia", 9000, R.drawable.tahu_lumpia_3),
-                Triple("Siomay", 10000, R.drawable.siomay_goreng),
-                Triple("Siomay Basah", 10000, R.drawable.siomay_basah_2),
-                Triple("Singkong Goreng", 20000, R.drawable.singkong_goreng),
-                Triple("Mihun", 15000, R.drawable.mihun_2),
-                Triple("Es Kacang Merah", 25000, R.drawable.es_kacang_merah),
-                Triple("Air Mineral", 5000, R.drawable.air_mineral_2),
-            )
+//            val products = listOf(
+//                Triple("Lumpia", 9000, R.drawable.lumpia),
+//                Triple("Tahu Lumpia", 9000, R.drawable.tahu_lumpia_3),
+//                Triple("Siomay", 10000, R.drawable.siomay_goreng),
+//                Triple("Siomay Basah", 10000, R.drawable.siomay_basah_2),
+//                Triple("Singkong Goreng", 20000, R.drawable.singkong_goreng),
+//                Triple("Mihun", 15000, R.drawable.mihun_2),
+//                Triple("Es Kacang Merah", 25000, R.drawable.es_kacang_merah),
+//                Triple("Air Mineral", 5000, R.drawable.air_mineral_2),
+//            )
 
-            // Grid
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                products.chunked(3).forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // render kartu yang ada
-                        rowItems.forEach { (name, price, image) ->
-                            ProductCard(
-                                name = name,
-                                price = price,
-                                image = image,
-                                modifier = Modifier.weight(1f),
-                                onFreeClick = {
-                                    transactionViewModel.addItemToCurrentCup(
-                                        OrderItem(
-                                            productId = name,
-                                            name = name,
-                                            unitPrice = price,
-                                            isFree = true,
-                                            imageRes = image
-                                        )
-                                    )
-                                },
-                                onItemClick = {
-                                    transactionViewModel.addItemToCurrentCup(
-                                        OrderItem(
-                                            productId = name,
-                                            name = name,
-                                            unitPrice = price,
-                                            isFree = false,
-                                            imageRes = image
-                                        )
-                                    )
-                                }
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(products, key = { it.id }) { product ->
+                    ProductCard(
+                        name = product.name,
+                        price = product.price,
+                        image = product.imageRes,
+                        modifier = Modifier,
+                        onFreeClick = {
+                            transactionViewModel.addItemToCurrentCup(
+                                OrderItem(
+                                    productId = product.id,
+                                    name = product.name,
+                                    unitPrice = product.price,
+                                    isFree = true,
+                                    imageRes = product.imageRes
+                                )
+                            )
+                        },
+                        onItemClick = {
+                            transactionViewModel.addItemToCurrentCup(
+                                OrderItem(
+                                    productId = product.id,
+                                    name = product.name,
+                                    unitPrice = product.price,
+                                    isFree = false,
+                                    imageRes = product.imageRes
+                                )
                             )
                         }
-                        // isi kolom kosong agar baris terakhir tidak melebar
-                        repeat(3 - rowItems.size) {
-                            Spacer(modifier = Modifier.weight(1f))
+                    )
+                }
+
+                // (Opsional) ketika belum ada produk sama sekali
+                if (products.isEmpty()) {
+                    item(span = { GridItemSpan(3) }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Belum ada produk. Tambahkan dari Kelola Menu.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }

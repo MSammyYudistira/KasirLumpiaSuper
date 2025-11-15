@@ -81,6 +81,88 @@ object DateUtils {
         }
     }
 
+
+    fun getWeekOfMonthFromDate(date: Date): Int {
+        val cal = Calendar.getInstance(idLocale)
+        cal.time = date
+        return cal.get(Calendar.WEEK_OF_MONTH)
+    }
+
+    fun formatDateRange(weekRange: WeekRange): String {
+        return "${weekRange.startDate} – ${weekRange.endDate}"
+    }
+
+    fun get7DayKeysFrom(date: Date): List<String> {
+        val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
+        val cal = Calendar.getInstance(idLocale)
+        cal.time = date
+
+        val keys = mutableListOf<String>()
+        repeat(7) {
+            keys.add(format.format(cal.time))
+            cal.add(Calendar.DAY_OF_MONTH, 1)
+        }
+        return keys
+    }
+
+    fun get30DayKeysOfCurrentMonth(): List<String> {
+        val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
+        val cal = Calendar.getInstance(idLocale)
+        val today = cal.time
+        val currentMonth = cal.get(Calendar.MONTH)
+        val currentYear = cal.get(Calendar.YEAR)
+
+        // mulai dari tanggal 1 bulan ini
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+
+        val keys = mutableListOf<String>()
+        while (cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear) {
+            val date = cal.time
+            if (!date.after(today)) keys.add(format.format(date))
+            cal.add(Calendar.DAY_OF_MONTH, 1)
+        }
+
+        return keys
+    }
+
+
+    fun getLastNDaysKeys(n: Int): List<String> {
+        val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
+        val cal = Calendar.getInstance(idLocale)
+
+        val keys = mutableListOf<String>()
+        repeat(n) {
+            keys.add(format.format(cal.time))
+            cal.add(Calendar.DAY_OF_MONTH, -1) // mundur 1 hari setiap loop
+        }
+
+        // urutkan dari paling lama ke terbaru
+        return keys.reversed()
+    }
+
+
+    fun format7DayRangeLabel(start: Date): String {
+        val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
+        val cal = Calendar.getInstance(idLocale)
+        cal.time = start
+        val startLabel = format.format(start)
+        cal.add(Calendar.DAY_OF_MONTH, 6)
+        val endLabel = format.format(cal.time)
+        return "$startLabel – $endLabel"
+    }
+
+    fun shortDayLabelFromKey(dateKey: String): String {
+        return try {
+            val fullFormat = SimpleDateFormat("dd MMMM yyyy", idLocale)
+            val shortFormat = SimpleDateFormat("dd MMM", idLocale)
+            val date = fullFormat.parse(dateKey)
+            shortFormat.format(date!!)
+        } catch (e: Exception) {
+            "-"
+        }
+    }
+
+
 }
 
 object BusinessDateManager {
@@ -93,9 +175,13 @@ object BusinessDateManager {
     fun getCurrentSystemDateLabel(): String =
         dateFormat.format(Calendar.getInstance().time)
 
-    fun lockTo(dateLabel: String) { lockedDateLabel = dateLabel }
+    fun lockTo(dateLabel: String) {
+        lockedDateLabel = dateLabel
+    }
 
-    fun releaseLock() { lockedDateLabel = null }
+    fun releaseLock() {
+        lockedDateLabel = null
+    }
 
     fun isLocked(): Boolean = lockedDateLabel != null
 
