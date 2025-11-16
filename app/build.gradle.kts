@@ -73,9 +73,12 @@ import org.gradle.kotlin.dsl.implementation
         implementation("androidx.navigation:navigation-compose:2.9.6")
         implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
 
+
+        // Firebase
         implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
         implementation("com.google.firebase:firebase-auth-ktx")
         implementation("com.google.firebase:firebase-firestore-ktx")
+        implementation("com.google.firebase:firebase-functions-ktx")
 
         implementation(libs.escpos.thermalprinter.android)
         implementation("androidx.datastore:datastore-preferences:1.1.1")
