@@ -2,16 +2,16 @@ package com.example.kasirlumpiasuper.ui.payment
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.data.MidtransService
-import com.example.kasirlumpiasuper.data.model.CreateQrisRequest
 import com.google.firebase.Firebase
 import com.google.firebase.functions.functions
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class PaymentGatewayViewModel : ViewModel() {
+
     private val _qrUrl = MutableStateFlow<String?>(null)
     val qrUrl: StateFlow<String?> = _qrUrl
 
@@ -20,84 +20,103 @@ class PaymentGatewayViewModel : ViewModel() {
 
     private var polling = false
 
+    // =====================================================================
+    // CREATE QRIS
+    // =====================================================================
     fun createQris(orderId: String, amount: Int) {
         viewModelScope.launch {
             try {
-                Firebase.functions
+                // LOG
+                println("PG: createQris START orderId=$orderId amount=$amount")
+
+                val result = Firebase.functions
                     .getHttpsCallable("createQris")
                     .call(
                         mapOf(
                             "orderId" to orderId,
-                            "amount" to amount,
+                            "amount" to amount
                         )
                     )
-                    .addOnSuccessListener { result ->
+                    .await()
 
-                        val data = result.data as Map<*, *>
+                val data = result.data as Map<*, *>
 
-                        _qrUrl.value = data["qrUrl"] as? String
-                        _paymentStatus.value = data["status"] as? String ?: "pending"
-                    }
-                    .addOnFailureListener {
-                        _qrUrl.value = null
-                        _paymentStatus.value = "error"
-                    }
+                val url = data["qrUrl"] as? String
+                val status = data["status"] as? String ?: "pending"
+
+                // LOG
+                println("PG: createQris RESULT data=$data")
+                println("PG: QR URL = $url status=$status")
+
+                _qrUrl.value = url
+                _paymentStatus.value = status
 
             } catch (e: Exception) {
+                println("PG: createQris ERROR = ${e.message}")
                 _qrUrl.value = null
                 _paymentStatus.value = "error"
             }
         }
     }
 
-    fun startPollingStatus(
-        orderId: String,
-        intervalMs: Long = 2500L
-    ) {
+    // =====================================================================
+    // POLLING STATUS
+    // =====================================================================
+    fun startPollingStatus(orderId: String, intervalMs: Long = 2500L) {
         if (polling) return
         polling = true
 
         viewModelScope.launch {
+            println("PG: Polling START for orderId=$orderId")
+
             try {
                 while (polling) {
 
-                    Firebase.functions
+                    val result = Firebase.functions
                         .getHttpsCallable("checkPaymentStatus")
                         .call(mapOf("orderId" to orderId))
-                        .addOnSuccessListener { result ->
+                        .await()
 
-                            val data = result.data as Map<*, *>
-                            val status = data["transaction_status"] as? String ?: "error"
+                    val data = result.data as Map<*, *>
+                    val status = data["transaction_status"] as? String ?: "error"
 
-                            _paymentStatus.value = status
+                    // LOG
+                    println("PG: Polling RESULT=$data")
+                    println("PG: Polling STATUS=$status")
 
-                            if (status in listOf("settlement", "expire", "cancel")) {
-                                polling = false
-                            }
-                        }
-                        .addOnFailureListener {
-                            _paymentStatus.value = "error"
-                            polling = false
-                        }
+                    _paymentStatus.value = status
+
+                    if (status in listOf("settlement", "expire", "cancel")) {
+                        polling = false
+                        println("PG: Polling STOP (final status=$status)")
+                        break
+                    }
 
                     delay(intervalMs)
                 }
-
             } catch (e: Exception) {
+                println("PG: Polling ERROR = ${e.message}")
                 _paymentStatus.value = "error"
                 polling = false
             }
         }
     }
 
+    // =====================================================================
+    // STOP POLLING
+    // =====================================================================
     fun stopPolling() {
+        println("PG: stopPolling CALLED")
         polling = false
     }
 
+    // =====================================================================
+    // RESET PAYMENT
+    // =====================================================================
     fun resetPayment() {
+        println("PG: resetPayment CALLED")
         _qrUrl.value = null
         _paymentStatus.value = null
         polling = false
     }
 }
-

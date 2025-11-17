@@ -98,10 +98,6 @@ import org.gradle.kotlin.dsl.implementation
         implementation("io.coil-kt:coil-compose:2.6.0")
 
         //Chart
-//        implementation ("com.patrykandpatrick.vico:compose-m3:2.3.0")
-//        implementation ("com.patrykandpatrick.vico:core:2.3.0")
-
-        //Chart 2
         implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
 

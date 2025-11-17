@@ -1,32 +1,155 @@
+import * as functions from 'firebase-functions';
+import axios from 'axios';
+
 /**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
+* Create Midtrans Basic Auth Header using server_key from Firebase Functions config.
+*/
+function authHeader(): string {
+  const key = process.env.MIDTRANS_SERVER_KEY || '';
+  return 'Basic ' + Buffer.from(key + ':').toString('base64');
+}
+
+/* ========================================================================
+   QRIS DIRECT API — CREATE QR CODE
+   ======================================================================== */
+
+/**
+ * Callable function to generate a QRIS (Direct API)
+ * Expected input:
+ *  {
+ *     orderId: "string",
+ *     amount: number
+ *  }
  */
+export const createQris = functions.https.onCall(async (data, _context) => {
+  try {
+    console.log('===== [createQris] CALLED =====');
+    console.log('RAW INPUT:', data);
+    console.log('data.data:', data.data);
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
-import * as logger from "firebase-functions/logger";
+    const body = data.data || {};
+    const orderId = body.orderId;
+    const amount = body.amount;
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+    console.log('Parsed orderId:', orderId, 'amount:', amount);
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+    if (!orderId || !amount) {
+      console.error('Missing orderId or amount');
+      throw new Error('Missing orderId or amount');
+    }
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    if (!serverKey) {
+      console.error('Server key missing');
+      throw new Error('Midtrans server key is not set');
+    }
+
+    console.log('Server key exists? ', !!serverKey);
+    console.log('Auth header:', authHeader());
+
+    const url = 'https://api.sandbox.midtrans.com/v2/charge';
+    const payload = {
+      payment_type: 'qris',
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: amount,
+      },
+    };
+
+    console.log('[createQris] Calling Midtrans…');
+    console.log('Payload:', payload);
+
+    const response = await axios.post(url, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': authHeader(),
+      },
+    });
+
+    console.log('[createQris] Midtrans Response:', response.data);
+
+    const r = response.data;
+
+    const qrUrl =
+      r?.qr_url ||
+      r?.actions?.[0]?.url ||
+      null;
+
+    console.log('[createQris] Extracted QR URL:', qrUrl);
+
+    return {
+      orderId,
+      qrUrl,
+      status: r?.transaction_status || 'pending',
+    };
+  } catch (err: any) {
+    const msg = err?.response?.data || err?.message || 'Unknown error';
+
+    console.error('[createQris] ERROR:', msg);
+
+    throw new functions.https.HttpsError(
+      'internal',
+      typeof msg === 'string' ? msg : JSON.stringify(msg)
+    );
+  }
+});
+
+/* ========================================================================
+   QRIS DIRECT API — CHECK PAYMENT STATUS
+   ======================================================================== */
+
+/**
+ * Callable function to check payment status.
+ * Expected input:
+ *  {
+ *     orderId: "string"
+ *  }
+ */
+export const checkPaymentStatus = functions.https.onCall(async (data, _context) => {
+  try {
+    console.log('===== [checkPaymentStatus] CALLED =====');
+    console.log('RAW INPUT:', data);
+
+    const body = data.data || {};
+    const orderId = body.orderId;
+
+    console.log('Parsed orderId:', orderId);
+
+    if (!orderId) {
+      console.error('Missing orderId');
+      throw new Error('Missing orderId');
+    }
+
+    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    if (!serverKey) {
+      console.error('Server key missing');
+      throw new Error('Midtrans server key is not set');
+    }
+
+    const url = `https://api.sandbox.midtrans.com/v2/${orderId}/status`;
+
+    console.log('[checkPaymentStatus] Calling Midtrans…');
+    console.log('URL:', url);
+    console.log('Auth header:', authHeader());
+
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: authHeader(),
+      },
+    });
+
+    console.log('[checkPaymentStatus] Midtrans STATUS Response:', response.data);
+
+    return response.data;
+  } catch (err: any) {
+    const msg = err?.response?.data || err?.message || 'Unknown error';
+
+    console.error('[checkPaymentStatus] ERROR:', msg);
+
+    throw new functions.https.HttpsError(
+      'internal',
+      typeof msg === 'string' ? msg : JSON.stringify(msg)
+    );
+  }
+});

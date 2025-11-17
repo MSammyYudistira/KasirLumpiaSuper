@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.navigation
 
-import android.R.attr.type
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,7 +20,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.kasirlumpiasuper.data.PreferencesManager
@@ -42,7 +39,6 @@ import com.example.kasirlumpiasuper.ui.history.OrderDetailScreen
 import com.example.kasirlumpiasuper.ui.menu.MenuDetailScreen
 import com.example.kasirlumpiasuper.ui.menu.MenuManagementScreen
 import com.example.kasirlumpiasuper.ui.menu.MenuViewModel
-import com.example.kasirlumpiasuper.ui.midtrans.MidtransWebViewScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentScreen
 import com.example.kasirlumpiasuper.ui.payment.PaymentViewModel
 import com.example.kasirlumpiasuper.ui.profile.ProfileScreen
@@ -231,22 +227,22 @@ fun KasirNavHost(
                 PaymentScreen(navController, paymentViewModel, transactionViewModel)
             }
 
-            composable(NavRoutes.MidtransWebView.route) { backStackEntry ->
-                val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
-                val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
-
-                val url = URLDecoder.decode(encodedUrl, Charsets.UTF_8.name())
-
-                val context = LocalContext.current
-
-                MidtransWebViewScreen(
-                    url = url,
-                    onClose = { navController.popBackStack() },
-                    onFinishSuccess = {
-                        navController.popBackStack()
-                    }
-                )
-            }
+//            composable(NavRoutes.MidtransWebView.route) { backStackEntry ->
+//                val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
+//                val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+//
+//                val url = URLDecoder.decode(encodedUrl, Charsets.UTF_8.name())
+//
+//                val context = LocalContext.current
+//
+//                MidtransWebViewScreen(
+//                    url = url,
+//                    onClose = { navController.popBackStack() },
+//                    onFinishSuccess = {
+//                        navController.popBackStack()
+//                    }
+//                )
+//            }
 
             // Kelola Menu (Admin Only)
             composable(NavRoutes.MenuManagement.route) { backStackEntry ->

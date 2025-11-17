@@ -1,13 +1,9 @@
 package com.example.kasirlumpiasuper.ui.payment
 
-import android.R.attr.textStyle
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -72,19 +68,14 @@ import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.HintText
 import com.example.kasirlumpiasuper.ui.theme.Outline
 import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
 import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.example.kasirlumpiasuper.ui.utils.FormatUtils
 import com.example.kasirlumpiasuper.ui.utils.PrintHelper
-import com.google.android.play.integrity.internal.al
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.net.URLEncoder
 
 @OptIn(ExperimentalLayoutApi::class)
 @SuppressLint("UnrememberedGetBackStackEntry")
@@ -99,9 +90,7 @@ fun PaymentScreen(
     val pgViewModel: PaymentGatewayViewModel = viewModel()
     val qrUrl by pgViewModel.qrUrl.collectAsState()
 
-//    val paymentUrl by pgViewModel.paymentUrl.collectAsState()
     val paymentStatus by pgViewModel.paymentStatus.collectAsState()
-
     var currentOrderId by remember { mutableStateOf<String?>(null) }
 
 //    val subtotal by transactionViewModel.subtotal.collectAsState()
@@ -127,6 +116,9 @@ fun PaymentScreen(
 
     LaunchedEffect(selectedMethod) {
         if (selectedMethod == PaymentMethod.CASHLESS) {
+            pgViewModel.stopPolling()
+            pgViewModel.resetPayment()
+
             paymentViewModel.setInputAmount(total.toString())
 
             val dateKey = BusinessDateManager.getBusinessDateLabel()
@@ -134,26 +126,34 @@ fun PaymentScreen(
             val orderId = "LUMPER-${dateKey}-${q}-${System.currentTimeMillis()}"
             currentOrderId = orderId
 
-            pgViewModel.createQris(orderId, total, "Kasir Lumpia")
-            pgViewModel.startPollingStatus(orderId)
-
-//            paymentViewModel.setInputAmount(total.toString())
+            pgViewModel.createQris(orderId, total)
+//            delay(1500)
+//            pgViewModel.startPollingStatus(orderId)
         } else {
+            pgViewModel.stopPolling()
             pgViewModel.resetPayment()
+        }
+    }
+
+    LaunchedEffect(qrUrl, currentOrderId, selectedMethod) {
+        if (selectedMethod == PaymentMethod.CASHLESS &&
+            !qrUrl.isNullOrBlank() &&
+            currentOrderId != null) {
+
+            // 2) Mulai polling setelah QR siap
+            pgViewModel.startPollingStatus(currentOrderId!!)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            pgViewModel.stopPolling()
         }
     }
 
     LaunchedEffect(Unit) {
         isPrinterConnected = PrintHelper.initPrinter(context)
     }
-
-    // Buka halaman pembayaran saat URL diterima
-//    LaunchedEffect(paymentUrl) {
-//        val url = paymentUrl ?: return@LaunchedEffect
-//        val encoded = URLEncoder.encode(url, Charsets.UTF_8.name())
-//        val oid = currentOrderId ?: return@LaunchedEffect
-//        navController.navigate(NavRoutes.MidtransWebView.build(encodedUrl = encoded, orderId = oid))
-//    }
 
     // Tangani status pembayaran
     LaunchedEffect(paymentStatus) {
@@ -606,106 +606,6 @@ fun PaymentScreen(
                                     }
                                 }
 
-
-//                                OutlinedTextField(
-//
-//                                    value = if (inputAmount == 0) "0" else inputAmount.toString(),
-//                                    onValueChange = { newValue ->
-//                                        val filtered = newValue.filter { it.isDigit() }
-//                                        paymentViewModel.setInputAmount(filtered)
-//                                    },
-//                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-//                                    modifier = Modifier
-//                                        .fillMaxWidth()
-//                                        .onFocusChanged { focusState ->
-//                                            if (focusState.isFocused && inputAmount == 0) {
-//                                                paymentViewModel.setInputAmount("")
-//                                            } else if (!focusState.isFocused && inputAmount == -1) {
-//                                                paymentViewModel.setInputAmount("0")
-//                                            }
-//                                        },
-//                                    textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
-//                                    colors = TextFieldDefaults.colors(
-//                                        unfocusedContainerColor = Surface,
-//                                    ),
-//                                )
-//
-//                                Spacer(Modifier.height(16.dp))
-//
-//                                FlowRow {
-//                                    Button(
-//                                        onClick = { paymentViewModel.setInputAmount(total.toString()) },
-//                                        shape = RoundedCornerShape(36.dp),
-//                                        colors = ButtonDefaults.buttonColors(
-//                                            containerColor = if (isExact) Primary else Color(
-//                                                0xFFE1EEFE
-//                                            )
-//                                        )
-//                                    ) {
-//                                        Text(
-//                                            "Uang Pas",
-//                                            fontWeight = FontWeight.Bold,
-//                                            color = if (isExact) Color.White else Primary
-//                                        )
-//                                    }
-//
-//                                    quickAmounts.forEach { amount ->
-//                                        val isSelected = inputAmount == amount
-//                                        Button(
-//                                            onClick = { paymentViewModel.setInputAmount(amount.toString()) },
-//                                            shape = RoundedCornerShape(36.dp),
-//                                            colors = ButtonDefaults.buttonColors(
-//                                                containerColor = if (isSelected) Primary else Color(
-//                                                    0xFFE1EEFE
-//                                                )
-//                                            )
-//                                        ) {
-//                                            Text(
-//                                                "Rp ${"%,d".format(amount)}",
-//                                                color = if (isSelected) Color.White else Primary
-//                                            )
-//                                        }
-//                                    }
-//                                }
-//
-//                                Spacer(Modifier.height(16.dp))
-//
-//                                Row(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    horizontalArrangement = Arrangement.SpaceBetween,
-//                                    verticalAlignment = Alignment.CenterVertically
-//                                ) {
-//                                    Text(
-//                                        "Uang Diterima",
-//                                        style = MaterialTheme.typography.bodyMedium
-//                                    )
-//                                    Text(
-//                                        "Rp $inputAmount",
-//                                        style = MaterialTheme.typography.titleMedium
-//                                    )
-//                                }
-//
-//                                Spacer(Modifier.height(16.dp))
-//                                Divider(thickness = 1.dp)
-//                                Spacer(Modifier.height(16.dp))
-//
-//                                Row(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    horizontalArrangement = Arrangement.SpaceBetween,
-//                                    verticalAlignment = Alignment.CenterVertically
-//                                ) {
-//                                    Text(
-//                                        "Kembalian",
-//                                        style = MaterialTheme.typography.displaySmall,
-//                                        color = Primary
-//                                    )
-//                                    Text(
-//                                        text = "Rp $change",
-//                                        style = MaterialTheme.typography.displaySmall,
-//                                        color = Primary
-//                                    )
-//                                }
-
                                 Spacer(Modifier.height(16.dp))
 
                                 Row(horizontalArrangement = Arrangement.SpaceBetween) {
@@ -762,32 +662,7 @@ fun PaymentScreen(
                                                     paymentViewModel = paymentViewModel
                                                 )
                                                 Toast.makeText(context, "Transaksi berhasil disimpan.", Toast.LENGTH_SHORT).show()
-
-//                                                pgViewModel.resetPayment()
-//                                                paymentViewModel.reset()
-//                                                transactionViewModel.resetTransaction()
                                             }
-
-
-//                                            val dateKey = BusinessDateManager.getBusinessDateLabel()
-//                                            val q = transactionViewModel.queuePreview.value ?: 0
-//                                            val orderId =
-//                                                "LUMPER-${dateKey}-${q}-${System.currentTimeMillis()}"
-//                                            currentOrderId = orderId
-
-//                                            pgViewModel.createQris(orderId, total, "Kasir Lumpia")
-//
-//                                            pgViewModel.startPollingStatus(orderId)
-
-//                                            if (!isPrinterConnected) {
-//                                                showPrinterWarning = true
-//                                            } else {
-//                                                commitTransactionAnyway(
-//                                                    context = context,
-//                                                    transactionViewModel = transactionViewModel,
-//                                                    paymentViewModel = paymentViewModel
-//                                                )
-//                                            }
                                         }
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -802,19 +677,6 @@ fun PaymentScreen(
                                                 style = MaterialTheme.typography.titleMedium
                                             )
                                         }
-
-//                                        Row(verticalAlignment = Alignment.CenterVertically) {
-//                                            Icon(
-//                                                painter = painterResource(R.drawable.baseline_print_24),
-//                                                contentDescription = "Cetak Struk"
-//                                            )
-//
-//                                            Spacer(Modifier.width(8.dp))
-//                                            Text(
-//                                                "Cetak Struk",
-//                                                style = MaterialTheme.typography.titleMedium
-//                                            )
-//                                        }
                                     }
                                 }
                             }
