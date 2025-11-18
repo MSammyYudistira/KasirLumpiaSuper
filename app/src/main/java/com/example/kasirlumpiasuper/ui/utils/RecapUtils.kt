@@ -35,67 +35,72 @@ object RecapUtils {
         val revenueAgg = aggregateRevenue(inputs.orders)
 
         val baseProducts = if (inputs.stockItems.isEmpty()) {
-            val allProductNames = inputs.orders
-                .flatMap { it.items.map { item -> item.name } }
-                .distinct()
 
-            allProductNames.map { name ->
-                StockInputItem(
-                    productId = name,
-                    name = name,
-                    initialStock = 0,
-                    damagedStock = 0
-                )
-            }
+            val uniqueProducts = inputs.orders
+                .flatMap { it.items }
+                .groupBy { it.productId }
+                .map { (productId, items) ->
+                    val name = items.first().name
+                    StockInputItem(
+                        productId = productId,
+                        name = name,
+                        initialStock = 0,
+                        damagedStock = 0
+                    )
+                }
+
+            uniqueProducts
 
         } else inputs.stockItems
 
-        val productMap = baseProducts.associateBy { it.name }
+        val productMap = baseProducts.associateBy { it.productId }
 
         val productRows = productMap.values.map { si ->
-            val soldByOrder = soldAgg[si.name] ?: 0
-            val ending = when {
-                si.initialStock > 0 -> (si.initialStock - si.damagedStock - soldByOrder).coerceAtLeast(
-                    0
-                )
 
+            val soldByOrder = soldAgg[si.productId] ?: 0
+            val revenue = revenueAgg[si.productId] ?: 0
+
+            val ending = when {
+                si.initialStock > 0 -> (si.initialStock - si.damagedStock - soldByOrder).coerceAtLeast(0)
                 soldByOrder > 0 -> 0
                 else -> 0
             }
 
             ProductRecapRow(
-                productId = si.name,
+                productId = si.productId,
                 name = si.name,
                 initialStock = si.initialStock,
                 endingStock = ending,
                 damagedStock = si.damagedStock,
                 sold = soldByOrder,
-                revenue = revenueAgg[si.name] ?: 0
+                revenue = revenue
             )
         }
 
-        // ✅ Urutan manual sesuai daftar produk kamu
-        val customOrder = listOf(
-            "Lumpia",
-            "Tahu Lumpia",
-            "Siomay",
-            "Singkong Goreng",
-            "Mihun",
-            "Es Kacang Merah",
-            "Air Mineral",
-            "Siomay Basah"
-        )
+//        // ✅ Urutan manual sesuai daftar produk kamu
+//        val customOrder = listOf(
+//            "Lumpia",
+//            "Tahu Lumpia",
+//            "Siomay",
+//            "Singkong Goreng",
+//            "Mihun",
+//            "Es Kacang Merah",
+//            "Air Mineral",
+//            "Siomay Basah"
+//        )
+
+//        val sortedRows = productRows.sortedBy { it.name }
 
         // Produk yang sudah ada di daftar
-        val knownRows = productRows.filter { it.name in customOrder }
-            .sortedBy { customOrder.indexOf(it.name) }
-
-        // Produk baru / tak dikenal ditaruh di bawah, urut alfabet
-        val unknownRows = productRows.filter { it.name !in customOrder }
-            .sortedBy { it.name }
+//        val knownRows = productRows.filter { it.name in customOrder }
+//            .sortedBy { customOrder.indexOf(it.name) }
+//
+//        // Produk baru / tak dikenal ditaruh di bawah, urut alfabet
+//        val unknownRows = productRows.filter { it.name !in customOrder }
+//            .sortedBy { it.name }
 
         // Gabungkan kembali
-        val sortedRows = knownRows + unknownRows
+        val sortedRows = productRows.sortedBy { it.name }
 
         // 🔹 Hitung barang gratis
         val free = computeFree(inputs.orders)
@@ -180,7 +185,7 @@ object RecapUtils {
         val map = mutableMapOf<String, Int>()
         orders.forEach { order ->
             order.items.forEach { item ->
-                val key = item.name // 🔁 gunakan name sebagai ID
+                val key = item.productId
                 map[key] = (map[key] ?: 0) + item.qty
             }
         }
@@ -190,19 +195,25 @@ object RecapUtils {
     // 🔸 Fungsi bantu: Agregasi pendapatan per produk
     private fun aggregateRevenue(orders: List<Order>): Map<String, Int> {
         val map = mutableMapOf<String, Int>()
+
         orders.forEach { order ->
             order.items.forEach { item ->
+
                 val basePrice = when {
                     item.isFree && item.originalUnitPrice != null -> item.originalUnitPrice
                     item.isFree -> item.unitPrice
                     else -> item.unitPrice
                 } ?: 0
+
                 val itemRevenue = basePrice * item.qty
-                map[item.name] = (map[item.name] ?: 0) + itemRevenue
+
+                map[item.productId] = (map[item.productId] ?: 0) + itemRevenue
             }
         }
+
         return map
     }
+
 
     // 🔸 Fungsi bantu: Hitung barang gratis
     private fun computeFree(orders: List<Order>): FreeSummary {
@@ -224,7 +235,4 @@ object RecapUtils {
             totalNominal = totalNominal
         )
     }
-
-
-
 }

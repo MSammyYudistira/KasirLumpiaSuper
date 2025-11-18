@@ -27,11 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.Users
 import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
@@ -134,16 +136,18 @@ fun CustomTopBar(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.lumper_logo),
+                    AsyncImage(
+                        model = users?.profileImageUrl?.ifBlank { null },
                         contentDescription = "Foto Profil",
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.baseline_person_24_gray),
+                        error = painterResource(R.drawable.baseline_person_24_gray),
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .clickable {
-                                onProfileClick()
-                            }
+                            .clickable { onProfileClick() }
                     )
+
 
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(

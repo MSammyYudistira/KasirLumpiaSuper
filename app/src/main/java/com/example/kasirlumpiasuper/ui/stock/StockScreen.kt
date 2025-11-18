@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.stock
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +15,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -30,13 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.data.model.StockInputItem
-import com.example.kasirlumpiasuper.data.model.StockMeta
 import com.example.kasirlumpiasuper.ui.components.CustomActionButton
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
-import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
 import com.example.kasirlumpiasuper.ui.theme.Surface
+import com.example.kasirlumpiasuper.ui.transaction.ProductListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,46 +44,45 @@ fun StockScreen(
     recapViewModel: RecapViewModel
 ) {
     val kasirViewModel: DashboardViewModel = viewModel()
-    val context = LocalContext.current
-    val stok = listOf(
-        "Lumpia",
-        "Tahu Lumpia",
-        "Siomay",
-        "Siomay Basah",
-        "Mihun",
-        "Singkong Goreng",
-        "Es Kacang Merah",
-        "Air Mineral"
-    )
+    val productViewModel: ProductListViewModel = viewModel()
 
+    val context = LocalContext.current
+    val products by productViewModel.productList.collectAsState()
+
+    // 🔥 Tidak ada lagi list statis
+    // val stok = listOf("Lumpia", ...)
+
+    // State dinamis berdasarkan product.id
     val initialStocks = remember { mutableStateMapOf<String, Int>() }
     val damagedStocks = remember { mutableStateMapOf<String, Int>() }
+
     var uangKas by remember { mutableStateOf("") }
+
     val hasAnyStockInput = remember {
         derivedStateOf {
-            initialStocks.values.any { it > 0 } || damagedStocks.values.any { it > 0 }
+            initialStocks.values.any { it > 0 } ||
+                    damagedStocks.values.any { it > 0 }
         }
     }
 
     Scaffold(
         topBar = {
             CustomTopBarWithBackAction(
-                onBackClick = {
-                    val popped = navController.popBackStack()
-                    Log.d(
-                        "Stock Screen",
-                        "Back Pressed, Result: $popped, current route: ${NavRoutes.Stock.route}"
-                    )
-                },
+                onBackClick = { navController.popBackStack() },
                 title = "Atur Stok"
             )
         }
     ) { innerPadding ->
+
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(horizontal = 72.dp),
         ) {
+
+            // ======================
+            // STOK AWAL
+            // ======================
             item {
                 Surface(
                     modifier = Modifier
@@ -97,18 +95,19 @@ fun StockScreen(
                         Text(
                             "Stok Awal",
                             style = MaterialTheme.typography.displaySmall,
-                            modifier = Modifier
-                                .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
+                            modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
-                        stok.forEach { product ->
+
+                        products.forEach { product ->
                             var value by remember { mutableStateOf("") }
+
                             OutlinedTextField(
                                 value = value,
                                 onValueChange = {
                                     value = it.filter(Char::isDigit)
-                                    initialStocks[product] = value.toIntOrNull() ?: 0
+                                    initialStocks[product.id] = value.toIntOrNull() ?: 0
                                 },
-                                label = { Text(product) },
+                                label = { Text(product.name) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                 modifier = Modifier
@@ -120,6 +119,9 @@ fun StockScreen(
                 }
             }
 
+            // ======================
+            // STOK RUSAK / RETUR
+            // ======================
             item {
                 Surface(
                     modifier = Modifier
@@ -132,18 +134,19 @@ fun StockScreen(
                         Text(
                             "Stok Rusak / Retur",
                             style = MaterialTheme.typography.displaySmall,
-                            modifier = Modifier
-                                .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
+                            modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
-                        stok.forEach { product ->
+
+                        products.forEach { product ->
                             var value by remember { mutableStateOf("") }
+
                             OutlinedTextField(
                                 value = value,
                                 onValueChange = {
                                     value = it.filter(Char::isDigit)
-                                    damagedStocks[product] = value.toIntOrNull() ?: 0
+                                    damagedStocks[product.id] = value.toIntOrNull() ?: 0
                                 },
-                                label = { Text(product) },
+                                label = { Text(product.name) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                 modifier = Modifier
@@ -155,6 +158,9 @@ fun StockScreen(
                 }
             }
 
+            // ======================
+            // UANG KAS PEMBUKA
+            // ======================
             item {
                 Surface(
                     modifier = Modifier
@@ -167,8 +173,7 @@ fun StockScreen(
                         Text(
                             "Uang Bawaan (Kas)",
                             style = MaterialTheme.typography.displaySmall,
-                            modifier = Modifier
-                                .padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
+                            modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
                         )
 
                         OutlinedTextField(
@@ -185,37 +190,35 @@ fun StockScreen(
                 }
             }
 
+            // ======================
+            // BUTTON SIMPAN
+            // ======================
             item {
                 val isButtonEnabled = hasAnyStockInput.value || uangKas.isNotBlank()
 
                 CustomActionButton(
                     onClicked = {
+
                         if (uangKas.isBlank()) {
-                            Toast.makeText(
-                                context,
-                                "Harap isi uang bawaan terlebih dahulu!",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(context, "Harap isi uang bawaan terlebih dahulu!", Toast.LENGTH_SHORT).show()
                             return@CustomActionButton
                         }
 
-                        val items = stok.map {
+                        // 🔥 Simpan berdasarkan product dinamis
+                        val items = products.map { product ->
                             StockInputItem(
-                                productId = it,
-                                name = it,
-                                initialStock = initialStocks[it] ?: 0,
-                                damagedStock = damagedStocks[it] ?: 0
+                                productId = product.id,
+                                name = product.name,
+                                initialStock = initialStocks[product.id] ?: 0,
+                                damagedStock = damagedStocks[product.id] ?: 0
                             )
                         }
+
                         recapViewModel.saveStockInput(
                             items = items,
                             cashOpening = uangKas.toIntOrNull() ?: 0,
                             onSuccess = {
-                                Toast.makeText(
-                                    context,
-                                    "Stok berhasil disimpan!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                Toast.makeText(context, "Stok berhasil disimpan!", Toast.LENGTH_SHORT).show()
                                 kasirViewModel.isStockFilledToday(isStockFilled = true)
                                 navController.popBackStack()
                             },

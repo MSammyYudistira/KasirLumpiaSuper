@@ -30,7 +30,7 @@ import kotlin.collections.map
             "free" to item.isFree,
             "cupIndex" to item.cupIndex,
             "originalUnitPrice" to (item.originalUnitPrice ?: item.unitPrice),
-            "imageRes" to item.imageRes // ✅ tambahkan ini
+            "imageUrl" to (item.imageUrl ?: "")
         )
 
         /**
@@ -44,7 +44,8 @@ import kotlin.collections.map
             unitPrice = m.getInt("unitPrice"),
             isFree = m.getBool("free"),
             cupIndex = m.getInt("cupIndex").takeIf { it > 0 } ?: 1,
-            originalUnitPrice = m.getInt("originalUnitPrice")
+            originalUnitPrice = m.getInt("originalUnitPrice"),
+            imageUrl = m.getString("imageUrl")
         )
 
         /** List<OrderItem> → List<Map<String, Any>> */
@@ -65,8 +66,7 @@ import kotlin.collections.map
                     originalUnitPrice = (map["originalUnitPrice"] as? Long)?.toInt(),
                     isFree = map["free"] as? Boolean ?: false,
                     cupIndex = (map["cupIndex"] as? Long)?.toInt() ?: 1,
-                    imageRes = (map["imageRes"] as? Long)?.toInt()
-                        ?: resolveImageResByName(map["name"] as? String ?: "") // ✅ fallback jika tidak tersimpan
+                    imageUrl = (map["imageUrl"] as? String) ?: "",
                 )
             }
         }

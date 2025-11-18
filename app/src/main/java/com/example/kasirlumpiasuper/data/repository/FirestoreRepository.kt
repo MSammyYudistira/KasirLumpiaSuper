@@ -176,19 +176,31 @@ class FirestoreRepository(
     // =============================================================
 
     suspend fun getUserData(): Users? {
-        val userId = currentUserId()
-        val snapshot = firestore.collection("users").document(userId).get().await()
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return null
+
+        val snapshot = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .get()
+            .await()
+
+        if (!snapshot.exists()) return null
+
         return Users(
+            uid = uid,
             name = snapshot.getString("name") ?: "",
-            role = snapshot.getString("role") ?: ""
+            email = snapshot.getString("email") ?: "",
+            role = snapshot.getString("role") ?: "kasir",
+            profileImageUrl = snapshot.getString("profileImageUrl") ?: ""   // 🔥 INI YANG PENTING
         )
     }
 
-    suspend fun getUserQuote(): String? {
-        val userId = currentUserId()
-        val snapshot = firestore.collection("users").document(userId).get().await()
-        return snapshot.getString("quote")
-    }
+
+//    suspend fun getUserQuote(): String? {
+//        val userId = currentUserId()
+//        val snapshot = firestore.collection("users").document(userId).get().await()
+//        return snapshot.getString("quote")
+//    }
 
     // =============================================================
     //  STOK / CASH

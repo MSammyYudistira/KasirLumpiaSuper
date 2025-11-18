@@ -127,8 +127,6 @@ fun PaymentScreen(
             currentOrderId = orderId
 
             pgViewModel.createQris(orderId, total)
-//            delay(1500)
-//            pgViewModel.startPollingStatus(orderId)
         } else {
             pgViewModel.stopPolling()
             pgViewModel.resetPayment()
@@ -228,7 +226,7 @@ fun PaymentScreen(
                 paymentViewModel.reset()
 
                 // Navigasi ke dashboard kasir
-                navController.navigate(NavRoutes.Dashboard.route)
+                navController.navigate(NavRoutes.Transaction.route)
 
                 // Reset state supaya efek ini tidak ke-trigger ulang
                 transactionViewModel.clearSaveOrderState()
@@ -680,6 +678,137 @@ fun PaymentScreen(
                                     }
                                 }
                             }
+
+//                        // =========== CASHLESS ===================
+//                        if (selectedMethod == PaymentMethod.CASHLESS) {
+//                            val quickAmounts = listOf(
+//                                10_000,
+//                                20_000,
+//                                30_000,
+//                                50_000,
+//                                70_000,
+//                                80_000,
+//                                90_000,
+//                                100_000
+//                            )
+//                            val isExact = inputAmount == total
+//
+//                            Column(
+//                                modifier = Modifier
+//                                    .padding(24.dp)
+//                                    .fillMaxWidth(),
+//                            ) {
+//                                Text(
+//                                    "Nominal Pembayaran (Non-Tunai)",
+//                                    style = MaterialTheme.typography.displaySmall
+//                                )
+//                                Spacer(Modifier.height(24.dp))
+//
+//                                OutlinedTextField(
+//                                    value = if (inputAmount == 0) "0" else inputAmount.toString(),
+//                                    onValueChange = { paymentViewModel.setInputAmount(it) },
+//                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+//                                    modifier = Modifier.fillMaxWidth(),
+//                                    textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
+//                                    colors = TextFieldDefaults.colors(
+//                                        unfocusedContainerColor = Surface,
+//                                    ),
+//                                )
+//
+//                                Spacer(Modifier.height(16.dp))
+//
+//                                FlowRow {
+//                                    Button(
+//                                        onClick = { paymentViewModel.setInputAmount(total.toString()) },
+//                                        shape = RoundedCornerShape(36.dp),
+//                                        colors = ButtonDefaults.buttonColors(
+//                                            containerColor = if (isExact) Primary else Color(
+//                                                0xFFE1EEFE
+//                                            )
+//                                        )
+//                                    ) {
+//                                        Text(
+//                                            "Uang Pas",
+//                                            fontWeight = FontWeight.Bold,
+//                                            color = if (isExact) Color.White else Primary
+//                                        )
+//                                    }
+//
+//                                    quickAmounts.forEach { amount ->
+//                                        val isSelected = inputAmount == amount
+//                                        Button(
+//                                            onClick = { paymentViewModel.setInputAmount(amount.toString()) },
+//                                            shape = RoundedCornerShape(36.dp),
+//                                            colors = ButtonDefaults.buttonColors(
+//                                                containerColor = if (isSelected) Primary else Color(
+//                                                    0xFFE1EEFE
+//                                                )
+//                                            )
+//                                        ) {
+//                                            Text(
+//                                                "Rp ${"%,d".format(amount)}",
+//                                                color = if (isSelected) Color.White else Primary
+//                                            )
+//                                        }
+//                                    }
+//                                }
+//
+//                                Spacer(Modifier.height(16.dp))
+//
+//                                Row(
+//                                    modifier = Modifier.fillMaxWidth(),
+//                                    horizontalArrangement = Arrangement.SpaceBetween,
+//                                    verticalAlignment = Alignment.CenterVertically
+//                                ) {
+//                                    Text(
+//                                        "Uang Diterima",
+//                                        style = MaterialTheme.typography.bodyMedium
+//                                    )
+//                                    Text(
+//                                        "Rp $inputAmount",
+//                                        style = MaterialTheme.typography.titleMedium
+//                                    )
+//                                }
+//
+//                                Spacer(Modifier.height(16.dp))
+//                                Divider(thickness = 1.dp)
+//                                Spacer(Modifier.height(16.dp))
+//
+//                                Row(
+//                                    modifier = Modifier.fillMaxWidth(),
+//                                    horizontalArrangement = Arrangement.SpaceBetween,
+//                                    verticalAlignment = Alignment.CenterVertically
+//                                ) {
+//                                    Text("Kembalian", style = MaterialTheme.typography.displaySmall, color = Primary)
+//                                    Text(
+//                                        text = "Rp $change",
+//                                        style = MaterialTheme.typography.displaySmall,
+//                                        color = Primary
+//                                    )
+//                                }
+//
+//                                Spacer(Modifier.height(24.dp))
+//
+//                                Button(
+//                                    modifier = Modifier.fillMaxWidth(),
+//                                    shape = RoundedCornerShape(12.dp),
+//                                    enabled = inputAmount > 0,
+//                                    onClick = {
+//
+//                                        if (!isPrinterConnected) {
+//                                            showPrinterWarning = true
+//                                        } else {
+//                                            commitTransactionAnyway(
+//                                                context = context,
+//                                                transactionViewModel = transactionViewModel,
+//                                                paymentViewModel = paymentViewModel
+//                                            )
+//                                        }
+//                                    }
+//                                ) {
+//                                    Text("Cetak Struk")
+//                                }
+//                            }
 
                             // =========== CASH ===================
                         } else if (selectedMethod == PaymentMethod.CASH) {

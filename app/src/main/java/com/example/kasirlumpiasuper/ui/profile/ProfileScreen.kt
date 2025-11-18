@@ -2,8 +2,12 @@ package com.example.kasirlumpiasuper.ui.profile
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,12 +20,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -35,15 +41,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.auth.AuthViewModel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
+import com.example.kasirlumpiasuper.ui.profile.ProfilePictureWithEdit
 import com.example.kasirlumpiasuper.ui.theme.Primary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,12 +71,20 @@ fun ProfileScreen(
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // state input sementara (biar bisa bandingin dengan data asli)
     var editedName by remember(user) { mutableStateOf(user.name) }
-    var editedQuote by remember(user) { mutableStateOf(user.quote) }
+    var localImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // cek apakah ada perubahan dari data asli
-    val hasChanges = editedName != user.name || editedQuote != user.quote
+    val hasChanges = editedName != user.name || localImageUri != null
+
+    // Launcher pilih gambar
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            localImageUri = uri
+            viewModel.updateProfileImage(uri)
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -81,7 +103,11 @@ fun ProfileScreen(
                 modifier = Modifier
                     .padding(horizontal = 24.dp, vertical = 32.dp)
             ) {
-                ProfilePicture()
+                ProfilePictureWithEdit(
+                    imageUrl = user.profileImageUrl,
+                    localImageUri = localImageUri,
+                    onEditClick = { launcher.launch("image/*") }
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -124,28 +150,7 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Quote
-                OutlinedTextField(
-                    value = editedQuote,
-                    onValueChange = { editedQuote = it },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_format_quote_24),
-                            contentDescription = null
-                        )
-                    },
-                    label = { Text("Quote") },
-                    trailingIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_edit_square_24),
-                            contentDescription = null
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
+                // Logout
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(),
@@ -205,7 +210,7 @@ fun ProfileScreen(
                     return@Button
                 }
 
-                viewModel.updateUser(name = editedName, quote = editedQuote) { success ->
+                viewModel.updateUser(name = editedName) { success ->
                     if (success) {
                         Toast.makeText(context, "Perubahan berhasil disimpan", Toast.LENGTH_SHORT)
                             .show()
@@ -214,6 +219,7 @@ fun ProfileScreen(
                             .show()
                     }
                 }
+                localImageUri = null
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -238,5 +244,46 @@ private fun ProfilePicture(
             contentDescription = "Default Profile Picture",
             modifier = Modifier.size(100.dp)
         )
+    }
+}
+
+@Composable
+private fun ProfilePictureWithEdit(
+    imageUrl: String?,
+    localImageUri: Uri?,
+    onEditClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier.size(120.dp),
+        contentAlignment = Alignment.BottomEnd
+    ) {
+
+        // FOTO PROFIL UTAMA
+        AsyncImage(
+            model = localImageUri ?: imageUrl,
+            contentDescription = "Profile Picture",
+            placeholder = painterResource(R.drawable.baseline_person_24_gray),
+            error = painterResource(R.drawable.baseline_person_24_gray),
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .border(BorderStroke(4.dp, Primary), CircleShape)
+                .padding(4.dp),
+            contentScale = ContentScale.Crop
+        )
+
+        // TOMBOL EDIT FOTO
+        IconButton(
+            onClick = onEditClick,
+            modifier = Modifier
+                .size(32.dp)
+                .background(Primary, CircleShape)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.baseline_photo_camera_24),
+                contentDescription = "Edit Foto",
+                tint = Color.White
+            )
+        }
     }
 }

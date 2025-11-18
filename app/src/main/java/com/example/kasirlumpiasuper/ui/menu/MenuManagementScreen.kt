@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,17 +21,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.Product
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Outline
+import com.example.kasirlumpiasuper.ui.theme.Primary
+import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Surface
 
 @Composable
@@ -112,14 +117,18 @@ fun ProductCardItem(
                     .background(Outline, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
+
+                AsyncImage(
+                    model = if (product.imageUrl.isNotBlank()) product.imageUrl else R.drawable.lumper_logo,
+                    contentDescription = null,
                     modifier = Modifier
                         .size(125.dp)
                         .padding(8.dp),
-                    painter = painterResource(product.imageRes),
-                    contentDescription = null,
-                    alignment = Alignment.Center
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(R.drawable.lumper_logo),
+                    error = painterResource(R.drawable.lumper_logo)
                 )
+
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -160,9 +169,10 @@ fun AddProductCard(onClick: () -> Unit) {
                     .background(Outline, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
+                Icon(
                     painter = painterResource(id = R.drawable.outline_add_24),
                     contentDescription = "Tambah Produk",
+                    tint = Primary,
                     modifier = Modifier
                         .size(125.dp)
                         .padding(8.dp)
@@ -172,9 +182,15 @@ fun AddProductCard(onClick: () -> Unit) {
             Text(
                 "Tambah Produk Baru",
                 fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Primary
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
-
         }
     }
 }

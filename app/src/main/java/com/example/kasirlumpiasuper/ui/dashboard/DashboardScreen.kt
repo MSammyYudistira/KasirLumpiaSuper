@@ -158,81 +158,81 @@ fun DashboardScreen(
                 item {
                     // Ringkasan Hari Ini
 
-//                    Surface(
-//                        onClick = {
-//                            showDatePicker(
-//                                context = context,
-//                                currentKey = selectedBusinessDate,
-//                                onPick = { pickedDate ->
-//                                    val todayLabel = BusinessDateManager.getCurrentSystemDateLabel()
-//                                    val sdf = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
-//
-//                                    try {
-//                                        val picked = sdf.parse(pickedDate)
-//                                        val today = sdf.parse(todayLabel)
-//
-//                                        if (picked != null && today != null) {
-//                                            // Normalisasi ke tengah malam (jam 00:00)
-//                                            val calPicked = Calendar.getInstance().apply {
-//                                                time = picked
-//                                                set(Calendar.HOUR_OF_DAY, 0)
-//                                                set(Calendar.MINUTE, 0)
-//                                                set(Calendar.SECOND, 0)
-//                                                set(Calendar.MILLISECOND, 0)
-//                                            }
-//                                            val calToday = Calendar.getInstance().apply {
-//                                                time = today
-//                                                set(Calendar.HOUR_OF_DAY, 0)
-//                                                set(Calendar.MINUTE, 0)
-//                                                set(Calendar.SECOND, 0)
-//                                                set(Calendar.MILLISECOND, 0)
-//                                            }
-//
-//                                            when {
-//                                                calPicked.after(calToday) -> {
-//                                                    Toast.makeText(
-//                                                        context,
-//                                                        "Tidak bisa memilih tanggal melebihi hari ini!",
-//                                                        Toast.LENGTH_SHORT
-//                                                    ).show()
-//                                                }
-//                                                else -> {
-//                                                    // ✅ boleh tanggal hari ini atau sebelumnya
-//                                                    viewModel.updateBusinessDate(pickedDate, prefs)
-//                                                    Toast.makeText(
-//                                                        context,
-//                                                        "Tanggal bisnis diubah ke $pickedDate",
-//                                                        Toast.LENGTH_SHORT
-//                                                    ).show()
-//                                                }
-//                                            }
-//                                        }
-//                                    } catch (e: Exception) {
-//                                        Toast.makeText(context, "Format tanggal tidak valid", Toast.LENGTH_SHORT).show()
-//                                    }
-//                                }
-//                            )
-//                        },
-//                        shape = RoundedCornerShape(8.dp),
-//                        color = Primary
-//                    ) {
-//                        Row(
-//                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            Icon(
-//                                painter = painterResource(R.drawable.baseline_date_range_24),
-//                                contentDescription = null,
-//                                tint = Color.White
-//                            )
-//                            Spacer(Modifier.width(8.dp))
-//                            Text(
-//                                text = businessDate,
-//                                color = Color.White,
-//                                style = MaterialTheme.typography.titleMedium
-//                            )
-//                        }
-//                    }
+                    Surface(
+                        onClick = {
+                            showDatePicker(
+                                context = context,
+                                currentKey = selectedBusinessDate,
+                                onPick = { pickedDate ->
+                                    val todayLabel = BusinessDateManager.getCurrentSystemDateLabel()
+                                    val sdf = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+
+                                    try {
+                                        val picked = sdf.parse(pickedDate)
+                                        val today = sdf.parse(todayLabel)
+
+                                        if (picked != null && today != null) {
+                                            // Normalisasi ke tengah malam (jam 00:00)
+                                            val calPicked = Calendar.getInstance().apply {
+                                                time = picked
+                                                set(Calendar.HOUR_OF_DAY, 0)
+                                                set(Calendar.MINUTE, 0)
+                                                set(Calendar.SECOND, 0)
+                                                set(Calendar.MILLISECOND, 0)
+                                            }
+                                            val calToday = Calendar.getInstance().apply {
+                                                time = today
+                                                set(Calendar.HOUR_OF_DAY, 0)
+                                                set(Calendar.MINUTE, 0)
+                                                set(Calendar.SECOND, 0)
+                                                set(Calendar.MILLISECOND, 0)
+                                            }
+
+                                            when {
+                                                calPicked.after(calToday) -> {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Tidak bisa memilih tanggal melebihi hari ini!",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                                else -> {
+                                                    // ✅ boleh tanggal hari ini atau sebelumnya
+                                                    viewModel.updateBusinessDate(pickedDate, prefs)
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Tanggal bisnis diubah ke $pickedDate",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Format tanggal tidak valid", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Primary
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_date_range_24),
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = businessDate,
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
 
                     Surface(
                         modifier = Modifier

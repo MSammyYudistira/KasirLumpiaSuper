@@ -1,7 +1,6 @@
 package com.example.kasirlumpiasuper.ui.transaction
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.OrderItem
 import com.example.kasirlumpiasuper.ui.components.AddButtonTransaction
@@ -73,7 +74,6 @@ import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
-import androidx.compose.foundation.lazy.grid.items
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -181,7 +181,7 @@ fun TransactionScreen(
                     ProductCard(
                         name = product.name,
                         price = product.price,
-                        image = product.imageRes,
+                        imageUrl = product.imageUrl,
                         modifier = Modifier,
                         onFreeClick = {
                             transactionViewModel.addItemToCurrentCup(
@@ -190,7 +190,7 @@ fun TransactionScreen(
                                     name = product.name,
                                     unitPrice = product.price,
                                     isFree = true,
-                                    imageRes = product.imageRes
+                                    imageUrl = product.imageUrl
                                 )
                             )
                         },
@@ -201,7 +201,7 @@ fun TransactionScreen(
                                     name = product.name,
                                     unitPrice = product.price,
                                     isFree = false,
-                                    imageRes = product.imageRes
+                                    imageUrl = product.imageUrl
                                 )
                             )
                         }
@@ -392,12 +392,21 @@ fun TransactionScreen(
                                                 .background(Outline, RoundedCornerShape(8.dp)),
                                             contentAlignment = Alignment.Center,
                                         ) {
-                                            Image(
+//                                            Image(
+//                                                modifier = Modifier
+//                                                    .padding(16.dp),
+//                                                painter = painterResource(id = if (item.imageRes != 0) item.imageRes else R.drawable.lumper_logo),
+//                                                contentDescription = null
+//                                            )
+                                            AsyncImage(
+                                                model = item.imageUrl.ifBlank { R.drawable.lumper_logo },
+                                                contentDescription = null,
                                                 modifier = Modifier
-                                                    .padding(16.dp),
-                                                painter = painterResource(id = if (item.imageRes != 0) item.imageRes else R.drawable.lumper_logo),
-                                                contentDescription = null
+                                                    .padding(16.dp)
+                                                    .size(70.dp),
+                                                placeholder = painterResource(R.drawable.lumper_logo)
                                             )
+
                                         }
 
                                         Spacer(modifier = Modifier.width(16.dp))
@@ -553,7 +562,7 @@ fun ProductCard(
     name: String,
     price: Int,
     modifier: Modifier = Modifier,
-    image: Int,
+    imageUrl: String,
     onFreeClick: () -> Unit,
     onItemClick: () -> Unit
 ) {
@@ -576,14 +585,24 @@ fun ProductCard(
                     .background(Outline, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
+//                Image(
+//                    modifier = modifier
+//                        .size(125.dp)
+//                        .padding(8.dp),
+//                    painter = painterResource(image),
+//                    contentDescription = null,
+//                    alignment = Alignment.Center
+//                )
+
+                AsyncImage(
+                    model = imageUrl.ifBlank { R.drawable.lumper_logo },
+                    contentDescription = null,
                     modifier = modifier
                         .size(125.dp)
                         .padding(8.dp),
-                    painter = painterResource(image),
-                    contentDescription = null,
-                    alignment = Alignment.Center
+                    placeholder = painterResource(R.drawable.lumper_logo)
                 )
+
             }
             Spacer(Modifier.height(8.dp))
 

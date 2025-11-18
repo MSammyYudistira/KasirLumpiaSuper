@@ -28,12 +28,6 @@ class DashboardViewModel(
 
     private val db = FirebaseFirestore.getInstance()
 
-    private val _isAdmin = MutableStateFlow(false)
-    val isAdmin = _isAdmin.asStateFlow()
-
-    private val _userName = MutableStateFlow("")
-    val userName = _userName.asStateFlow()
-
     // --- UI States ---
     private val _stockFilledToday = MutableStateFlow(false)
     val stockFilledToday: StateFlow<Boolean> = _stockFilledToday
@@ -61,18 +55,6 @@ class DashboardViewModel(
 
     private val _businessDate = MutableStateFlow(BusinessDateManager.getBusinessDateLabel())
     val businessDate: StateFlow<String> = _businessDate
-
-    private val _quote = MutableStateFlow<String?>(null)
-    val quote: StateFlow<String?> = _quote
-
-
-    fun setUserRole(role: String) {
-        _isAdmin.value = role == "admin"
-    }
-
-    fun setUserName(name: String) {
-        _userName.value = name
-    }
 
     // --------------------------------------------------------------------
     // 🔹 FETCH TOTAL PENDAPATAN HARI INI
@@ -288,52 +270,4 @@ class DashboardViewModel(
             _manualResetRequired.value = false
         }
     }
-
-    // --------------------------------------------------------------------
-    // 🔹 QUOTES HARI INI
-    // --------------------------------------------------------------------
-    fun loadQuote() {
-        viewModelScope.launch {
-            val quote = repository.getUserQuote()
-            if (quote != null) {
-                _quote.value = quote
-            } else {
-                Log.d("FirestoreVM", "Lewati loadQuote(): user belum login.")
-            }
-        }
-    }
-
-    //    fun restoreManualLock(prefs: PreferencesManager) {
-//        viewModelScope.launch {
-//            if (prefs.isManualLockActive()) {
-//                prefs.getLockedDate()?.let { lockedDate ->
-//                    BusinessDateManager.lockTo(lockedDate)
-//                    println("🔁 Lock tanggal dipulihkan: $lockedDate")
-//                }
-//            } else {
-//                BusinessDateManager.releaseLock()
-//            }
-//        }
-//    }
-//
-//    fun checkIfNewDay(prefs: PreferencesManager) {
-//        viewModelScope.launch {
-//                val lastBusinessDate = prefs.getLastBusinessDate() ?: ""
-//                val currentDate = BusinessDateManager.getBusinessDateLabel()
-//
-//            val isManualLock = prefs.isManualLockActive()
-//
-//            if (isManualLock) {
-//                _isNewDay.value = false
-//                println("ℹ️ Manual lock aktif, tidak tampilkan dialog hari baru.")
-//                return@launch
-//            }
-//
-//            // 🔹 Kalau tidak lock, baru cek apakah hari sudah ganti
-//            _isNewDay.value = lastBusinessDate != currentDate
-//            if (_isNewDay.value) {
-//                println("🕒 Hari baru terdeteksi: dari $lastBusinessDate ke $currentDate")
-//            }
-//        }
-//    }
 }

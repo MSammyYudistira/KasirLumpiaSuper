@@ -79,8 +79,10 @@ import org.gradle.kotlin.dsl.implementation
         implementation("com.google.firebase:firebase-auth-ktx")
         implementation("com.google.firebase:firebase-firestore-ktx")
         implementation("com.google.firebase:firebase-functions-ktx")
+        implementation("com.google.firebase:firebase-storage-ktx:")
 
         implementation(libs.escpos.thermalprinter.android)
+
         implementation("androidx.datastore:datastore-preferences:1.1.1")
         implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 

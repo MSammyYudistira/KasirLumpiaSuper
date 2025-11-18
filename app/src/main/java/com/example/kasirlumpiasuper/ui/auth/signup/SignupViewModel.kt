@@ -75,7 +75,7 @@ class SignupViewModel(
                         name = username.trim(),
                         email = email.trim(),
                         role = role,
-                        quote = "",
+//                        quote = "",
                         createdAt = Timestamp.now()
                     )
 
