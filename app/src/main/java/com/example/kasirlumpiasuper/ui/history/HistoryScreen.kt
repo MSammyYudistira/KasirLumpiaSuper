@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.history
 
-import android.R.attr.onClick
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
@@ -55,9 +54,7 @@ import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.example.kasirlumpiasuper.ui.utils.DateUtils.timeLabel
 import com.example.kasirlumpiasuper.ui.utils.PrintHelper
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -110,11 +107,11 @@ fun HistoryScreen(
         } else {
             LazyColumn(
                 modifier = Modifier
-                    .padding(top = 24.dp)
                     .padding(horizontal = 72.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
+                    Spacer(Modifier.height(24.dp))
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         shadowElevation = 4.dp,

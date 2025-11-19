@@ -33,88 +33,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.model.PaymentMethod
 import com.example.kasirlumpiasuper.ui.theme.HintText
 import com.example.kasirlumpiasuper.ui.theme.Outline
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
-
-@Composable
-fun PaymentMethodSection(
-    selectedMethod: PaymentMethod?,
-    inputAmount: Int,
-    discount: Int,
-    total: Int,
-    change: Int,
-    onSelectMethod: (PaymentMethod) -> Unit,
-    onAmountChange: (String) -> Unit,
-    onConfirm: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 48.dp)
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        Text(
-            "Pilih Metode Pembayaran",
-            style = MaterialTheme.typography.displaySmall
-        )
-
-        // 🔘 PILIHAN METODE PEMBAYARAN
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            // 💵 CASH
-            PaymentMethodCard(
-                title = "Cash",
-                description = "Pembayaran dengan uang tunai",
-                iconRes = R.drawable.baseline_money_bill_wave_24,
-                isSelected = selectedMethod == PaymentMethod.CASH,
-                onClick = { onSelectMethod(PaymentMethod.CASH) },
-                modifier = Modifier.weight(1f)
-            )
-
-            // 📱 CASHLESS
-            PaymentMethodCard(
-                title = "QRIS",
-                description = "Scan QR Code untuk bayar",
-                iconRes = R.drawable.baseline_qr_code_24,
-                isSelected = selectedMethod == PaymentMethod.CASHLESS,
-                onClick = { onSelectMethod(PaymentMethod.CASHLESS) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // 🧾 DETAIL INPUT BERDASARKAN METODE
-        when (selectedMethod) {
-            PaymentMethod.CASH -> {
-                CashPaymentSection(
-                    inputAmount = inputAmount,
-                    discount = discount,
-                    total = total,
-                    change = change,
-                    onAmountChange = onAmountChange,
-                    onConfirm = onConfirm
-                )
-            }
-
-            PaymentMethod.CASHLESS -> {
-                CashlessPaymentSection(total = total, onConfirm = onConfirm)
-            }
-
-            else -> {
-                Text(
-                    text = "Silakan pilih metode pembayaran",
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    color = HintText,
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun PaymentMethodCard(

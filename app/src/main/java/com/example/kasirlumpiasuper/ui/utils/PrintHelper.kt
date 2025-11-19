@@ -1,12 +1,11 @@
 package com.example.kasirlumpiasuper.ui.utils
 
-import android.R.attr.order
 import android.content.Context
 import android.widget.Toast
-import com.example.kasirlumpiasuper.data.model.Order
 import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.connection.DeviceConnection
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
+import com.example.kasirlumpiasuper.data.model.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat

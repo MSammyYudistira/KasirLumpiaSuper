@@ -18,7 +18,6 @@ import kotlinx.coroutines.tasks.await
 class FirestoreRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    private val firestore = FirebaseFirestore.getInstance()
 
     private fun currentUserId(): String =
         FirebaseAuth.getInstance().currentUser?.uid ?: "unknown"
@@ -52,15 +51,23 @@ class FirestoreRepository(
             val dateKey = order.businessDate
             val queueNumber = order.queueNumber.toString()
 
-            // Path: /users/{uid}/orders/{dateKey}/{queueNumber}
-            val docRef = db.collection("users")
+            val userDocRef = db.collection("users")
                 .document(userId)
                 .collection("orders")
                 .document(dateKey)
                 .collection("entries")
                 .document(queueNumber)
 
-            docRef.set(order).await()
+            val globalDocRef = db.collection("orders_global")
+                .document(dateKey)
+                .collection("transactions")
+                .document(queueNumber)
+
+            db.runBatch { batch ->
+                batch.set(userDocRef, order)
+                batch.set(globalDocRef, order)
+            }.await()
+
             Result.Success(Unit)
         } catch (e: FirebaseFirestoreException) {
             Result.Error(ErrorMapper.mapFirestoreException(e))
@@ -69,23 +76,36 @@ class FirestoreRepository(
         }
     }
 
+
     suspend fun deleteOrder(dateKey: String, queueNumber: Int): Boolean {
         val userId = currentUserId()
         return try {
-            db.collection("users")
+            val queueStr = queueNumber.toString()
+
+            val userDocRef = db.collection("users")
                 .document(userId)
                 .collection("orders")
                 .document(dateKey)
                 .collection("entries")
-                .document(queueNumber.toString())
-                .delete()
-                .await()
+                .document(queueStr)
+
+            val globalDocRef = db.collection("orders_global")
+                .document(dateKey)
+                .collection("transactions")
+                .document(queueStr)
+
+            db.runBatch { batch ->
+                batch.delete(userDocRef)
+                batch.delete(globalDocRef)
+            }.await()
+
             true
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "deleteOrder error: ${e.message}", e)
             false
         }
     }
+
 
     suspend fun getOrderByQueue(dateKey: String, queueNumber: Int): Order? {
         val userId = currentUserId()
@@ -137,14 +157,29 @@ class FirestoreRepository(
     ): Boolean {
         val userId = currentUserId()
         return try {
-            val docRef = db.collection("users")
+            val queueStr = queueNumber.toString()
+
+            // Ref user
+            val userDocRef = db.collection("users")
                 .document(userId)
                 .collection("orders")
                 .document(dateKey)
                 .collection("entries")
-                .document(queueNumber.toString())
+                .document(queueStr)
 
-            docRef.set(updatedOrder).await()
+            // Ref global
+            val globalDocRef = db.collection("orders_global")
+                .document(dateKey)
+                .collection("transactions")
+                .document(queueStr)
+
+            // 🔹 Update dua-duanya
+            db.runBatch { batch ->
+                // pakai merge biar field lain nggak hilang
+                batch.set(userDocRef, updatedOrder, SetOptions.merge())
+                batch.set(globalDocRef, updatedOrder, SetOptions.merge())
+            }.await()
+
             true
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "updateOrder error: ${e.message}", e)
@@ -152,7 +187,7 @@ class FirestoreRepository(
         }
     }
 
-    /** 🔹 Ambil total pendapatan dari semua transaksi di tanggal tertentu */
+
     suspend fun getDailyRevenue(dateKey: String): Int {
         return try {
             val userId = currentUserId()
@@ -171,9 +206,21 @@ class FirestoreRepository(
         }
     }
 
-    // =============================================================
-    //  USER DATA
-    // =============================================================
+    suspend fun getDailyRevenueGlobal(dateKey: String): Int {
+        return try {
+            val snapshot = db.collection("orders_global")
+                .document(dateKey)
+                .collection("transactions")
+                .get()
+                .await()
+
+            snapshot.documents.sumOf { it.getLong("total")?.toInt() ?: 0 }
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "getDailyRevenueGlobal error: ${e.message}", e)
+            0
+        }
+    }
+
 
     suspend fun getUserData(): Users? {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return null
@@ -195,17 +242,6 @@ class FirestoreRepository(
         )
     }
 
-
-//    suspend fun getUserQuote(): String? {
-//        val userId = currentUserId()
-//        val snapshot = firestore.collection("users").document(userId).get().await()
-//        return snapshot.getString("quote")
-//    }
-
-    // =============================================================
-    //  STOK / CASH
-    // =============================================================
-
     suspend fun isStockFilled(dateKey: String): Boolean {
         val userId = currentUserId()
         return try {
@@ -221,74 +257,33 @@ class FirestoreRepository(
         }
     }
 
-    suspend fun resetStockForDate(dateKey: String) {
-        val userId = currentUserId()
-        try {
-            db.collection("users")
-                .document(userId)
-                .collection("stock_inputs")
-                .document(dateKey)
-                .delete()
-                .await()
-        } catch (e: Exception) {
-            Log.e("FirestoreRepo", "resetStockForDate error: ${e.message}", e)
-        }
-    }
-
-    suspend fun resetCashForDate(dateKey: String) {
-        val userId = currentUserId()
-        try {
-            db.collection("users")
-                .document(userId)
-                .collection("cash")
-                .document(dateKey)
-                .delete()
-                .await()
-        } catch (e: Exception) {
-            Log.e("FirestoreRepo", "resetCashForDate error: ${e.message}", e)
-        }
-    }
-
-    suspend fun getDailyCashAtRegister(dateKey: String): Int {
-        return try {
-            val userId = currentUserId()
-            val snap = db.collection("users")
-                .document(userId)
-                .collection("recap_inputs")
-                .document(dateKey)
-                .get()
-                .await()
-
-            val big = snap.getLong("uangBesar")?.toInt() ?: 0
-            val small = snap.getLong("uangKecil")?.toInt() ?: 0
-            val extra = snap.getLong("uangLebihan")?.toInt() ?: 0
-            big + small + extra
-        } catch (e: Exception) {
-            0
-        }
-    }
-
-    suspend fun getDailyExpense(dateKey: String): Int {
-        return try {
-            val userId = currentUserId()
-            val snap = db.collection("users")
-                .document(userId)
-                .collection("recap_inputs")
-                .document(dateKey)
-                .get()
-                .await()
-
-            val mineralWater = snap.getLong("mineralWaterExpense")?.toInt() ?: 0
-            val otherExpense = snap.getLong("otherExpense")?.toInt() ?: 0
-            val freeNominal = snap.getLong("freeNominal")?.toInt() ?: 0  // opsional kalau mau tambah free cost
-
-            mineralWater + otherExpense
-        } catch (e: Exception) {
-            Log.e("FirestoreRepo", "getDailyExpense error: ${e.message}")
-            0
-        }
-    }
-
+//    suspend fun resetStockForDate(dateKey: String) {
+//        val userId = currentUserId()
+//        try {
+//            db.collection("users")
+//                .document(userId)
+//                .collection("stock_inputs")
+//                .document(dateKey)
+//                .delete()
+//                .await()
+//        } catch (e: Exception) {
+//            Log.e("FirestoreRepo", "resetStockForDate error: ${e.message}", e)
+//        }
+//    }
+//
+//    suspend fun resetCashForDate(dateKey: String) {
+//        val userId = currentUserId()
+//        try {
+//            db.collection("users")
+//                .document(userId)
+//                .collection("cash")
+//                .document(dateKey)
+//                .delete()
+//                .await()
+//        } catch (e: Exception) {
+//            Log.e("FirestoreRepo", "resetCashForDate error: ${e.message}", e)
+//        }
+//    }
 
 
 }

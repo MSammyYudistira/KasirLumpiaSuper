@@ -1,53 +1,53 @@
 package com.example.kasirlumpiasuper.ui.stats
 
-import android.R.attr.data
-import android.R.attr.entries
-import android.R.attr.onClick
 import android.annotation.SuppressLint
-import androidx.compose.foundation.layout.*
+import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.ui.theme.Success
-import com.example.kasirlumpiasuper.ui.theme.Danger
-import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
-import com.example.kasirlumpiasuper.ui.theme.Secondary
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.github.mikephil.charting.charts.BarChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import android.app.DatePickerDialog
-import android.widget.Space
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.platform.LocalContext
-import com.example.kasirlumpiasuper.data.model.ExpenseSummary
 import com.example.kasirlumpiasuper.ui.components.DoubleBarChart
 import com.example.kasirlumpiasuper.ui.components.GrowthLineChart
-import com.example.kasirlumpiasuper.ui.history.showDatePicker
-import okhttp3.internal.format
+import com.example.kasirlumpiasuper.ui.components.SingleBarChart
+import com.example.kasirlumpiasuper.ui.theme.Primary
 import java.text.SimpleDateFormat
-import java.util.*
-
-import java.util.*
-import java.util.stream.Collectors.toList
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @SuppressLint("DefaultLocale", "UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,23 +57,13 @@ fun StatisticScreen(
     viewModel: StatisticViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val dailyRevenue by viewModel.dailyRevenue.collectAsState()
-    val totalWeekly by viewModel.totalWeekly.collectAsState()
-    val averageDaily by viewModel.averageDaily.collectAsState()
-    val growthPercent by viewModel.growthPercent.collectAsState()
-    val selectedWeek by viewModel.selectedWeek.collectAsState()
-    val weeksOfMonth by viewModel.weeksOfMonth.collectAsState()
     val isLoadingChart by viewModel.isLoadingChart.collectAsState()
     val format = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
 
-    var selectedDateLabel by remember { mutableStateOf("Pilih Tanggal") }
-    var expanded by remember { mutableStateOf(false) }
     var selectedMonth by remember { mutableStateOf(Calendar.getInstance().get(Calendar.MONTH)) }
     var selectedYear by remember { mutableStateOf(Calendar.getInstance().get(Calendar.YEAR)) }
     var incomeData by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-    var expenseData by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-//    var selectedRangeLabel by remember { mutableStateOf(format.format(Date())) }
-    var cashData by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+
     // label tanggal yang dipilih
     var selectedRangeLabel by remember {
         mutableStateOf(
@@ -84,9 +74,8 @@ fun StatisticScreen(
 
 
     LaunchedEffect(Unit) {
-        viewModel.loadRevenueAndExpenseRange(Date()) { i, e ->
+        viewModel.loadRevenueRange(Date()) { i ->
             incomeData = i
-            expenseData = e
         }
     }
 
@@ -99,7 +88,7 @@ fun StatisticScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 72.dp,),
+                .padding(horizontal = 72.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
@@ -115,14 +104,17 @@ fun StatisticScreen(
                         modifier = Modifier.padding(24.dp)
                     ) {
                         Text("Grafik Pendapatan", style = MaterialTheme.typography.displaySmall)
+                        Text(
+                            "Grafik untuk melihat pendapatan secara global",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                         Spacer(Modifier.height(4.dp))
                         LaunchedEffect(Unit) {
                             val now = Date()
                             selectedRangeLabel = format.format(now)
 
-                            viewModel.loadRevenueAndExpenseRange(now) { i, e ->
+                            viewModel.loadRevenueRange(now) { i ->
                                 incomeData = i
-                                expenseData = e
                             }
                         }
 
@@ -143,9 +135,8 @@ fun StatisticScreen(
                                             SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
                                         selectedRangeLabel = format.format(picked)
 
-                                        viewModel.loadRevenueAndExpenseRange(picked) { i, e ->
+                                        viewModel.loadRevenueRange(picked) { i ->
                                             incomeData = i
-                                            expenseData = e
                                         }
                                     },
                                     cal.get(Calendar.YEAR),
@@ -186,17 +177,18 @@ fun StatisticScreen(
                                 )
                             }
                         } else {
-                            DoubleBarChart(
+                            SingleBarChart(
                                 income = incomeData.values.toList(),
-                                cash = expenseData.values.toList(),
-                                labels = incomeData.keys.toList()
+                                labels = incomeData.keys.toList(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(260.dp)
                             )
                         }
                     }
                 }
             }
 
-            /** 🔹 Grafik Pertumbuhan Pendapatan */
             item {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
@@ -207,6 +199,10 @@ fun StatisticScreen(
                         Text(
                             "Pertumbuhan Pendapatan",
                             style = MaterialTheme.typography.displaySmall
+                        )
+                        Text(
+                            "Grafik untuk melihat pertumbuhan pendapatan (%) secara global",
+                            style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(Modifier.height(8.dp))
 
@@ -234,7 +230,11 @@ fun StatisticScreen(
                                     .fillMaxWidth(),
                                 readOnly = true,
                                 label = { Text("Periode") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                        expanded
+                                    )
+                                }
                             )
 
                             ExposedDropdownMenu(
@@ -279,134 +279,6 @@ fun StatisticScreen(
                     }
                 }
                 Spacer(Modifier.height(24.dp))
-            }
-
-
-//            /** 🔹 Row Ringkasan */
-//            item {
-//                Row(
-//                    horizontalArrangement = Arrangement.spacedBy(32.dp),
-//                    modifier = Modifier.fillMaxWidth()
-//                ) {
-//                    SummaryCard(
-//                        title = "Total Pendapatan",
-//                        value = DateUtils.rupiah(totalWeekly),
-//                        modifier = Modifier.weight(1f),
-//                        icon = painterResource(R.drawable.outline_edit_square_24),
-//                    )
-//                    SummaryCard(
-//                        title = "Rata-rata Harian",
-//                        value = DateUtils.rupiah(averageDaily),
-//                        modifier = Modifier.weight(1f),
-//                        icon = painterResource(R.drawable.outline_edit_square_24),
-//                    )
-//                    SummaryCard(
-//                        title = "Pertumbuhan",
-//                        value = String.format(
-//                            "%.1f%%",
-//                            growthPercent ?: 0f
-//                        ),
-//                        valueColor = when {
-//                            (growthPercent ?: 0f) > 0 -> Success
-//                            (growthPercent ?: 0f) < 0 -> Danger
-//                            else -> Color.Black
-//                        },
-//                        modifier = Modifier.weight(1f),
-//                        icon = painterResource(R.drawable.outline_edit_square_24),
-//                    )
-//                }
-//            }
-        }
-    }
-}
-
-@Composable
-fun WeeklyRevenueBarChart(
-    data: Map<String, Int>, // dari dailyRevenue
-    modifier: Modifier = Modifier
-) {
-    val entries = data.entries.mapIndexed { index, (label, value) ->
-        BarEntry(index.toFloat(), value.toFloat())
-    }
-
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            BarChart(context).apply {
-                setFitBars(true)
-                description.isEnabled = false
-                axisRight.isEnabled = false
-                legend.isEnabled = false
-
-                // sumbu X (hari)
-                xAxis.apply {
-                    valueFormatter = IndexAxisValueFormatter(data.keys.toList())
-                    position = XAxis.XAxisPosition.BOTTOM
-                    setDrawGridLines(false)
-                    granularity = 1f
-                    textColor = android.graphics.Color.DKGRAY
-                }
-
-                // sumbu Y kiri
-                axisLeft.apply {
-                    textColor = android.graphics.Color.DKGRAY
-                    setDrawGridLines(true)
-                    gridColor = android.graphics.Color.LTGRAY
-                }
-            }
-        },
-        update = { chart ->
-            val dataSet = BarDataSet(entries, "Pendapatan Harian").apply {
-                color = Primary.hashCode() // ubah sesuai warna tema
-                valueTextColor = android.graphics.Color.BLACK
-                valueTextSize = 12f
-            }
-
-            chart.data = BarData(dataSet)
-            chart.invalidate() // refresh
-        }
-    )
-}
-
-/** 🔹 Kartu Ringkasan */
-@Composable
-fun SummaryCard(
-    title: String,
-    value: String,
-    modifier: Modifier,
-    icon: Painter,
-    valueColor: Color = Color.Black
-) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        shadowElevation = 2.dp,
-        modifier = modifier
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Secondary,
-                modifier = Modifier.padding(end = 12.dp)
-            ) {
-                Icon(
-                    painter = icon,
-                    contentDescription = null,
-                    tint = PrimaryBold,
-                    modifier = Modifier.padding(10.dp)
-                )
-            }
-
-            Column(
-            ) {
-                Text(title, style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    value,
-                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
-                    color = valueColor
-                )
             }
         }
     }

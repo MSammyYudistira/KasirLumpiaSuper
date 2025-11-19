@@ -115,444 +115,440 @@ fun TransactionScreen(
         }
     }
 
-//    LaunchedEffect(Unit) {
-//        transactionViewModel.fetchQueuePreview()
-//    }
-
-
-    Row(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // =========================
-        // KIRI - DAFTAR PRODUK
-        // =========================
-
-        Column(
-            modifier = Modifier
-                .weight(2f)
-                .padding(end = 16.dp)
-        ) {
-            // TopBar kiri
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 2.dp,
-                shape = RoundedCornerShape(bottomEnd = 8.dp),
-            ) {
-                Row(
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    Text(
-                        text = "Detail Transaksi",
-                        style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-//            val products = listOf(
-//                Triple("Lumpia", 9000, R.drawable.lumpia),
-//                Triple("Tahu Lumpia", 9000, R.drawable.tahu_lumpia_3),
-//                Triple("Siomay", 10000, R.drawable.siomay_goreng),
-//                Triple("Siomay Basah", 10000, R.drawable.siomay_basah_2),
-//                Triple("Singkong Goreng", 20000, R.drawable.singkong_goreng),
-//                Triple("Mihun", 15000, R.drawable.mihun_2),
-//                Triple("Es Kacang Merah", 25000, R.drawable.es_kacang_merah),
-//                Triple("Air Mineral", 5000, R.drawable.air_mineral_2),
-//            )
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(products, key = { it.id }) { product ->
-                    ProductCard(
-                        name = product.name,
-                        price = product.price,
-                        imageUrl = product.imageUrl,
-                        modifier = Modifier,
-                        onFreeClick = {
-                            transactionViewModel.addItemToCurrentCup(
-                                OrderItem(
-                                    productId = product.id,
-                                    name = product.name,
-                                    unitPrice = product.price,
-                                    isFree = true,
-                                    imageUrl = product.imageUrl
-                                )
-                            )
-                        },
-                        onItemClick = {
-                            transactionViewModel.addItemToCurrentCup(
-                                OrderItem(
-                                    productId = product.id,
-                                    name = product.name,
-                                    unitPrice = product.price,
-                                    isFree = false,
-                                    imageUrl = product.imageUrl
-                                )
-                            )
-                        }
-                    )
-                }
-
-                // (Opsional) ketika belum ada produk sama sekali
-                if (products.isEmpty()) {
-                    item(span = { GridItemSpan(3) }) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Belum ada produk. Tambahkan dari Kelola Menu.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // =========================
-        // KANAN - KERANJANG (scrollable)
-        // =========================
-
-
-        Surface(
-            modifier = Modifier
-                .weight(1.2f)
-                .fillMaxHeight()
-                .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = Color.White,
-            shadowElevation = 4.dp
-        ) {
-            Box(Modifier.fillMaxSize()) {
-                // ==== HEADER: full-bleed, tidak kena padding ====
-                val headerHeight = 64.dp
-                Column {
-                    Surface(
-                        shape = RoundedCornerShape(
-                            topStart = 16.dp, topEnd = 16.dp,
-                            bottomStart = 0.dp, bottomEnd = 0.dp
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(headerHeight)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.padding(start = 16.dp)) {
-                                Surface(
-                                    color = Secondary,
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier
-                                        .size(40.dp)
-
-                                ) {
-                                    Box(
-                                        Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.outline_food_menu_24),
-                                            contentDescription = null,
-                                            tint = PrimaryBold,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                "Pesanan Nomor #${queueLabel(queuePreview)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f, fill = true),
-                        shadowElevation = 4.dp
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(16.dp)
-                        ) {
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-
-                                Button(
-                                    onClick = { transactionViewModel.addCup() },
-                                    shape = RoundedCornerShape(4.dp),
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(50.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(
-                                            0xFFE0F2FF
-                                        )
-                                    )
-                                ) {
-
-                                    Row(
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            painterResource(R.drawable.outline_add_24),
-                                            contentDescription = "add Cup",
-                                            tint = PrimaryBold
-                                        )
-                                        Text(
-                                            text = "Tambah Cup",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = PrimaryBold
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                if (cups.isNotEmpty()) {
-                                    ExposedDropdownMenuBox(
-                                        expanded = expanded,
-                                        onExpandedChange = { expanded = !expanded },
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        OutlinedTextField(
-                                            readOnly = true,
-                                            value = "Cup - $currentCup",
-                                            onValueChange = {},
-                                            label = { Text("Pilih Cup") },
-                                            trailingIcon = {
-                                                ExposedDropdownMenuDefaults.TrailingIcon(
-                                                    expanded = expanded
-                                                )
-                                            },
-                                            modifier = Modifier
-                                                .menuAnchor(),
-                                            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
-                                        )
-                                        ExposedDropdownMenu(
-                                            expanded = expanded,
-                                            onDismissRequest = { expanded = false }
-                                        ) {
-                                            cups.keys.sorted().forEach { cup ->
-                                                DropdownMenuItem(
-                                                    text = { Text("Cup - $cup") },
-                                                    onClick = {
-                                                        transactionViewModel.setCurrentCup(cup)
-                                                        expanded = false
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(
-                                    items = currentItems,
-                                    key = { it.productId + "-" + it.isFree }
-                                ) { item ->
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(height = 90.dp, width = 110.dp)
-                                                .background(Outline, RoundedCornerShape(8.dp)),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-//                                            Image(
-//                                                modifier = Modifier
-//                                                    .padding(16.dp),
-//                                                painter = painterResource(id = if (item.imageRes != 0) item.imageRes else R.drawable.lumper_logo),
-//                                                contentDescription = null
-//                                            )
-                                            AsyncImage(
-                                                model = item.imageUrl.ifBlank { R.drawable.lumper_logo },
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .padding(16.dp)
-                                                    .size(70.dp),
-                                                placeholder = painterResource(R.drawable.lumper_logo)
-                                            )
-
-                                        }
-
-                                        Spacer(modifier = Modifier.width(16.dp))
-
-                                        Column(
-                                            modifier = Modifier.weight(1f),
-                                            horizontalAlignment = Alignment.Start
-                                        ) {
-                                            Text(text = item.name, fontWeight = FontWeight.SemiBold)
-                                            Text(
-                                                text = if (item.isFree) "Rp 0" else "Rp ${item.unitPrice * item.qty}",
-                                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                                color = Color.Gray
-                                            )
-                                        }
-                                        AddButtonTransaction(
-                                            item = item,
-                                            transactionViewModel = transactionViewModel
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        shadowElevation = 4.dp,
-                        shape = RoundedCornerShape(8.dp)
-
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(16.dp)
-                        ) {
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Subtotal", style = MaterialTheme.typography.labelLarge)
-                                Text("Rp $subtotal", style = MaterialTheme.typography.labelLarge)
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-
-                            OutlinedTextField(
-                                value = if (showEmpty && discountInput == 0) "()" else "(${discountInput})",
-                                onValueChange = { input ->
-                                    // filter hanya angka
-                                    val onlyDigits = input.filter { it.isDigit() }
-                                    transactionViewModel.setDiscount(onlyDigits)
-                                },
-                                label = { Text("Discount") },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                textStyle = LocalTextStyle.current.copy(color = Success),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .onFocusChanged { focusState ->
-                                        if (focusState.isFocused) {
-                                            // Saat diklik, kosongkan tampilan kalau nilainya 0
-                                            showEmpty = true
-                                        } else {
-                                            // Saat kehilangan fokus, kembalikan angka jika kosong
-                                            if (discountInput == 0) showEmpty = false
-                                        }
-                                    },
-                                prefix = { Text("Rp ", color = Success) },
-                            )
-
-                            OutlinedTextField(
-                                value = notes,
-                                onValueChange = transactionViewModel::setNotes,
-                                label = { Text("Catatan") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Spacer(Modifier.height(8.dp))
-                            HorizontalDivider(thickness = 2.dp)
-                            Spacer(Modifier.height(4.dp))
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "Total",
-                                    style = MaterialTheme.typography.displaySmall,
-                                    color = Color.Black
-                                )
-
-                                Text("Rp $total", style = MaterialTheme.typography.displaySmall)
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-
-                            Button(
-                                onClick = {
-                                    if (isEditMode) {
-                                        transactionViewModel.commitEditedOrder(
-                                            dateKey!!,
-                                            queueNumber!!,
-                                            onSuccess = {
-                                                Toast.makeText(context, "Perubahan disimpan", Toast.LENGTH_SHORT).show()
-                                                navController.popBackStack() // kembali ke OrderDetailScreen
-                                            },
-                                            onError = { e ->
-                                                Toast.makeText(context, "Gagal: ${e.message}", Toast.LENGTH_SHORT).show()
-                                            }
-                                        )
-                                    } else {
-                                        // mode transaksi baru → lanjut ke pembayaran
-                                        if (isValid) {
-                                            navController.navigate(NavRoutes.Payment.route)
-                                        } else {
-                                            Toast.makeText(context, "Lengkapi pesanan & nama customer terlebih dahulu", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                },
-                                enabled = isValid,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(if (isEditMode) "Simpan Perubahan" else "Pilih Metode Pembayaran")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     if (isLoading) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White.copy(alpha = 0.6f)),
+                .background(Color.White.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(color = Primary)
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            // =========================
+            // KIRI - DAFTAR PRODUK
+            // =========================
+
+            Column(
+                modifier = Modifier
+                    .weight(2f)
+                    .padding(end = 16.dp)
+            ) {
+                // TopBar kiri
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 2.dp,
+                    shape = RoundedCornerShape(bottomEnd = 8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Text(
+                            text = "Detail Transaksi",
+                            style = MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(products, key = { it.id }) { product ->
+                        ProductCard(
+                            name = product.name,
+                            price = product.price,
+                            imageUrl = product.imageUrl,
+                            modifier = Modifier,
+                            onFreeClick = {
+                                transactionViewModel.addItemToCurrentCup(
+                                    OrderItem(
+                                        productId = product.id,
+                                        name = product.name,
+                                        unitPrice = product.price,
+                                        isFree = true,
+                                        imageUrl = product.imageUrl
+                                    )
+                                )
+                            },
+                            onItemClick = {
+                                transactionViewModel.addItemToCurrentCup(
+                                    OrderItem(
+                                        productId = product.id,
+                                        name = product.name,
+                                        unitPrice = product.price,
+                                        isFree = false,
+                                        imageUrl = product.imageUrl
+                                    )
+                                )
+                            }
+                        )
+                    }
+
+                    // (Opsional) ketika belum ada produk sama sekali
+                    if (products.isEmpty()) {
+                        item(span = { GridItemSpan(3) }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Belum ada produk. Tambahkan dari Kelola Menu.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // =========================
+            // KANAN - KERANJANG (scrollable)
+            // =========================
+
+
+            Surface(
+                modifier = Modifier
+                    .weight(1.2f)
+                    .fillMaxHeight()
+                    .padding(vertical = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                shadowElevation = 4.dp
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    // ==== HEADER: full-bleed, tidak kena padding ====
+                    val headerHeight = 64.dp
+                    Column {
+                        Surface(
+                            shape = RoundedCornerShape(
+                                topStart = 16.dp, topEnd = 16.dp,
+                                bottomStart = 0.dp, bottomEnd = 0.dp
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(headerHeight)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.padding(start = 16.dp)) {
+                                    Surface(
+                                        color = Secondary,
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier
+                                            .size(40.dp)
+
+                                    ) {
+                                        Box(
+                                            Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.outline_food_menu_24),
+                                                contentDescription = null,
+                                                tint = PrimaryBold,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    "Pesanan Nomor #${queueLabel(queuePreview)}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = true),
+                            shadowElevation = 4.dp
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                            ) {
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+
+                                    Button(
+                                        onClick = { transactionViewModel.addCup() },
+                                        shape = RoundedCornerShape(4.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(50.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(
+                                                0xFFE0F2FF
+                                            )
+                                        )
+                                    ) {
+
+                                        Row(
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                painterResource(R.drawable.outline_add_24),
+                                                contentDescription = "add Cup",
+                                                tint = PrimaryBold
+                                            )
+                                            Text(
+                                                text = "Tambah Cup",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = PrimaryBold
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(16.dp))
+
+                                    if (cups.isNotEmpty()) {
+                                        ExposedDropdownMenuBox(
+                                            expanded = expanded,
+                                            onExpandedChange = { expanded = !expanded },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            OutlinedTextField(
+                                                readOnly = true,
+                                                value = "Cup - $currentCup",
+                                                onValueChange = {},
+                                                label = { Text("Pilih Cup") },
+                                                trailingIcon = {
+                                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                                        expanded = expanded
+                                                    )
+                                                },
+                                                modifier = Modifier
+                                                    .menuAnchor(),
+                                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                                            )
+                                            ExposedDropdownMenu(
+                                                expanded = expanded,
+                                                onDismissRequest = { expanded = false }
+                                            ) {
+                                                cups.keys.sorted().forEach { cup ->
+                                                    DropdownMenuItem(
+                                                        text = { Text("Cup - $cup") },
+                                                        onClick = {
+                                                            transactionViewModel.setCurrentCup(cup)
+                                                            expanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                LazyColumn(
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(
+                                        items = currentItems,
+                                        key = { it.productId + "-" + it.isFree }
+                                    ) { item ->
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(height = 90.dp, width = 110.dp)
+                                                    .background(Outline, RoundedCornerShape(8.dp)),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                AsyncImage(
+                                                    model = item.imageUrl.ifBlank { R.drawable.lumper_logo },
+                                                    contentDescription = null,
+                                                    modifier = Modifier
+                                                        .padding(16.dp)
+                                                        .size(70.dp),
+                                                    placeholder = painterResource(R.drawable.lumper_logo)
+                                                )
+
+                                            }
+
+                                            Spacer(modifier = Modifier.width(16.dp))
+
+                                            Column(
+                                                modifier = Modifier.weight(1f),
+                                                horizontalAlignment = Alignment.Start
+                                            ) {
+                                                Text(
+                                                    text = item.name,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Text(
+                                                    text = if (item.isFree) "Rp 0" else "Rp ${item.unitPrice * item.qty}",
+                                                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                                                    color = Color.Gray
+                                                )
+                                            }
+                                            AddButtonTransaction(
+                                                item = item,
+                                                transactionViewModel = transactionViewModel
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shadowElevation = 4.dp,
+                            shape = RoundedCornerShape(8.dp)
+
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                            ) {
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Subtotal", style = MaterialTheme.typography.labelLarge)
+                                    Text(
+                                        "Rp $subtotal",
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+
+                                OutlinedTextField(
+                                    value = if (showEmpty && discountInput == 0) "()" else "(${discountInput})",
+                                    onValueChange = { input ->
+                                        // filter hanya angka
+                                        val onlyDigits = input.filter { it.isDigit() }
+                                        transactionViewModel.setDiscount(onlyDigits)
+                                    },
+                                    label = { Text("Discount") },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    textStyle = LocalTextStyle.current.copy(color = Success),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused) {
+                                                // Saat diklik, kosongkan tampilan kalau nilainya 0
+                                                showEmpty = true
+                                            } else {
+                                                // Saat kehilangan fokus, kembalikan angka jika kosong
+                                                if (discountInput == 0) showEmpty = false
+                                            }
+                                        },
+                                    prefix = { Text("Rp ", color = Success) },
+                                )
+
+                                OutlinedTextField(
+                                    value = notes,
+                                    onValueChange = transactionViewModel::setNotes,
+                                    label = { Text("Catatan") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                Spacer(Modifier.height(8.dp))
+                                HorizontalDivider(thickness = 2.dp)
+                                Spacer(Modifier.height(4.dp))
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Total",
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = Color.Black
+                                    )
+
+                                    Text("Rp $total", style = MaterialTheme.typography.displaySmall)
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (isEditMode) {
+                                            transactionViewModel.commitEditedOrder(
+                                                dateKey!!,
+                                                queueNumber!!,
+                                                onSuccess = {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Perubahan disimpan",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    navController.popBackStack() // kembali ke OrderDetailScreen
+                                                },
+                                                onError = { e ->
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Gagal: ${e.message}",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            )
+                                        } else {
+                                            // mode transaksi baru → lanjut ke pembayaran
+                                            if (isValid) {
+                                                navController.navigate(NavRoutes.Payment.route)
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Lengkapi pesanan & nama customer terlebih dahulu",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    },
+                                    enabled = isValid,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(if (isEditMode) "Simpan Perubahan" else "Pilih Metode Pembayaran")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -585,15 +581,6 @@ fun ProductCard(
                     .background(Outline, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-//                Image(
-//                    modifier = modifier
-//                        .size(125.dp)
-//                        .padding(8.dp),
-//                    painter = painterResource(image),
-//                    contentDescription = null,
-//                    alignment = Alignment.Center
-//                )
-
                 AsyncImage(
                     model = imageUrl.ifBlank { R.drawable.lumper_logo },
                     contentDescription = null,
@@ -602,7 +589,6 @@ fun ProductCard(
                         .padding(8.dp),
                     placeholder = painterResource(R.drawable.lumper_logo)
                 )
-
             }
             Spacer(Modifier.height(8.dp))
 
@@ -631,30 +617,7 @@ fun ProductCard(
                     )
                 }
             }
-
         }
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//private fun CardPreview() {
-//    KasirLumpiaSuperTheme {
-//        ProductCard(
-//            name = "Lumpia Super",
-//            price = 8000,
-//            modifier = Modifier.padding(8.dp),
-//            image = painterResource(R.drawable.lumpia_super)
-//        )
-//    }
-//}
-
-//@Preview(showBackground = true, device = Devices.TABLET)
-//@Composable
-//fun TransactionPreview() {
-//    KasirLumpiaSuperTheme {
-//        TransactionScreen(
-//            navController = rememberNavController()
-//        )
-//    }
-//}

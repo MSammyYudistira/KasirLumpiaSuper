@@ -1,14 +1,9 @@
 package com.example.kasirlumpiasuper.ui.components
 
-import android.R.attr.text
 import android.graphics.Color.DKGRAY
-import android.graphics.Color.toArgb
-import android.provider.SyncStateContract.Helpers.update
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -16,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.kasirlumpiasuper.ui.theme.Danger
 import com.example.kasirlumpiasuper.ui.theme.Success
-import com.example.kasirlumpiasuper.ui.theme.Warning
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
@@ -30,8 +24,8 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
-import androidx.core.graphics.toColorInt
-import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun DoubleBarChart(
@@ -47,20 +41,16 @@ fun DoubleBarChart(
             BarChart(context).apply {
                 description.isEnabled = false
                 axisRight.isEnabled = false
-
-                // 🔹 Konfigurasi Legend
                 legend.apply {
                     isEnabled = true
                     textSize = 12f
                     xEntrySpace = 12f
-                    yOffset = 10f // 🔹 turunkan posisi legend biar gak nempel chart
+                    yOffset = 10f
                     verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
-//                    horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
                     orientation = Legend.LegendOrientation.HORIZONTAL
-                    setDrawInside(false) // 🔹 legend di luar area chart
+                    setDrawInside(false)
                 }
 
-                // 🔹 Konfigurasi Sumbu X
                 xAxis.apply {
                     valueFormatter = IndexAxisValueFormatter(
                         labels.map { DateUtils.shortDayLabelFromKey(it) }
@@ -68,26 +58,22 @@ fun DoubleBarChart(
                     position = XAxis.XAxisPosition.BOTTOM
                     setDrawGridLines(false)
                     granularity = 1f
-                    yOffset = 6f // 🔹 geser label tanggal agak turun
-                    setCenterAxisLabels(true) // 🔹 biar label rata tengah di antara dua bar
-                    textColor = android.graphics.Color.DKGRAY
+                    yOffset = 6f
+                    setCenterAxisLabels(true)
+                    textColor = DKGRAY
                     textSize = 12f
                 }
 
-                // 🔹 Konfigurasi Sumbu Y (kiri)
                 axisLeft.apply {
-                    textColor = android.graphics.Color.DKGRAY
+                    textColor = DKGRAY
                     setDrawGridLines(true)
                     gridColor = android.graphics.Color.LTGRAY
                     gridLineWidth = 0.5f // garis halus
                 }
-
-                // 🔹 Tambahkan sedikit padding di sisi kanan/kiri
                 setExtraOffsets(8f, 0f, 8f, 0f)
             }
         },
         update = { chart ->
-            // 🔹 Jangan update kalau belum ada data
             if (income.isEmpty() || cash.isEmpty() || labels.isEmpty()) return@AndroidView
 
             val barEntriesIncome =
@@ -96,22 +82,21 @@ fun DoubleBarChart(
                 cash.mapIndexed { i, v -> BarEntry(i.toFloat(), v.toFloat()) }
 
             val dataSetIncome = BarDataSet(barEntriesIncome, "Pendapatan").apply {
-                color = Color(0xFF2196F3).toArgb() // biru
+                color = Color(0xFF2196F3).toArgb()
                 valueTextColor = android.graphics.Color.BLACK
                 valueTextSize = 10f
             }
 
             val dataSetCash = BarDataSet(barEntriesCash, "Pengeluaran").apply {
-                color = Danger.toArgb() // oranye
+                color = Danger.toArgb()
                 valueTextColor = android.graphics.Color.BLACK
                 valueTextSize = 10f
             }
 
-            // 🔹 Setup BarData
             val barData = BarData(dataSetIncome, dataSetCash)
-            val groupSpace = 0.26f // jarak antar grup bar (lebih kecil supaya muat semua)
-            val barSpace = 0.04f   // jarak antar bar dalam satu grup
-            val barWidth = 0.33f   // lebar batang
+            val groupSpace = 0.26f
+            val barSpace = 0.04f
+            val barWidth = 0.33f
 
             barData.barWidth = barWidth
             chart.data = barData
@@ -119,19 +104,70 @@ fun DoubleBarChart(
             val groupCount = labels.size
             val groupWidth = barData.getGroupWidth(groupSpace, barSpace)
 
-            // 🔹 Pastikan semua bar dan label terakhir kelihatan penuh
             chart.xAxis.axisMinimum = 0f
-            chart.xAxis.axisMaximum = groupWidth * groupCount + 0.4f // padding kanan
+            chart.xAxis.axisMaximum = groupWidth * groupCount + 0.4f
 
-            // 🔹 Terapkan pengelompokan bar
             chart.groupBars(0f, groupSpace, barSpace)
-
-            // 🔹 Animasi biar smooth
             chart.animateY(800)
             chart.invalidate()
         }
     )
 }
+
+@Composable
+fun SingleBarChart(
+    income: List<Int>,
+    labels: List<String>,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        factory = { context ->
+            BarChart(context).apply {
+
+                description.isEnabled = false
+                legend.isEnabled = false
+
+                val entries = income.mapIndexed { index, value ->
+                    BarEntry(index.toFloat(), value.toFloat())
+                }
+
+                val dataSet = BarDataSet(entries, null).apply {
+                    valueTextSize = 12f
+                    setDrawValues(true)
+                }
+                dataSet.color = Color(0xFF2196F3).toArgb()
+
+                data = BarData(dataSet)
+
+                xAxis.apply {
+                    valueFormatter = IndexAxisValueFormatter(
+                        labels.map { DateUtils.shortDayLabelFromKey(it) }
+                    )
+                    position = XAxis.XAxisPosition.BOTTOM
+                    granularity = 1f
+                    setDrawGridLines(false)
+                    setDrawAxisLine(false)
+                    textSize = 10f
+                    textColor = DKGRAY
+                }
+
+                axisLeft.apply {
+                    setDrawGridLines(true)
+                    setDrawAxisLine(false)
+                    textSize = 10f
+                    textColor = DKGRAY
+                }
+
+                axisRight.isEnabled = false
+
+                animateY(800)
+            }
+        },
+        modifier = modifier
+    )
+}
+
+
 
 @Composable
 fun GrowthLineChart(
@@ -154,11 +190,11 @@ fun GrowthLineChart(
                     setDrawGridLines(false)
                     granularity = 1f
                     yOffset = 6f
-                    textColor = android.graphics.Color.DKGRAY
+                    textColor = DKGRAY
                 }
 
                 axisLeft.apply {
-                    textColor = android.graphics.Color.DKGRAY
+                    textColor = DKGRAY
                     setDrawGridLines(true)
                     gridColor = android.graphics.Color.LTGRAY
                     gridLineWidth = 0.5f
@@ -181,21 +217,19 @@ fun GrowthLineChart(
                 valueTextSize = 10f
                 mode = LineDataSet.Mode.CUBIC_BEZIER
 
-                // ✅ Format label jadi "10%" atau "-5%"
                 valueFormatter = object : ValueFormatter() {
                     override fun getPointLabel(entry: Entry?): String {
                         val y = entry?.y ?: 0f
-                        val symbol = if (y > 0) "+" else "" // tambahkan + untuk nilai positif
+                        val symbol = if (y > 0) "+" else ""
                         return "$symbol${y.toInt()}%"
                     }
                 }
 
-                // ✅ Pewarnaan titik label per data
                 val textColors = entries.map { e ->
                     when {
-                        e.y < 0f  -> Danger.toArgb()       // merah
-                        e.y == 0f -> Color.DarkGray.toArgb()  // netral
-                        else      -> Success.toArgb()      // hijau
+                        e.y < 0f  -> Danger.toArgb()
+                        e.y == 0f -> Color.DarkGray.toArgb()
+                        else      -> Success.toArgb()
                     }
                 }
                 setValueTextColors(textColors)
@@ -204,7 +238,6 @@ fun GrowthLineChart(
             val lineData = LineData(dataSet)
             chart.data = lineData
 
-            // ✅ Sumbu Y dinamis biar tidak terpotong
             val minY = (growthData.values.minOrNull() ?: -100f) - 10
             val maxY = (growthData.values.maxOrNull() ?: 100f) + 10
             chart.axisLeft.axisMinimum = minY

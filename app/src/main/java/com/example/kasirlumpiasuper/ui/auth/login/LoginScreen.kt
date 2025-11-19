@@ -53,12 +53,8 @@ fun LoginScreen(
     navController: NavHostController,
     loginViewModel: LoginViewModel = viewModel(),
     authViewModel: AuthViewModel,
-    dashboardViewModel: DashboardViewModel = viewModel(navController.getBackStackEntry("main"))
+    dashboardViewModel: DashboardViewModel? = viewModel(navController.getBackStackEntry("main"))
 ) {
-//    val parentEntry = remember(navController) {
-//        navController.getBackStackEntry(NavRoutes.AuthCheck.route)
-//    }
-//    val authViewModel: AuthViewModel = viewModel(parentEntry)
 
     val loginState by loginViewModel.loginState.collectAsState()
     val context = LocalContext.current

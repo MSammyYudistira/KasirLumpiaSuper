@@ -1,7 +1,6 @@
 package com.example.kasirlumpiasuper.ui.utils
 
 import android.icu.text.NumberFormat
-import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -70,27 +69,6 @@ object DateUtils {
         return result
     }
 
-    fun getDayName(dateString: String): String {
-        return try {
-            val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
-            val date = format.parse(dateString)
-            val dayFormat = SimpleDateFormat("EEE", idLocale) // contoh output: "Sen", "Sel", "Rab"
-            dayFormat.format(date ?: Date())
-        } catch (e: Exception) {
-            "-"
-        }
-    }
-
-
-    fun getWeekOfMonthFromDate(date: Date): Int {
-        val cal = Calendar.getInstance(idLocale)
-        cal.time = date
-        return cal.get(Calendar.WEEK_OF_MONTH)
-    }
-
-    fun formatDateRange(weekRange: WeekRange): String {
-        return "${weekRange.startDate} – ${weekRange.endDate}"
-    }
 
     fun get7DayKeysFrom(date: Date): List<String> {
         val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
@@ -140,16 +118,6 @@ object DateUtils {
         return keys.reversed()
     }
 
-
-    fun format7DayRangeLabel(start: Date): String {
-        val format = SimpleDateFormat("dd MMMM yyyy", idLocale)
-        val cal = Calendar.getInstance(idLocale)
-        cal.time = start
-        val startLabel = format.format(start)
-        cal.add(Calendar.DAY_OF_MONTH, 6)
-        val endLabel = format.format(cal.time)
-        return "$startLabel – $endLabel"
-    }
 
     fun shortDayLabelFromKey(dateKey: String): String {
         return try {

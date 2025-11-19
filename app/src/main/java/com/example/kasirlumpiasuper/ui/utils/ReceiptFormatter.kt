@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.utils
 
-import android.util.Log
 import com.example.kasirlumpiasuper.data.model.Order
 import com.example.kasirlumpiasuper.data.model.PaymentMethod
 import java.text.SimpleDateFormat

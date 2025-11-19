@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.recap
 
-import android.R.string.ok
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
@@ -14,7 +13,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,7 +50,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.CashAtRegister
@@ -285,8 +282,9 @@ fun DetailRecapScreen(
                         if (showPdfDialog && generatedPdfUri != null) {
                             AlertDialog(
                                 onDismissRequest = { showPdfDialog = false },
-                                title = { Text("Rekapan Disimpan") },
-                                text = { Text("Rekapan telah disimpan dalam bentuk PDF di folder Download. Apakah kamu ingin membukanya sekarang?") },
+                                containerColor = Color.White,
+                                title = { Text("Rekapan Disimpan", style = MaterialTheme.typography.displaySmall) },
+                                text = { Text("Rekapan telah disimpan dalam bentuk PDF di folder Download. Apakah kamu ingin membukanya sekarang?", style = MaterialTheme.typography.bodyMedium) },
                                 confirmButton = {
                                     TextButton(onClick = {
                                         showPdfDialog = false
@@ -846,150 +844,3 @@ fun TableCell(
     )
 }
 
-@Composable
-fun RecapCard(
-    title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        shadowElevation = 2.dp,
-        modifier = modifier
-    ) {
-        Column(
-            Modifier.padding(16.dp)
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-fun RecapTable(rows: List<ProductRecapRow>) {
-    val columnWeights = listOf(2f, 1f, 1f, 1f, 1f, 1.5f)
-    val alignments = listOf(
-        TextAlign.Start,  // Nama Makanan
-        TextAlign.Center, // Stok Awal
-        TextAlign.Center, // Stok Akhir
-        TextAlign.Center, // Rusak/Retur
-        TextAlign.Center, // Terjual
-        TextAlign.End     // Pendapatan
-    )
-
-
-    val headers =
-        listOf(
-            "Nama Makanan",
-            "Stok Awal",
-            "Stok Akhir",
-            "Rusak / Retur",
-            "Terjual",
-            "Pendapatan"
-        )
-
-    Column(Modifier.fillMaxWidth()) {
-        // 🔹 Header
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .background(Secondary)
-                .padding(vertical = 8.dp, horizontal = 16.dp)
-        ) {
-            headers.forEachIndexed { index, text ->
-                TableCell(
-                    text = text,
-                    modifier = Modifier.weight(columnWeights[index]),
-                    bold = true,
-                    align = alignments[index]
-                )
-            }
-        }
-
-        // 🔹 Isi Data
-        rows.forEachIndexed { idx, row ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 16.dp)
-            ) {
-                TableCell(row.name, Modifier.weight(columnWeights[0]), align = alignments[0])
-                TableCell(
-                    "${row.initialStock}",
-                    Modifier.weight(columnWeights[1]),
-                    align = alignments[1]
-                )
-                TableCell(
-                    "${row.endingStock}",
-                    Modifier.weight(columnWeights[2]),
-                    align = alignments[2]
-                )
-                TableCell(
-                    "${row.damagedStock}",
-                    Modifier.weight(columnWeights[3]),
-                    align = alignments[3]
-                )
-                TableCell(
-                    "${row.sold}",
-                    Modifier.weight(columnWeights[4]),
-                    align = alignments[4]
-                )
-                TableCell(
-                    DateUtils.rupiah(row.revenue),
-                    Modifier.weight(columnWeights[5]),
-                    align = alignments[5]
-                )
-            }
-            if (idx < rows.lastIndex) Divider(color = Color(0xFFDDDDDD), thickness = 1.dp)
-//                row.forEachIndexed { index, text ->
-//                    TableCell(
-//                        text = text,
-//                        modifier = Modifier.weight(columnWeights[index]),
-//                        align = alignments[index]
-//                    )
-//                }
-        }
-
-//            if (rowIndex < data.lastIndex) {
-//                Divider(color = Color(0xFFDDDDDD), thickness = 1.dp)
-//            }
-    }
-
-    // 🔹 Footer (Total)
-    val totalSold = rows.sumOf { it.sold }
-    val totalRevenue = rows.sumOf { it.revenue }
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(Secondary)
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-    ) {
-        TableCell(
-            "Total",
-            Modifier.weight(columnWeights[0]),
-            bold = true,
-            align = alignments[0]
-        )
-        TableCell("", Modifier.weight(columnWeights[1]))
-        TableCell("", Modifier.weight(columnWeights[2]))
-        TableCell("", Modifier.weight(columnWeights[3]))
-        TableCell(
-            "$totalSold",
-            Modifier.weight(columnWeights[4]),
-            bold = true,
-            align = alignments[4]
-        )
-        TableCell(
-            DateUtils.rupiah(totalRevenue),
-            Modifier.weight(columnWeights[5]),
-            bold = true,
-            align = alignments[5]
-        )
-    }
-}

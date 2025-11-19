@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 
 class HistoryViewModel : ViewModel() {
 
-    private val db = FirebaseFirestore.getInstance()
     private val repository: FirestoreRepository = FirestoreRepository()
 
     /** 🔹 Tanggal aktif — pakai format label "29 September 2025" */

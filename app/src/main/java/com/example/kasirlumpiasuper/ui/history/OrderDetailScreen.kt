@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.history
 
-import android.R.attr.onClick
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,12 +17,9 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -46,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
-import com.example.kasirlumpiasuper.ui.theme.Danger
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
@@ -479,8 +474,9 @@ fun OrderDetailScreen(
                             if (openDialog.value) {
                                 AlertDialog(
                                     onDismissRequest = { openDialog.value = false },
-                                    title = { Text("Hapus Transaksi") },
-                                    text = { Text("Apakah kamu yakin ingin menghapus transaksi ini? Tindakan ini tidak bisa dibatalkan.") },
+                                    containerColor = Color.White,
+                                    title = { Text("Hapus Transaksi", style = MaterialTheme.typography.displaySmall) },
+                                    text = { Text("Apakah kamu yakin ingin menghapus transaksi ini? Tindakan ini tidak bisa dibatalkan.", style = MaterialTheme.typography.bodyMedium) },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             openDialog.value = false

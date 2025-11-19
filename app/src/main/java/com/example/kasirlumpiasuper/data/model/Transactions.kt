@@ -37,7 +37,6 @@ data class OrderItem(
     val cupIndex: Int = 1, // Cup-1, Cup-2 ...
     @get:PropertyName("free") @set:PropertyName("free")
     var isFree: Boolean = false,
-//    val imageRes: Int = 0
     val imageUrl: String = ""
 
 )

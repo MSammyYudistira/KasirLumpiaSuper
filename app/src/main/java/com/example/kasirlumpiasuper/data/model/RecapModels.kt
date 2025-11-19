@@ -1,8 +1,5 @@
 package com.example.kasirlumpiasuper.data.model
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.ServerTimestamp
-
 data class StockInputItem(
     val productId: String = "",
     val name: String = "",
@@ -29,7 +26,7 @@ data class ProductRecapRow(
     val productId: String = "",
     val name: String = "",
     val initialStock: Int = 0,
-    val endingStock: Int = 0,   // diambil dari rekap kemarin (kalau ada), else 0
+    val endingStock: Int = 0,
     val damagedStock: Int = 0,
     val sold: Int = 0,
     val revenue: Int = 0
@@ -51,8 +48,8 @@ data class ExpenseSummary(
 data class GrossSection(
     val sum1: Int = 0,          // total pendapatan dari table makanan
     val nonCash: Int = 0,       // total transaksi non tunai
-    val expenseToday: Int = 0,  // dari ExpenseSummary.sum
-    val sum2: Int = 0,          // sum1 - nonCash - expenseToday (laba bersih tunai)
+    val expenseToday: Int = 0,
+    val sum2: Int = 0,          // sum1 - nonCash - expenseToday
     val sum3: Int = 0,          // sum 2 + cashOpening = sum3
     val cashOpening: Int = 0    // dari StockMeta hari pertama, atau dari “Uang Kecil” hari kemarin
 )

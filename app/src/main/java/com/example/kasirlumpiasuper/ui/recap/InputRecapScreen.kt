@@ -1,10 +1,5 @@
 package com.example.kasirlumpiasuper.ui.recap
 
-import android.R.attr.digits
-import android.R.attr.textStyle
-import android.R.id.input
-import android.net.Uri
-import android.os.Debug
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -21,14 +16,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key.Companion.D
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -36,10 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.data.model.RecapInput
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
-import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.example.kasirlumpiasuper.ui.theme.Surface
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
 
 @Composable
 fun InputRecapScreen(

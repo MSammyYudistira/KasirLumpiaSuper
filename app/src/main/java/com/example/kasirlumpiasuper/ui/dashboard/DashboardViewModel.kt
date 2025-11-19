@@ -1,26 +1,19 @@
 package com.example.kasirlumpiasuper.ui.dashboard
 
-import android.icu.util.Calendar
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.data.PreferencesManager
-import com.example.kasirlumpiasuper.data.Result
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class DashboardViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
@@ -41,28 +34,23 @@ class DashboardViewModel(
     private val _grandTotalToday = MutableStateFlow(0)
     val grandTotalToday: StateFlow<Int> = _grandTotalToday
 
-    private val _queuePreview = MutableStateFlow<Int?>(null)
-    val queuePreview: StateFlow<Int?> = _queuePreview
-
     private val _isNewDay = MutableStateFlow(false)
     val isNewDay: StateFlow<Boolean> = _isNewDay
 
     private val _manualResetRequired = MutableStateFlow(false)
     val manualResetRequired: StateFlow<Boolean> = _manualResetRequired
 
-    private val _isLoadingCustomerCount = MutableStateFlow(false)
-    val isLoadingCustomerCount: StateFlow<Boolean> = _isLoadingCustomerCount
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _businessDate = MutableStateFlow(BusinessDateManager.getBusinessDateLabel())
     val businessDate: StateFlow<String> = _businessDate
 
-    // --------------------------------------------------------------------
-    // 🔹 FETCH TOTAL PENDAPATAN HARI INI
-    // --------------------------------------------------------------------
     fun fetchTodayRevenue() {
         val dateKey = BusinessDateManager.getBusinessDateLabel()
 
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
 
@@ -71,72 +59,87 @@ class DashboardViewModel(
                     .document(userId)
                     .collection("orders")
                     .document(dateKey)
-                    .collection("entries") // atau langsung .collection(dateKey) kalau tanpa subcollection
+                    .collection("entries")
                     .get()
                     .addOnSuccessListener { snapshot ->
                         val total = snapshot.documents.sumOf { doc ->
                             doc.getLong("total")?.toInt() ?: 0
                         }
                         _grandTotalToday.value = total
-                        println("✅ Total pendapatan hari ini: $total")
                     }
-                    .addOnFailureListener { e ->
-                        println("❌ Gagal ambil pendapatan: ${e.message}")
+                    .addOnFailureListener {
                         _grandTotalToday.value = 0
                     }
+                    .addOnCompleteListener {
+                        _isLoading.value = false
+                    }
             } catch (e: Exception) {
-                println("❌ Error fetchTodayRevenue: ${e.message}")
                 _grandTotalToday.value = 0
+                _isLoading.value = false
             }
         }
     }
 
-    // --------------------------------------------------------------------
-    // 🔹 CEK APAKAH STOK SUDAH DIISI HARI INI
-    // --------------------------------------------------------------------
-    fun isStockFilledToday(isStockFilled: Boolean) {
+
+    fun isStockFilledToday() {
         viewModelScope.launch {
-            val today = BusinessDateManager.getBusinessDateLabel()
-            val filled = repository.isStockFilled(today)
+            _isLoading.value = true
+            val date = businessDate.value   // ← BUKAN tanggal sistem
+            val filled = repository.isStockFilled(date)
             _stockFilledToday.value = filled
+            _isLoading.value = false
         }
     }
 
-    // --------------------------------------------------------------------
-    // 🔹 RESET STOK & KAS HARIAN
-    // --------------------------------------------------------------------
-    fun resetStock() {
+
+    fun observeBusinessDate(prefs: PreferencesManager) {
         viewModelScope.launch {
-            try {
-                val dateKey = BusinessDateManager.getBusinessDateLabel()
-                repository.resetStockForDate(dateKey)
-                _stockFilledToday.value = false
-                println("✅ Stok berhasil di-reset untuk $dateKey")
-            } catch (e: Exception) {
-                println("❌ Gagal reset stok: ${e.message}")
+            prefs.lastBusinessDateFlow.collect { savedDate ->
+                if (savedDate != null) {
+                    _businessDate.value = savedDate
+                }
             }
         }
     }
 
-    fun resetCash() {
-        viewModelScope.launch {
-            try {
-                val dateKey = BusinessDateManager.getBusinessDateLabel()
-                repository.resetCashForDate(dateKey)
-                _cashFilledToday.value = false
-                println("✅ Kas berhasil di-reset untuk $dateKey")
-            } catch (e: Exception) {
-                println("❌ Gagal reset kas: ${e.message}")
-            }
-        }
-    }
+//    fun resetStock() {
+//        _stockFilledToday.value = false
+//    }
+//
+//    fun resetCash() {
+//        _cashFilledToday.value = false
+//    }
 
-    // --------------------------------------------------------------------
-    // 🔹 JUMLAH PELANGGAN HARI INI (DENGAN FILTER OPSIONAL)
-    // --------------------------------------------------------------------
+
+//    fun resetStock() {
+//        viewModelScope.launch {
+//            try {
+//                val dateKey = BusinessDateManager.getBusinessDateLabel()
+//                repository.resetStockForDate(dateKey)
+//                _stockFilledToday.value = false
+//                println("✅ Stok berhasil di-reset untuk $dateKey")
+//            } catch (e: Exception) {
+//                println("❌ Gagal reset stok: ${e.message}")
+//            }
+//        }
+//    }
+//
+//    fun resetCash() {
+//        viewModelScope.launch {
+//            try {
+//                val dateKey = BusinessDateManager.getBusinessDateLabel()
+//                repository.resetCashForDate(dateKey)
+//                _cashFilledToday.value = false
+//                println("✅ Kas berhasil di-reset untuk $dateKey")
+//            } catch (e: Exception) {
+//                println("❌ Gagal reset kas: ${e.message}")
+//            }
+//        }
+//    }
+
     fun checkCustomerCountToday(filterByCashierId: String? = null) {
         val dateKey = BusinessDateManager.getBusinessDateLabel()
-        _isLoadingCustomerCount.value = true
+        _isLoading.value = true
 
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
@@ -145,7 +148,7 @@ class DashboardViewModel(
             .document(userId)
             .collection("orders")
             .document(dateKey)
-            .collection("entries") // atau langsung .collection(dateKey) jika tidak pakai subcollection
+            .collection("entries")
 
         if (!filterByCashierId.isNullOrBlank()) {
             query = query.whereEqualTo("cashierId", filterByCashierId) as CollectionReference
@@ -154,95 +157,73 @@ class DashboardViewModel(
         query.get()
             .addOnSuccessListener { snapshot ->
                 _customerCountToday.value = snapshot.size()
-                _isLoadingCustomerCount.value = false
+                _isLoading.value = false
                 println("✅ Jumlah pelanggan hari ini: ${snapshot.size()}")
             }
             .addOnFailureListener { e ->
                 e.printStackTrace()
                 _customerCountToday.value = 0
-                _isLoadingCustomerCount.value = false
+                _isLoading.value = false
                 println("❌ Gagal ambil jumlah pelanggan: ${e.message}")
             }
     }
 
-    // --------------------------------------------------------------------
-    // 🔹 AMBIL NOMOR ANTRIAN TERBARU
-    // --------------------------------------------------------------------
-    fun fetchQueuePreview() {
-        viewModelScope.launch {
-            try {
-                val dateKey = BusinessDateManager.getBusinessDateLabel()
-                when (val result = repository.getNextQueueNumber(dateKey)) {
-                    is Result.Success -> {
-                        _queuePreview.value = result.data
-                    }
-
-                    is Result.Error -> {
-                        _queuePreview.value = 1 // fallback jika gagal
-                        println("❌ Gagal mendapatkan queue number: ${result.error}")
-                    }
-                }
-            } catch (e: Exception) {
-                _queuePreview.value = 1
-                println("❌ Exception saat fetchQueuePreview: ${e.message}")
-            }
-        }
-    }
-
-    // --------------------------------------------------------------------
-    // 🔹 RESET HARIAN (SETELAH HARI BERGANTI)
-    // --------------------------------------------------------------------
     suspend fun resetDailyData(
         prefs: PreferencesManager,
         currentDate: String,
-        viewModel: DashboardViewModel,
         navController: NavHostController
     ) {
-        viewModel.resetStock()
-        viewModel.resetCash()
+        _isLoading.value = true
 
+        // RESET STATE HARI INI SAJA (JANGAN HAPUS DATA FIRESTORE)
+        _stockFilledToday.value = false
+//        _cashFilledToday.value = false
+
+        delay(500)
+        // UPDATE TANGGAL BISNIS
         prefs.saveLastBusinessDate(currentDate)
-
-        viewModel.fetchQueuePreview()
+        BusinessDateManager.lockTo(currentDate)
+        _businessDate.value = currentDate
+        prefs.saveManualLock(true, currentDate)
 
         navController.navigate(NavRoutes.AuthCheck.route) {
             popUpTo(NavRoutes.Dashboard.route) { inclusive = false }
         }
+
+        _isLoading.value = false
     }
+
 
     // --------------------------------------------------------------------
     // 🔹 CEK APAKAH HARI BERGANTI
     // --------------------------------------------------------------------
     fun initializeBusinessDay(prefs: PreferencesManager) {
         viewModelScope.launch {
-            if (prefs.isManualLockActive()) {
-                prefs.getLockedDate()?.let {
-                    BusinessDateManager.lockTo(it)
-                    _businessDate.value = it
-                }
+            val savedDate = prefs.getLastBusinessDate()
+            if (savedDate != null) {
+                BusinessDateManager.lockTo(savedDate)   // WAJIB
+                _businessDate.value = savedDate
             } else {
                 val today = BusinessDateManager.getCurrentSystemDateLabel()
-                BusinessDateManager.releaseLock()
+                BusinessDateManager.lockTo(today)       // WAJIB
+                prefs.saveLastBusinessDate(today)
                 _businessDate.value = today
             }
         }
     }
 
+
     fun updateBusinessDate(date: String, prefs: PreferencesManager) {
         viewModelScope.launch {
+            _isLoading.value = true
             BusinessDateManager.lockTo(date)
+            prefs.saveLastBusinessDate(date)     // WAJIB
             prefs.saveManualLock(true, date)
             _businessDate.value = date
+            _isLoading.value = false
         }
     }
 
-    fun setManualBusinessDate(prefs: PreferencesManager, newDate: String) {
-        viewModelScope.launch {
-            BusinessDateManager.lockTo(newDate)
-            prefs.saveManualLock(true, newDate)
-            println("📅 Manual lock diubah ke $newDate")
-        }
-    }
 
     fun rejectAutoReset(prefs: PreferencesManager) {
         viewModelScope.launch {

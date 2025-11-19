@@ -1,6 +1,5 @@
 package com.example.kasirlumpiasuper.ui.utils
 
-import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.OrderItem
 import kotlin.collections.map
 
@@ -33,21 +32,6 @@ import kotlin.collections.map
             "imageUrl" to (item.imageUrl ?: "")
         )
 
-        /**
-         * Map mentah Firestore → OrderItem (null-safe + tipe aman).
-         * Field yang tidak ada akan diisi default yang aman.
-         */
-        fun fromMap(m: Map<String, Any?>): OrderItem = OrderItem(
-            productId = m.getString("productId"),
-            name = m.getString("name"),
-            qty = m.getInt("qty"),
-            unitPrice = m.getInt("unitPrice"),
-            isFree = m.getBool("free"),
-            cupIndex = m.getInt("cupIndex").takeIf { it > 0 } ?: 1,
-            originalUnitPrice = m.getInt("originalUnitPrice"),
-            imageUrl = m.getString("imageUrl")
-        )
-
         /** List<OrderItem> → List<Map<String, Any>> */
         fun itemsToMapList(items: List<OrderItem>): List<Map<String, Any>> =
             items.map(::toMap)
@@ -68,21 +52,6 @@ import kotlin.collections.map
                     cupIndex = (map["cupIndex"] as? Long)?.toInt() ?: 1,
                     imageUrl = (map["imageUrl"] as? String) ?: "",
                 )
-            }
-        }
-
-        // 🔹 fallback resolver untuk gambar berdasarkan nama produk
-        private fun resolveImageResByName(name: String): Int {
-            return when (name) {
-                "Lumpia" -> R.drawable.lumpia
-                "Tahu Lumpia" -> R.drawable.tahu_lumpia_3
-                "Siomay" -> R.drawable.siomay_goreng
-                "Siomay Basah" -> R.drawable.siomay_basah_2
-                "Singkong Goreng" -> R.drawable.singkong_goreng
-                "Mihun" -> R.drawable.mihun_2
-                "Es Kacang Merah" -> R.drawable.es_kacang_merah
-                "Air Mineral" -> R.drawable.air_mineral
-                else -> R.drawable.lumper_logo
             }
         }
 

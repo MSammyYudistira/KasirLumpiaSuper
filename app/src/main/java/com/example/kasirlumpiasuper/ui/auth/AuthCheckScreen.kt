@@ -43,18 +43,14 @@ fun AuthCheckScreen(
 
             val context = LocalContext.current
             val prefs = remember { PreferencesManager(context) }
-            val dashboardViewModel: DashboardViewModel = viewModel()
-
-            // Gunakan key authState agar LaunchedEffect hanya trigger saat benar-benar berubah
             LaunchedEffect(authState) {
-                dashboardViewModel.initializeBusinessDay(prefs)
-
                 navController.navigate("main") {
                     popUpTo(NavRoutes.AuthCheck.route) { inclusive = true }
                     launchSingleTop = true
                     restoreState = true
                 }
             }
+
         }
 
         is AuthState.LoggedOut -> {

@@ -32,20 +32,16 @@ class AuthViewModel(private val context: Context) : ViewModel() {
         val user = firebaseAuth.currentUser
         if (user == null) {
             Log.d("AuthDebug", "AuthStateListener → LoggedOut")
-            // Jangan langsung ubah ke LoggedOut, tunggu fallback DataStore dulu
             viewModelScope.launch {
                 val prefs = context.datastore.data.first()
                 val savedUid = prefs[DataStoreKeys.User_UID]
-                val savedRole = prefs[DataStoreKeys.User_ROLE]   // ⬅️ ambil role cached
+                val savedRole = prefs[DataStoreKeys.User_ROLE]
 
                 if (savedUid != null && !savedRole.isNullOrBlank()) {
-                    // ⬅️ Langsung anggap logged in berdasarkan cache
                     _authState.value = AuthState.LoggedIn(savedRole)
 
-                    // (Opsional) verifikasi ke Firestore di background
                     fetchUserRole(savedUid)
                 } else if (savedUid != null) {
-                    // fallback lama: coba fetch role dari Firestore
                     fetchUserRole(savedUid)
                 } else {
                     _authState.value = AuthState.LoggedOut
@@ -66,7 +62,7 @@ class AuthViewModel(private val context: Context) : ViewModel() {
     private fun fetchUserRole(uid: String) {
         Log.d("AuthDebug", "fetchUserRole() dipanggil untuk UID: $uid")
 
-        _authState.value = AuthState.Loading // 🔹 Tambahan: beri tahu UI sedang ambil data
+        _authState.value = AuthState.Loading
 
         firestore.collection("users").document(uid)
             .get()
@@ -75,14 +71,12 @@ class AuthViewModel(private val context: Context) : ViewModel() {
                     val role = doc.getString("role") ?: "kasir"
                     Log.d("AuthDebug", "Firestore success → role: $role")
 
-                    // 🔹 Log semua field penting
                     val name = doc.getString("name") ?: "(tidak ada nama)"
                     val email = doc.getString("email") ?: "(tidak ada email)"
                     Log.d(
                         "AuthDebug",
                         "UserData: name=$name, email=$email, role=$role"
                     )
-
                     _authState.value = AuthState.LoggedIn(role)
                     Log.d("AuthDebug", "_authState diubah ke LoggedIn($role)")
                 } else {
@@ -101,14 +95,12 @@ class AuthViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch {
             Log.d("AuthDebug", "Logout user dan bersihkan cache")
 
-            // 🔹 Bersihkan DataStore dulu
             context.datastore.edit { prefs ->
                 prefs.remove(DataStoreKeys.User_UID)
                 prefs.remove(DataStoreKeys.User_ROLE)
                 prefs.remove(DataStoreKeys.User_NAME)
             }
 
-            // 🔹 Cek dulu apakah ada Firebase user sebelum signOut
             val currentUser = auth.currentUser
             if (currentUser != null) {
                 try {

@@ -1,22 +1,17 @@
 package com.example.kasirlumpiasuper.ui.utils
 
-import android.util.Log
 import com.example.kasirlumpiasuper.data.model.CashAtRegister
 import com.example.kasirlumpiasuper.data.model.DailyRecap
 import com.example.kasirlumpiasuper.data.model.ExpenseSummary
 import com.example.kasirlumpiasuper.data.model.FreeSummary
 import com.example.kasirlumpiasuper.data.model.GrossSection
 import com.example.kasirlumpiasuper.data.model.Order
-import com.example.kasirlumpiasuper.data.model.OrderItem
 import com.example.kasirlumpiasuper.data.model.PaymentMethod
 import com.example.kasirlumpiasuper.data.model.ProductRecapRow
 import com.example.kasirlumpiasuper.data.model.RecapInput
 import com.example.kasirlumpiasuper.data.model.StockInputItem
 import com.example.kasirlumpiasuper.data.model.StockMeta
 import com.google.firebase.auth.FirebaseAuth
-import kotlin.collections.filter
-import kotlin.collections.flatMap
-import kotlin.collections.map
 
 object RecapUtils {
 

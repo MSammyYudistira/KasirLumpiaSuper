@@ -9,12 +9,10 @@ import com.example.kasirlumpiasuper.data.model.OrderItem
 import com.example.kasirlumpiasuper.data.model.PaymentMethod
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.example.kasirlumpiasuper.domain.error.DomainError
-import com.example.kasirlumpiasuper.domain.error.ErrorMapper
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager.getBusinessDateLabel
 import com.example.kasirlumpiasuper.ui.utils.OrderCalculator
 import com.example.kasirlumpiasuper.ui.utils.OrderMapper
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +36,6 @@ class TransactionViewModel(
     val currentCupIndex: StateFlow<Int> = _currentCupIndex
 
     private val _customerName = MutableStateFlow("")
-    val customerName: StateFlow<String> = _customerName
 
     private val _notes = MutableStateFlow("")
     val notes: StateFlow<String> = _notes
@@ -50,17 +47,13 @@ class TransactionViewModel(
     val queuePreview: StateFlow<Int?> = _queuePreview
 
     private val _lastOrder = MutableStateFlow<Order?>(null)
-    val lastOrder: StateFlow<Order?> = _lastOrder
-
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _isSuccess = MutableStateFlow<Boolean?>(null)
-    val isSuccess: StateFlow<Boolean?> = _isSuccess
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
 
     private val _saveOrderState = MutableStateFlow<Result<Unit>?>(null)
     val saveOrderState: StateFlow<Result<Unit>?> = _saveOrderState

@@ -41,18 +41,14 @@ import com.example.kasirlumpiasuper.ui.transaction.ProductListViewModel
 @Composable
 fun StockScreen(
     navController: NavHostController,
-    recapViewModel: RecapViewModel
+    recapViewModel: RecapViewModel,
+    dashboardViewModel: DashboardViewModel
 ) {
-    val kasirViewModel: DashboardViewModel = viewModel()
     val productViewModel: ProductListViewModel = viewModel()
 
     val context = LocalContext.current
     val products by productViewModel.productList.collectAsState()
 
-    // 🔥 Tidak ada lagi list statis
-    // val stok = listOf("Lumpia", ...)
-
-    // State dinamis berdasarkan product.id
     val initialStocks = remember { mutableStateMapOf<String, Int>() }
     val damagedStocks = remember { mutableStateMapOf<String, Int>() }
 
@@ -219,7 +215,7 @@ fun StockScreen(
                             cashOpening = uangKas.toIntOrNull() ?: 0,
                             onSuccess = {
                                 Toast.makeText(context, "Stok berhasil disimpan!", Toast.LENGTH_SHORT).show()
-                                kasirViewModel.isStockFilledToday(isStockFilled = true)
+                                dashboardViewModel.isStockFilledToday()
                                 navController.popBackStack()
                             },
                             onError = { err ->

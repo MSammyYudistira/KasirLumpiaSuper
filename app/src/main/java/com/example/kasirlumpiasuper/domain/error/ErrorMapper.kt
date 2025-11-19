@@ -15,11 +15,4 @@ object ErrorMapper {
         }
     }
 
-    fun mapPrinterException(e: Exception): DomainError {
-        return when {
-            e.message?.contains("Out of paper", ignoreCase = true) == true -> DomainError.PrinterOutOfPaper
-            e.message?.contains("not paired", ignoreCase = true) == true -> DomainError.PrinterNotPaired
-            else -> DomainError.PrinterConnectionFailed
-        }
-    }
 }

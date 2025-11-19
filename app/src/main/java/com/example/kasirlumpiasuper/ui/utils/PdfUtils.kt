@@ -9,7 +9,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Build
-import android.os.Environment
 import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.view.View
@@ -20,8 +19,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
-import java.io.File
-import java.io.FileOutputStream
 
 
 object PdfUtils {
@@ -151,50 +148,6 @@ object PdfUtils {
             resolver.update(uri, values, null, null)
 
             pdfDocument.close()
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-    private fun writePdfToDownloads(
-        context: Context,
-        pdfDocument: PdfDocument,
-        fileName: String
-    ): Boolean {
-        return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android 10+ via MediaStore
-                val values = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                    put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
-                    put(MediaStore.Downloads.IS_PENDING, 1)
-                }
-                val resolver = context.contentResolver
-                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                    ?: return false
-                val stream = resolver.openOutputStream(uri) ?: return false
-                // tulis dulu
-                pdfDocument.writeTo(stream)
-                stream.flush()
-                stream.close()
-                // tandai selesai
-                values.clear()
-                values.put(MediaStore.Downloads.IS_PENDING, 0)
-                resolver.update(uri, values, null, null)
-                null // sudah selesai
-            } else {
-                // < Android 10: ke /storage/emulated/0/Download
-                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                if (!downloadsDir.exists()) downloadsDir.mkdirs()
-                val file = File(downloadsDir, fileName)
-                FileOutputStream(file).use { fos ->
-                    pdfDocument.writeTo(fos)
-                    fos.flush()
-                }
-                null
-            }
             true
         } catch (e: Exception) {
             e.printStackTrace()

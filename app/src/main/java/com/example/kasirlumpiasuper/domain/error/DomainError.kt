@@ -8,10 +8,4 @@ sealed class DomainError {
     object RateLimited : DomainError()
     data class InvalidInput(val reason: String) : DomainError()
     object UnknownError : DomainError()
-
-    // Printer Related
-    object PrinterNotPaired : DomainError()
-    object BluetoothPermissionRequired : DomainError()
-    object PrinterOutOfPaper : DomainError()
-    object PrinterConnectionFailed : DomainError()
 }

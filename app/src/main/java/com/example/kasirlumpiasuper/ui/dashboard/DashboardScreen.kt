@@ -39,17 +39,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.PreferencesManager
+import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
 import com.example.kasirlumpiasuper.ui.history.showDatePicker
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager.getBusinessDateLabel
 import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -63,76 +63,94 @@ fun DashboardScreen(
     prefs: PreferencesManager
 ) {
 
+    val firestoreViewModel: FirestoreViewModel = viewModel()
+
+    val user by firestoreViewModel.user.collectAsState()
+    val role = user?.role ?: "kasir"
+
     val stockFilledToday by viewModel.stockFilledToday.collectAsState()
     val customerCountToday by viewModel.customerCountToday.collectAsState()
     val manualResetRequired by viewModel.manualResetRequired.collectAsState()
-    val isLoading by viewModel.isLoadingCustomerCount.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val businessDate by viewModel.businessDate.collectAsState()
     val totalRevenue by viewModel.grandTotalToday.collectAsState()
-//    val quotes by viewModel.quote.collectAsState()
-
     val currentSystemDate = BusinessDateManager.getCurrentSystemDateLabel()
     val isDifferentDay = currentSystemDate != businessDate
-
     val context = LocalContext.current
-//    val prefs = remember { PreferencesManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
     var showDialog by remember { mutableStateOf(false) }
     var showNewDayDialog by remember { mutableStateOf(true) }
-    var selectedBusinessDate by remember { mutableStateOf(BusinessDateManager.getBusinessDateLabel()) }
+    var selectedBusinessDate by remember { mutableStateOf(getBusinessDateLabel()) }
 
     LaunchedEffect(Unit) {
         viewModel.initializeBusinessDay(prefs)
-//        if (FirebaseAuth.getInstance().currentUser != null) {
-//            viewModel.loadQuote()
-//        }
+        firestoreViewModel.loadUser()
+        viewModel.observeBusinessDate(prefs)
     }
 
     LaunchedEffect(businessDate) {
         viewModel.fetchTodayRevenue()
-        viewModel.isStockFilledToday(stockFilledToday)
+        viewModel.isStockFilledToday()
         viewModel.checkCustomerCountToday()
+        showNewDayDialog = true
     }
 
     if (isDifferentDay && showNewDayDialog) {
         AlertDialog(
-            onDismissRequest = { showNewDayDialog = false},
-            title = { Text("Hari Baru Dimulai") },
-            text = { Text("Tanggal berganti. Apakah kamu ingin mulai hari baru sekarang?") },
+            onDismissRequest = { showNewDayDialog = false },
+            containerColor = Color.White,
+            title = {
+                Text(
+                    "Hari Baru Dimulai",
+                    style = MaterialTheme.typography.displaySmall
+                )
+            },
+            text = {
+                Text(
+                    "Tanggal berganti. Apakah kamu ingin mulai hari baru sekarang?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    coroutineScope.launch {
-                        viewModel.resetDailyData(
-                            prefs = prefs,
-                            currentDate = currentSystemDate,
-                            viewModel = viewModel,
-                            navController = navController
-                        )
-                        viewModel.markResetDone(prefs)
-                        viewModel.updateBusinessDate(currentSystemDate, prefs)
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            viewModel.resetDailyData(
+                                prefs = prefs,
+                                currentDate = currentSystemDate,
+                                navController = navController
+                            )
+                            viewModel.markResetDone(prefs)
+                            viewModel.updateBusinessDate(currentSystemDate, prefs)
 
-                        showNewDayDialog = false
-                        Toast.makeText(context, "Reset hari telah berhasil.", Toast.LENGTH_SHORT).show()
+                            showNewDayDialog = false
+                            Toast.makeText(
+                                context,
+                                "Reset hari telah berhasil.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
-                }) {
+                ) {
                     Text("Ya, Reset")
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    coroutineScope.launch {
-                        viewModel.rejectAutoReset(prefs)
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            viewModel.rejectAutoReset(prefs)
 
-                        viewModel.updateBusinessDate(
-                            getBusinessDateLabel(),
-                            prefs
-                        )
+                            viewModel.updateBusinessDate(
+                                getBusinessDateLabel(),
+                                prefs
+                            )
 
-                        showNewDayDialog = false
-                        Toast.makeText(context, "Tetap di tanggal sebelumnya", Toast.LENGTH_SHORT).show()
+                            showNewDayDialog = false
+                        }
                     }
-                }) {
+                ) {
                     Text("Tidak Sekarang")
                 }
             }
@@ -151,93 +169,16 @@ fun DashboardScreen(
             }
         } else {
             LazyColumn(
-                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(horizontal = 72.dp)
+                    .padding(top = 24.dp)
             ) {
                 item {
                     // Ringkasan Hari Ini
-
-                    Surface(
-                        onClick = {
-                            showDatePicker(
-                                context = context,
-                                currentKey = selectedBusinessDate,
-                                onPick = { pickedDate ->
-                                    val todayLabel = BusinessDateManager.getCurrentSystemDateLabel()
-                                    val sdf = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
-
-                                    try {
-                                        val picked = sdf.parse(pickedDate)
-                                        val today = sdf.parse(todayLabel)
-
-                                        if (picked != null && today != null) {
-                                            // Normalisasi ke tengah malam (jam 00:00)
-                                            val calPicked = Calendar.getInstance().apply {
-                                                time = picked
-                                                set(Calendar.HOUR_OF_DAY, 0)
-                                                set(Calendar.MINUTE, 0)
-                                                set(Calendar.SECOND, 0)
-                                                set(Calendar.MILLISECOND, 0)
-                                            }
-                                            val calToday = Calendar.getInstance().apply {
-                                                time = today
-                                                set(Calendar.HOUR_OF_DAY, 0)
-                                                set(Calendar.MINUTE, 0)
-                                                set(Calendar.SECOND, 0)
-                                                set(Calendar.MILLISECOND, 0)
-                                            }
-
-                                            when {
-                                                calPicked.after(calToday) -> {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Tidak bisa memilih tanggal melebihi hari ini!",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                                else -> {
-                                                    // ✅ boleh tanggal hari ini atau sebelumnya
-                                                    viewModel.updateBusinessDate(pickedDate, prefs)
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Tanggal bisnis diubah ke $pickedDate",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Format tanggal tidak valid", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            )
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Primary
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.baseline_date_range_24),
-                                contentDescription = null,
-                                tint = Color.White
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = businessDate,
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                    }
-
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp),
+                            .padding(bottom = 24.dp),
                         shadowElevation = 4.dp,
                         shape = RoundedCornerShape(8.dp),
                     ) {
@@ -252,10 +193,104 @@ fun DashboardScreen(
                             )
 
                             Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = businessDate,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+
+                            if (role == "kasir") {
+                                Text(
+                                    text = businessDate,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            } else {
+                                Surface(
+                                    onClick = {
+                                        showDatePicker(
+                                            context = context,
+                                            currentKey = selectedBusinessDate,
+                                            onPick = { pickedDate ->
+                                                val todayLabel =
+                                                    BusinessDateManager.getCurrentSystemDateLabel()
+                                                val sdf = SimpleDateFormat(
+                                                    "dd MMMM yyyy",
+                                                    Locale("id", "ID")
+                                                )
+
+                                                try {
+                                                    val picked = sdf.parse(pickedDate)
+                                                    val today = sdf.parse(todayLabel)
+
+                                                    if (picked != null && today != null) {
+                                                        // Normalisasi ke tengah malam (jam 00:00)
+                                                        val calPicked =
+                                                            Calendar.getInstance().apply {
+                                                                time = picked
+                                                                set(Calendar.HOUR_OF_DAY, 0)
+                                                                set(Calendar.MINUTE, 0)
+                                                                set(Calendar.SECOND, 0)
+                                                                set(Calendar.MILLISECOND, 0)
+                                                            }
+                                                        val calToday =
+                                                            Calendar.getInstance().apply {
+                                                                time = today
+                                                                set(Calendar.HOUR_OF_DAY, 0)
+                                                                set(Calendar.MINUTE, 0)
+                                                                set(Calendar.SECOND, 0)
+                                                                set(Calendar.MILLISECOND, 0)
+                                                            }
+
+                                                        when {
+                                                            calPicked.after(calToday) -> {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Tidak bisa memilih tanggal melebihi hari ini!",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+
+                                                            else -> {
+                                                                // ✅ boleh tanggal hari ini atau sebelumnya
+                                                                viewModel.updateBusinessDate(
+                                                                    pickedDate,
+                                                                    prefs
+                                                                )
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Tanggal bisnis diubah ke $pickedDate",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+                                                        }
+                                                    }
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Format tanggal tidak valid",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    shadowElevation = 4.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(
+                                            horizontal = 12.dp,
+                                            vertical = 6.dp
+                                        ),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.baseline_date_range_24),
+                                            contentDescription = null,
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = businessDate,
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+                                    }
+                                }
+                            }
 
                             Row(
                                 modifier = Modifier
@@ -329,7 +364,6 @@ fun DashboardScreen(
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                         Text(
-//                                            DateUtils.rupiah(totalRevenue)
                                             text = DateUtils.rupiah(totalRevenue),
                                             style = MaterialTheme.typography.displayMedium,
                                             color = Color(0xFF22C55E)
@@ -359,7 +393,7 @@ fun DashboardScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = "Tanggal telah berganti ke ${BusinessDateManager.getBusinessDateLabel()}",
+                                        text = "Tanggal telah berganti ke ${getBusinessDateLabel()}",
                                         style = MaterialTheme.typography.displaySmall,
                                         color = Color.Red
                                     )
@@ -374,14 +408,14 @@ fun DashboardScreen(
                                         viewModel.resetDailyData(
                                             prefs = prefs,
                                             currentDate = currentSystemDate,
-                                            viewModel = viewModel,
                                             navController = navController
                                         )
                                         viewModel.markResetDone(prefs)
+                                        viewModel.updateBusinessDate(currentSystemDate, prefs)
                                     }
                                     Toast.makeText(
                                         context,
-                                        "Reset hari telah berhasil.",
+                                        "Reset hari berhasil.",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -460,8 +494,9 @@ fun DashboardScreen(
                     if (showDialog) {
                         AlertDialog(
                             onDismissRequest = { showDialog = false },
-                            title = { Text("Stok Sudah Diisi") },
-                            text = { Text("Apakah kamu ingin mengatur ulang stok?") },
+                            containerColor = Color.White,
+                            title = { Text("Stok sudah di isi", style = MaterialTheme.typography.displaySmall) },
+                            text = { Text("Apakah kamu ingin mengatur ulang stok?", style = MaterialTheme.typography.bodyMedium) },
                             confirmButton = {
                                 TextButton(onClick = {
                                     showDialog = false
@@ -486,8 +521,7 @@ fun DashboardScreen(
                         shadowElevation = 4.dp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 24.dp)
-                        ,
+                            .padding(bottom = 24.dp),
                         color = if (!stockFilledToday) Color(0xFFFFD4D4) else MaterialTheme.colorScheme.surface
                     ) {
                         Row(
@@ -511,12 +545,12 @@ fun DashboardScreen(
                             }
                             TextButton(
                                 onClick = {
-                                if (stockFilledToday) {
-                                    showDialog = true
-                                } else {
-                                    navController.navigate(NavRoutes.Stock.route)
+                                    if (stockFilledToday) {
+                                        showDialog = true
+                                    } else {
+                                        navController.navigate(NavRoutes.Stock.route)
+                                    }
                                 }
-                            }
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.outline_management_stockout),
@@ -531,13 +565,10 @@ fun DashboardScreen(
                             }
                         }
                     }
-//                    Spacer(Modifier.height(24.dp))
                 }
 
-                item {
-                    // Tampilkan hanya untuk admin
-//                    if (viewModel.isAdmin.collectAsState().value) {
-
+                if (role == "admin") {
+                    item {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             shadowElevation = 4.dp,
@@ -581,13 +612,10 @@ fun DashboardScreen(
                                 }
                             }
                         }
-
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
-
-
             }
         }
     }
-//}
+}

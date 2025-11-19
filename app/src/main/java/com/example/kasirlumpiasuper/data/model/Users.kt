@@ -8,8 +8,7 @@ data class Users(
     val name: String = "",
     val email: String = "",
     val role: String = "kasir",
-//    val quote: String = "",
-    val profileImageUrl: String = "", // <— WAJIB ada
+    val profileImageUrl: String = "",
 
     @ServerTimestamp
     val createdAt: Timestamp? = null

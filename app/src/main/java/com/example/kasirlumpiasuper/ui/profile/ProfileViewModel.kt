@@ -1,26 +1,19 @@
 package com.example.kasirlumpiasuper.ui.profile
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
 import com.example.kasirlumpiasuper.data.model.Users
-import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.utils.StorageHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class ProfileViewModel : ViewModel() {
-
-
     private val _user = MutableStateFlow(
         Users(
             name = "",
@@ -88,10 +81,6 @@ class ProfileViewModel : ViewModel() {
                 it.printStackTrace()
                 onResult(false)
             }
-    }
-
-    fun refreshUser() {
-        loadUserFromAuth()
     }
 
     suspend fun uploadProfileImage(uri: Uri) {

@@ -1,31 +1,22 @@
 package com.example.kasirlumpiasuper.data.repository
 
 import android.util.Log
-import com.example.kasirlumpiasuper.data.model.DailyRecap
 import com.example.kasirlumpiasuper.data.model.Order
 import com.example.kasirlumpiasuper.data.model.RecapInput
 import com.example.kasirlumpiasuper.data.model.StockInputItem
 import com.example.kasirlumpiasuper.data.model.StockMeta
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.tasks.await
-import kotlin.jvm.java
 
 
 class RecapRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    /** Helper untuk ambil UID login saat ini */
     private fun currentUserId(): String =
         FirebaseAuth.getInstance().currentUser?.uid ?: "unknown"
-    // =============================================================
-    //  🔹 USER
-    // =============================================================
 
     suspend fun getUserNameById(uid: String): String {
         return try {
@@ -46,10 +37,6 @@ class RecapRepository(
         )
     }
 
-    // =============================================================
-    //  🔹 ORDERS / TRANSAKSI
-    // =============================================================
-
     suspend fun getOrdersByDate(dateLabel: String): List<Order> {
         val userId = currentUserId()
         return try {
@@ -66,10 +53,6 @@ class RecapRepository(
             emptyList()
         }
     }
-
-    // =============================================================
-    //  🔹 STOCK INPUTS
-    // =============================================================
 
     suspend fun getStockItemsByDate(dateLabel: String): List<StockInputItem> {
         val userId = currentUserId()
@@ -88,7 +71,6 @@ class RecapRepository(
         }
     }
 
-    /** 🔸 Meta sekarang jadi field di dokumen tanggal, bukan subcollection */
     suspend fun getStockMetaByDate(dateLabel: String): StockMeta? {
         val userId = currentUserId()
         return try {
@@ -118,21 +100,18 @@ class RecapRepository(
             .collection("stock_inputs")
             .document(dateLabel)
 
-        // 🔹 Simpan meta langsung di dokumen induk
         batch.set(
             parentRef,
             meta,
             SetOptions.merge()
         )
 
-        // 🔹 Simpan items per produk
         val itemsRef = parentRef.collection("items")
         items.forEach {
             val doc = itemsRef.document(it.productId)
             batch.set(doc, it)
         }
 
-        // 🔹 Tambahkan marker hasData & updatedAt
         batch.set(
             parentRef,
             mapOf("hasData" to true, "updatedAt" to FieldValue.serverTimestamp()),
@@ -141,10 +120,6 @@ class RecapRepository(
 
         batch.commit().await()
     }
-
-    // =============================================================
-    //  🔹 RECAP INPUTS
-    // =============================================================
 
     suspend fun getRecapInputByDate(dateLabel: String): RecapInput? {
         val userId = currentUserId()
@@ -191,38 +166,4 @@ class RecapRepository(
             Log.e("RecapRepo", "saveRecapInput error: ${e.message}")
         }
     }
-
-    //    /** 🔹 Ambil semua transaksi pada tanggal tertentu */
-//    suspend fun getOrders(dateLabel: String): List<Order> {
-//        val snap = db.collection("orders")
-//            .document(dateLabel)
-//            .collection("transactions")
-//            .get()
-//            .await()
-//        return snap.documents.mapNotNull { it.toObject(Order::class.java) }
-//    }
-
-//    /** 🔹 Ambil stok awal & stok rusak + uang kas awal (cashOpening) dari StockScreen */
-//    suspend fun getStockInputs(dateLabel: String): Pair<List<StockInputItem>, StockMeta?> {
-//        val parentRef = db.collection("stock_inputs").document(dateLabel)
-//
-//        // Ambil items dari stock_inputs/{dateLabel}/items
-//        val itemsSnap = parentRef.collection("items").get().await()
-//        val items = itemsSnap.documents.mapNotNull { it.toObject(StockInputItem::class.java) }
-//
-//        // Ambil meta dari stock_inputs/{dateLabel}/meta/default
-//        val metaSnap = parentRef.collection("meta").document("default").get().await()
-//        val meta = metaSnap.toObject(StockMeta::class.java)
-//
-//        return items to meta
-//    }
-//
-//    /** 🔹 Ambil data input rekapan dari InputRecapScreen */
-//    suspend fun getRecapInput(dateLabel: String): RecapInput? {
-//        val doc = db.collection("recap_inputs")
-//            .document(dateLabel)
-//            .get()
-//            .await()
-//        return doc.toObject(RecapInput::class.java)
-//    }
 }

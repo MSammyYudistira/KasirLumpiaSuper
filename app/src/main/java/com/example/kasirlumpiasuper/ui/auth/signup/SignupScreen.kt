@@ -191,13 +191,3 @@ fun SignupScreen(
         }
     }
 }
-
-@Preview(showBackground = true, device = Devices.TABLET)
-@Composable
-private fun SignupScreenPreview() {
-    KasirLumpiaSuperTheme {
-        SignupScreen(
-            navController = rememberNavController()
-        )
-    }
-}

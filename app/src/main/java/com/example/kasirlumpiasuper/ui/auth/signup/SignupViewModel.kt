@@ -9,7 +9,6 @@ import com.example.kasirlumpiasuper.data.model.Users
 import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 
@@ -34,7 +33,6 @@ class SignupViewModel(
         role: String,
         onSuccess: () -> Unit
     ) {
-        // 🔹 Validasi input
         if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
             errorMessage = "Isi semua field!"
             return
@@ -69,17 +67,14 @@ class SignupViewModel(
                         return@addOnCompleteListener
                     }
 
-                    // 🔹 Buat model user baru
                     val newUser = Users(
                         uid = uid,
                         name = username.trim(),
                         email = email.trim(),
                         role = role,
-//                        quote = "",
                         createdAt = Timestamp.now()
                     )
 
-                    // 🔹 Simpan ke Firestore
                     firestore.collection("users")
                         .document(uid)
                         .set(newUser)
@@ -88,14 +83,12 @@ class SignupViewModel(
                             onSuccess()
                         }
                         .addOnFailureListener { e ->
-                            // ❗ Jika gagal simpan data, rollback akun Auth agar tidak orphan
                             auth.currentUser?.delete()
                             isLoading = false
                             errorMessage = "Gagal menyimpan data user: ${e.message}"
                             Log.e("SignupError", "Firestore set failed: ${e.message}", e)
                         }
                 } else {
-                    // 🔹 Jika gagal membuat akun
                     isLoading = false
                     errorMessage = "Pendaftaran gagal: ${task.exception?.message ?: "Terjadi kesalahan tak diketahui"}"
                     Log.e("SignupError", "Auth failed: ${task.exception?.message}", task.exception)

@@ -3,7 +3,6 @@ package com.example.kasirlumpiasuper.ui.menu
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.model.Product
 import com.example.kasirlumpiasuper.data.repository.MenuRepository
 import com.example.kasirlumpiasuper.ui.utils.StorageHelper

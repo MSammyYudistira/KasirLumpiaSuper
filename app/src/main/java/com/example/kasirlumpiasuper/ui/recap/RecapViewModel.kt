@@ -7,13 +7,9 @@ import com.example.kasirlumpiasuper.data.model.DailyRecap
 import com.example.kasirlumpiasuper.data.model.RecapInput
 import com.example.kasirlumpiasuper.data.model.StockInputItem
 import com.example.kasirlumpiasuper.data.model.StockMeta
-import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
 import com.example.kasirlumpiasuper.data.repository.RecapRepository
 import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
 import com.example.kasirlumpiasuper.ui.utils.RecapUtils
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -30,19 +26,6 @@ class RecapViewModel(
 
     private val _recap = MutableStateFlow<DailyRecap?>(null)
     val recap: StateFlow<DailyRecap?> = _recap
-
-    private val _userName = MutableStateFlow<String>("")
-    val userName: StateFlow<String> = _userName
-
-    private val _hasRecapInput = MutableStateFlow(false)
-    val hasRecapInput: StateFlow<Boolean> = _hasRecapInput
-
-    fun loadUserName(cashierId: String) {
-        viewModelScope.launch {
-            val name = repo.getUserNameById(cashierId)
-            _userName.value = name
-        }
-    }
 
     fun load(dateLabel: String) {
         viewModelScope.launch {

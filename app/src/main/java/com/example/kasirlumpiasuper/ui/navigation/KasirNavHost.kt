@@ -50,7 +50,6 @@ import com.example.kasirlumpiasuper.ui.stats.StatisticScreen
 import com.example.kasirlumpiasuper.ui.stock.StockScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionScreen
 import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
-import java.net.URLDecoder
 
 @RequiresApi(Build.VERSION_CODES.Q)
 @SuppressLint("UnrememberedGetBackStackEntry", "StateFlowValueCalledInComposition")
@@ -66,7 +65,7 @@ fun KasirNavHost(
 
     // ViewModel yang akan menampung role admin/kasir (di-scope ke "main")
     // Dibuat di luar NavHost supaya Compose tidak re-create tiap navigasi
-    val dashboardViewModel: DashboardViewModel = viewModel()
+//    val dashboardViewModel: DashboardViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -86,7 +85,7 @@ fun KasirNavHost(
         composable(NavRoutes.Login.route) {
             LoginScreen(
                 navController = navController,
-                dashboardViewModel = dashboardViewModel,
+                dashboardViewModel = null,
                 authViewModel = authViewModel
             )
         }
@@ -98,10 +97,17 @@ fun KasirNavHost(
             route = "main"
         ) {
 
-            composable(NavRoutes.Dashboard.route) {
+            composable(NavRoutes.Dashboard.route) { backStackEntry ->
+                // ⭐ Ambil parent entry dari "main" NAV GRAPH
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry("main")
+                }
+
+                // ⭐ DashboardViewModel shared untuk semua screen
+                val dashboardViewModel: DashboardViewModel = viewModel(parentEntry)
+
                 val context = LocalContext.current
                 val prefs = remember { PreferencesManager(context) }
-                val dashboardViewModel: DashboardViewModel = viewModel()
                 MainScaffold(
                     navController = navController,
                     viewModel = firestoreViewModel
@@ -141,7 +147,20 @@ fun KasirNavHost(
 
             composable(NavRoutes.Stock.route) { backStackEntry ->
                 val recapViewModel: RecapViewModel = viewModel(backStackEntry)
-                StockScreen(navController, recapViewModel = recapViewModel)
+
+                    // ⭐ Ambil parent entry dari "main" NAV GRAPH
+                    val parentEntry = remember(backStackEntry) {
+                        navController.getBackStackEntry("main")
+                    }
+
+                    // ⭐ DashboardViewModel shared untuk semua screen
+                    val dashboardViewModel: DashboardViewModel = viewModel(parentEntry)
+
+                    StockScreen(
+                    navController,
+                    recapViewModel = recapViewModel,
+                    dashboardViewModel = dashboardViewModel
+                )
             }
 
             composable(
@@ -227,23 +246,6 @@ fun KasirNavHost(
                 PaymentScreen(navController, paymentViewModel, transactionViewModel)
             }
 
-//            composable(NavRoutes.MidtransWebView.route) { backStackEntry ->
-//                val encodedUrl = backStackEntry.arguments?.getString("encodedUrl") ?: ""
-//                val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
-//
-//                val url = URLDecoder.decode(encodedUrl, Charsets.UTF_8.name())
-//
-//                val context = LocalContext.current
-//
-//                MidtransWebViewScreen(
-//                    url = url,
-//                    onClose = { navController.popBackStack() },
-//                    onFinishSuccess = {
-//                        navController.popBackStack()
-//                    }
-//                )
-//            }
-
             // Kelola Menu (Admin Only)
             composable(NavRoutes.MenuManagement.route) { backStackEntry ->
                 val menuViewModel: MenuViewModel = viewModel(backStackEntry)
@@ -276,10 +278,6 @@ fun MainScaffold(
     LaunchedEffect(Unit) {
         viewModel.loadUser()
     }
-
-//    val dashboardViewModel: DashboardViewModel = viewModel()
-//    val isAdmin by dashboardViewModel.isAdmin.collectAsState()
-//    val userName by dashboardViewModel.userName.collectAsState()
 
     val selectedMenu = when (currentRoute) {
         NavRoutes.Dashboard.route -> TopBarMenu.DASHBOARD

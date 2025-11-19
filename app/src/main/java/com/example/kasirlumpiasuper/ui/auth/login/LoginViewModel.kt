@@ -1,7 +1,6 @@
 package com.example.kasirlumpiasuper.ui.auth.login
 
 import android.content.Context
-import android.util.Log
 import android.util.Patterns
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,20 +37,16 @@ class LoginViewModel : ViewModel() {
         context: Context,
         onResult: (success: Boolean, role: String?, username: String?) -> Unit
     ) {
-
-        // 1️⃣ Validasi dasar
         if (email.isBlank() || password.isBlank()) {
             errorMessage = "Email dan password tidak boleh kosong"
             return
         }
 
-        // 2️⃣ Validasi format email
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             errorMessage = "Format email tidak valid"
             return
         }
 
-        // 3️⃣ Validasi panjang password
         if (password.length < 6) {
             errorMessage = "Password minimal 6 karakter"
             return
@@ -71,12 +66,11 @@ class LoginViewModel : ViewModel() {
                                 val role = document.getString("role") ?: "kasir"
                                 val username = document.getString("name") ?: ""
 
-                                // simpan UID ke DataStore
                                 CoroutineScope(Dispatchers.IO).launch {
                                     context.datastore.edit { prefs ->
                                         prefs[DataStoreKeys.User_UID] = uid
-                                        prefs[DataStoreKeys.User_ROLE] = role          // ⬅️ simpan role
-                                        prefs[DataStoreKeys.User_NAME] = username      // ⬅️ opsional
+                                        prefs[DataStoreKeys.User_ROLE] = role
+                                        prefs[DataStoreKeys.User_NAME] = username
                                     }
                                 }
 
