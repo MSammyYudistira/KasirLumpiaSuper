@@ -29,7 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.model.Users
+import com.example.kasirlumpiasuper.domain.model.Users
 import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary

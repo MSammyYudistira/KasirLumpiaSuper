@@ -33,17 +33,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.components.CustomTextField
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Background
-import com.example.kasirlumpiasuper.ui.theme.KasirLumpiaSuperTheme
 import com.example.kasirlumpiasuper.ui.theme.Surface
 
 @Composable
@@ -61,6 +57,15 @@ fun SignupScreen(
     LaunchedEffect(viewModel.errorMessage) {
         viewModel.errorMessage?.let { text ->
             Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(viewModel.signupSuccess) {
+        if (viewModel.signupSuccess) {
+            Toast.makeText(context, "Signup Berhasil! Silakan login.", Toast.LENGTH_LONG).show()
+            navController.navigate(NavRoutes.Login.route) {
+                popUpTo(NavRoutes.Signup.route) { inclusive = true }
+            }
         }
     }
 
@@ -144,7 +149,6 @@ fun SignupScreen(
                     shape = RoundedCornerShape(8.dp),
                     enabled = !viewModel.isLoading,
                     onClick = {
-
                         viewModel.signupUser(
                             username = username,
                             email = email,
@@ -152,12 +156,6 @@ fun SignupScreen(
                             confirmPassword = confirmPassword,
                             role = "kasir"
                         )
-                        {
-                            Toast.makeText(context, "Signup berhasil!", Toast.LENGTH_SHORT).show()
-                            navController.navigate(NavRoutes.Login.route) {
-                                popUpTo(NavRoutes.Signup.route) { inclusive = true }
-                            }
-                        }
                     }
                 ) {
                     if (viewModel.isLoading) {
@@ -167,7 +165,7 @@ fun SignupScreen(
                             strokeWidth = 2.dp
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Loading...")
+                        Text("Menunggu verifikasi...")
                     } else {
                         Icon(
                             painter = painterResource(R.drawable.baseline_person_add_24),

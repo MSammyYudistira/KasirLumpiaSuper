@@ -4,14 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kasirlumpiasuper.data.Result
-import com.example.kasirlumpiasuper.data.model.Order
-import com.example.kasirlumpiasuper.data.model.OrderItem
-import com.example.kasirlumpiasuper.data.model.PaymentMethod
-import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
+import com.example.kasirlumpiasuper.domain.model.Order
+import com.example.kasirlumpiasuper.domain.model.OrderItem
+import com.example.kasirlumpiasuper.domain.model.PaymentMethod
+import com.example.kasirlumpiasuper.data.firestore.FirestoreRepository
 import com.example.kasirlumpiasuper.domain.error.DomainError
-import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager.getBusinessDateLabel
-import com.example.kasirlumpiasuper.ui.utils.OrderCalculator
-import com.example.kasirlumpiasuper.ui.utils.OrderMapper
+import com.example.kasirlumpiasuper.helper.date.BusinessDateManager.getBusinessDateLabel
+import com.example.kasirlumpiasuper.helper.order.OrderCalculator
+import com.example.kasirlumpiasuper.helper.order.OrderMapper
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -26,9 +26,6 @@ import kotlinx.coroutines.launch
 class TransactionViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
 ) : ViewModel() {
-
-//    private val appContext = getApplication<Application>().applicationContext
-
     private val _cups = MutableStateFlow<Map<Int, List<OrderItem>>>(mapOf(1 to emptyList()))
     val cups: StateFlow<Map<Int, List<OrderItem>>> = _cups
 
@@ -128,19 +125,78 @@ class TransactionViewModel(
         _lastOrder.value = order
     }
 
-    fun commitTransaction(order: Order) {
-        viewModelScope.launch(SupervisorJob()) {
-            val result = tryCommitWithRetry(order)
+//    fun commitTransaction(order: Order) {
+//        viewModelScope.launch(SupervisorJob()) {
+//            val result = tryCommitWithRetry(order)
+//            _saveOrderState.value = result
+//        }
+//    }
+
+    fun submitOrder(
+        paymentMethod: PaymentMethod,
+        cashReceived: Int? = null,
+        change: Int? = null,
+        nonCashAmount: Int? = null
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val uid = FirebaseAuth.getInstance().currentUser!!.uid
+            val dateKey = getBusinessDateLabel()
+
+            // 1️⃣ Ambil nomor queue LOKAL
+            val localQueue = repository.getNextLocalQueueNumber(uid, dateKey)
+
+            // 2️⃣ Ambil nomor queue GLOBAL
+            val globalQueue = repository.getNextGlobalQueueNumber(dateKey)
+
+            // 3️⃣ Bangun ORDER siap simpan
+            val order = buildOrderForCommit(
+                queueNumber = localQueue,
+                paymentMethod = paymentMethod,
+                cashReceived = cashReceived,
+                change = change,
+                nonCashAmount = nonCashAmount
+            ).copy(
+                queueNumber = localQueue,
+                globalQueueNumber = globalQueue
+            )
+
+            // 4️⃣ Simpan ke Firestore
+            val result = repository.saveOrder(
+                uid = uid,
+                date = dateKey,
+                globalQueue = globalQueue,
+                localQueue = localQueue,
+                order = order
+            )
+
             _saveOrderState.value = result
+            _isLoading.value = false
         }
     }
 
-    private suspend fun tryCommitWithRetry(order: Order): Result<Unit> {
+
+
+    private suspend fun tryCommitWithRetry(
+        uid: String,
+        date: String,
+        globalQueue: Int,
+        localQueue: Int,
+        order: Order
+    ): Result<Unit> {
         val maxAttempts = 3
         val delays = listOf(200L, 500L, 1000L)
 
         repeat(maxAttempts) { attempt ->
-            when (val result = repository.saveOrder(order)) {
+            when (
+                val result = repository.saveOrder(
+                    uid = uid,
+                    date = date,
+                    globalQueue = globalQueue,
+                    localQueue = localQueue,
+                    order = order
+                )
+            ) {
                 is Result.Success -> return result
                 is Result.Error -> {
                     if (result.error is DomainError.NetworkError && attempt < maxAttempts - 1) {
@@ -151,8 +207,10 @@ class TransactionViewModel(
                 }
             }
         }
+
         return Result.Error(DomainError.UnknownError)
     }
+
 
     fun getLastOrder(): Order? = _lastOrder.value
 
@@ -168,10 +226,7 @@ class TransactionViewModel(
             }
 
             is Result.Error -> {
-                // Kalau gagal ambil queue number, fallback ke 1 (biar gak crash)
                 _queuePreview.value = 1
-
-                // Kamu juga bisa tampilkan error log kalau mau
                 _errorMessage.value = when (result.error) {
                     DomainError.NetworkError -> "Gagal ambil nomor antrian (koneksi buruk)"
                     DomainError.PreconditionFailed -> "Index Firestore belum dibuat"
@@ -202,14 +257,14 @@ class TransactionViewModel(
             items.map { item ->
                 if (item.isFree) {
                     item.copy(
-                        originalUnitPrice = item.unitPrice, // simpan harga asli
-                        unitPrice = 0,                      // ubah harga efektif jadi 0
+                        originalUnitPrice = item.unitPrice,
+                        unitPrice = 0,
                         isFree = true,
-                        cupIndex = cupIndex                 // pastikan cupIndex ikut
+                        cupIndex = cupIndex
                     )
                 } else {
                     item.copy(
-                        originalUnitPrice = item.unitPrice, // harga normal
+                        originalUnitPrice = item.unitPrice,
                         isFree = false,
                         cupIndex = cupIndex
                     )
@@ -252,7 +307,6 @@ class TransactionViewModel(
             _errorMessage.value = null
 
             try {
-                // Ambil data order dari repository
                 val order = repository.getOrderByQueue(dateKey, queueNumber)
                 if (order == null) {
                     _errorMessage.value = "Transaksi tidak ditemukan"
@@ -260,15 +314,10 @@ class TransactionViewModel(
                     return@launch
                 }
 
-                // Ambil juga daftar item-nya
                 val items = repository.getOrderItems(dateKey, queueNumber)
-
-                // 🔹 Setel state ViewModel dari data Firestore
-                // 🔹 Kelompokkan item berdasarkan cupIndex
                 val groupedByCup = items.groupBy { it.cupIndex }.toSortedMap()
 
-                // 🔹 Simpan ke state
-                _cups.value = groupedByCup // supaya urut 1, 2, dst
+                _cups.value = groupedByCup
                 _notes.value = order.notes ?: ""
                 _discountInput.value = order.discount ?: 0
                 _queuePreview.value = order.queueNumber
@@ -299,12 +348,12 @@ class TransactionViewModel(
                 val items = cupsData.values.flatten().map { item ->
                     if (item.isFree) {
                         item.copy(
-                            originalUnitPrice = item.unitPrice, // simpan harga asli
-                            unitPrice = 0                       // harga efektif 0
+                            originalUnitPrice = item.unitPrice,
+                            unitPrice = 0
                         )
                     } else {
                         item.copy(
-                            originalUnitPrice = item.unitPrice, // harga normal
+                            originalUnitPrice = item.unitPrice,
                         )
                     }
                 }
@@ -330,7 +379,7 @@ class TransactionViewModel(
                     "status" to (lastOrder?.status ?: "PAID"),
                     "cashReceived" to (lastOrder?.cashReceived ?: 0),
                     "change" to (lastOrder?.change ?: 0),
-                    "nonCashAmount" to (lastOrder?.nonCashAmount ?: 0), // ✅ tambahkan agar tetap ada
+                    "nonCashAmount" to (lastOrder?.nonCashAmount ?: 0),
                 )
 
                 val success = repository.updateOrder(dateKey, queueNumber, updatedData)

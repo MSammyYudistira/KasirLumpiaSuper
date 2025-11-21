@@ -5,12 +5,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.example.kasirlumpiasuper.data.model.Users
-import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
+import androidx.lifecycle.viewModelScope
+import com.example.kasirlumpiasuper.domain.model.Users
+import com.example.kasirlumpiasuper.data.firestore.FirestoreRepository
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class SignupViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
@@ -22,6 +25,12 @@ class SignupViewModel(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    var verificationSent by mutableStateOf(false)
+        private set
+
+    var signupSuccess by mutableStateOf(false)
+        private set
+
     private val auth = Firebase.auth
     private val firestore = Firebase.firestore
 
@@ -30,8 +39,7 @@ class SignupViewModel(
         email: String,
         password: String,
         confirmPassword: String,
-        role: String,
-        onSuccess: () -> Unit
+        role: String
     ) {
         if (username.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
             errorMessage = "Isi semua field!"
@@ -56,43 +64,67 @@ class SignupViewModel(
         isLoading = true
         errorMessage = null
 
-        // 🔹 Buat akun di Firebase Auth
-        auth.createUserWithEmailAndPassword(email.trim(), password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val uid = auth.currentUser?.uid
-                    if (uid == null) {
-                        isLoading = false
-                        errorMessage = "Gagal mengambil UID pengguna."
-                        return@addOnCompleteListener
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnSuccessListener {
+                val uid = auth.currentUser?.uid ?: return@addOnSuccessListener
+
+                val userData = Users(
+                    uid = uid,
+                    name = username,
+                    email = email,
+                    role = role,
+                    createdAt = Timestamp.now()
+                )
+
+                firestore.collection("users")
+                    .document(uid)
+                    .set(userData)
+                    .addOnSuccessListener {
+                        sendVerificationEmail(email)
                     }
+                    .addOnFailureListener {
+                        errorMessage = "Gagal menyimpan user."
+                        isLoading = false
+                    }
+            }
+            .addOnFailureListener {
+                errorMessage = it.message
+                isLoading = false
+            }
+    }
 
-                    val newUser = Users(
-                        uid = uid,
-                        name = username.trim(),
-                        email = email.trim(),
-                        role = role,
-                        createdAt = Timestamp.now()
-                    )
+    private fun sendVerificationEmail(email: String) {
+        auth.currentUser?.sendEmailVerification()
+            ?.addOnSuccessListener {
+                verificationSent = true
+                errorMessage = "Email verifikasi dikirim ke $email"
 
-                    firestore.collection("users")
-                        .document(uid)
-                        .set(newUser)
-                        .addOnSuccessListener {
-                            isLoading = false
-                            onSuccess()
-                        }
-                        .addOnFailureListener { e ->
-                            auth.currentUser?.delete()
-                            isLoading = false
-                            errorMessage = "Gagal menyimpan data user: ${e.message}"
-                            Log.e("SignupError", "Firestore set failed: ${e.message}", e)
-                        }
-                } else {
+                startEmailVerificationChecker()
+            }
+            ?.addOnFailureListener {
+                errorMessage = "Gagal mengirim email verifikasi."
+                isLoading = false
+            }
+    }
+
+    private fun startEmailVerificationChecker() {
+        viewModelScope.launch {
+            repeat(30) {  // maksimal 30 x cek (±60 detik)
+                delay(2000)
+
+                auth.currentUser?.reload()
+                val verified = auth.currentUser?.isEmailVerified ?: false
+
+                if (verified) {
+                    signupSuccess = true
                     isLoading = false
-                    errorMessage = "Pendaftaran gagal: ${task.exception?.message ?: "Terjadi kesalahan tak diketahui"}"
-                    Log.e("SignupError", "Auth failed: ${task.exception?.message}", task.exception)
+                    return@launch
                 }
             }
+
+            // jika expired
+            isLoading = false
+            errorMessage = "Verifikasi email belum dilakukan."
+        }
     }
 }

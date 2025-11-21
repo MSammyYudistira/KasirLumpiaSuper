@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.kasirlumpiasuper.data.PreferencesManager
+import com.example.kasirlumpiasuper.data.datastore.PreferencesManager
 import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 

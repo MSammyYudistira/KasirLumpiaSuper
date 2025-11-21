@@ -2,8 +2,8 @@ package com.example.kasirlumpiasuper.ui.transaction
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.data.model.Product
-import com.example.kasirlumpiasuper.data.repository.MenuRepository
+import com.example.kasirlumpiasuper.domain.model.Product
+import com.example.kasirlumpiasuper.data.firestore.MenuRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch

@@ -36,7 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.model.Product
+import com.example.kasirlumpiasuper.domain.model.Product
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.theme.Outline
@@ -75,7 +75,6 @@ fun MenuManagementScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
 
-                // Produk normal
                 items(products) { product ->
                     ProductCardItem(
                         product = product,
@@ -85,7 +84,6 @@ fun MenuManagementScreen(
                     )
                 }
 
-                // Card Tambah Produk
                 item {
                     AddProductCard(
                         onClick = {

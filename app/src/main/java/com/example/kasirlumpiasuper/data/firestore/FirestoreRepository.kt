@@ -1,0 +1,299 @@
+package com.example.kasirlumpiasuper.data.firestore
+
+import android.util.Log
+import com.example.kasirlumpiasuper.data.Result
+import com.example.kasirlumpiasuper.domain.model.Order
+import com.example.kasirlumpiasuper.domain.model.OrderItem
+import com.example.kasirlumpiasuper.domain.model.Users
+import com.example.kasirlumpiasuper.domain.error.DomainError
+import com.example.kasirlumpiasuper.domain.error.ErrorMapper
+import com.example.kasirlumpiasuper.helper.order.OrderMapper
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.tasks.await
+
+class FirestoreRepository(
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+) {
+
+    private fun currentUserId(): String =
+        FirebaseAuth.getInstance().currentUser?.uid ?: "unknown"
+
+
+    suspend fun getNextQueueNumber(date: String): Result<Int> {
+        val userId = currentUserId()
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("orders")
+                .document(date)
+                .collection("entries")
+                .orderBy("queueNumber", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .await()
+
+            val lastQueue = snapshot.documents.firstOrNull()?.getLong("queueNumber")?.toInt() ?: 0
+            Result.Success(lastQueue + 1)
+        } catch (e: FirebaseFirestoreException) {
+            Result.Error(ErrorMapper.mapFirestoreException(e))
+        } catch (e: Exception) {
+            Result.Error(DomainError.UnknownError)
+        }
+    }
+
+    suspend fun getNextLocalQueueNumber(uid: String, date: String): Int {
+        val snapshot = db.collection("users")
+            .document(uid)
+            .collection("orders")
+            .document(date)
+            .collection("entries")
+            .orderBy("queueNumber", Query.Direction.DESCENDING)
+            .limit(1)
+            .get()
+            .await()
+
+        val last = snapshot.documents.firstOrNull()
+            ?.getLong("queueNumber")
+            ?.toInt() ?: 0
+
+        return last + 1
+    }
+
+    suspend fun getNextGlobalQueueNumber(date: String): Int {
+        val snapshot = db.collection("orders_global")
+            .document(date)
+            .collection("entries")
+            .orderBy("globalQueueNumber", Query.Direction.DESCENDING)
+            .limit(1)
+            .get()
+            .await()
+
+        val last = snapshot.documents.firstOrNull()?.getLong("globalQueueNumber")?.toInt() ?: 0
+        return last + 1
+    }
+
+    suspend fun saveOrder(
+        uid: String,
+        date: String,
+        globalQueue: Int,
+        localQueue: Int,
+        order: Order
+    ): Result<Unit> {
+        return try {
+            val userRef = db.collection("users")
+                .document(uid)
+                .collection("orders")
+                .document(date)
+                .collection("entries")
+                .document(localQueue.toString())   // UI kasir
+
+            val globalRef = db.collection("orders_global")
+                .document(date)
+                .collection("entries")
+                .document(globalQueue.toString())  // Statistik global
+
+            val fullOrder = order.copy(
+                globalQueueNumber = globalQueue,
+                queueNumber = localQueue
+            )
+
+            db.runBatch { batch ->
+                batch.set(userRef, fullOrder)
+                batch.set(globalRef, fullOrder)
+            }.await()
+
+            Result.Success(Unit)
+
+        } catch (e: FirebaseFirestoreException) {
+            Result.Error(ErrorMapper.mapFirestoreException(e))
+        } catch (e: Exception) {
+            Result.Error(DomainError.UnknownError)
+        }
+    }
+
+
+
+    suspend fun deleteOrder(dateKey: String, queueNumber: Int): Boolean {
+        val userId = currentUserId()
+        return try {
+            val queueStr = queueNumber.toString()
+
+            val userDocRef = db.collection("users")
+                .document(userId)
+                .collection("orders")
+                .document(dateKey)
+                .collection("entries")
+                .document(queueStr)
+
+            val globalDocRef = db.collection("orders_global")
+                .document(dateKey)
+                .collection("entries")
+                .document(queueStr)
+
+            db.runBatch { batch ->
+                batch.delete(userDocRef)
+                batch.delete(globalDocRef)
+            }.await()
+
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "deleteOrder error: ${e.message}", e)
+            false
+        }
+    }
+
+
+    suspend fun getOrderByQueue(dateKey: String, queueNumber: Int): Order? {
+        val userId = currentUserId()
+        return try {
+            val doc = db.collection("users")
+                .document(userId)
+                .collection("orders")
+                .document(dateKey)
+                .collection("entries")
+                .document(queueNumber.toString())
+                .get()
+                .await()
+
+            if (!doc.exists()) return null
+            doc.toObject(Order::class.java)
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "getOrderByQueue error: ${e.message}", e)
+            null
+        }
+    }
+
+    suspend fun getOrderItems(dateKey: String, queueNumber: Int): List<OrderItem> {
+        val userId = currentUserId()
+        return try {
+            val doc = db.collection("users")
+                .document(userId)
+                .collection("orders")
+                .document(dateKey)
+                .collection("entries")
+                .document(queueNumber.toString())
+                .get()
+                .await()
+
+            if (!doc.exists()) emptyList()
+            else {
+                val rawItems = doc.get("items")
+                OrderMapper.mapListToItems(rawItems)
+            }
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "getOrderItems error: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    suspend fun updateOrder(
+        dateKey: String,
+        queueNumber: Int,
+        updatedOrder: Map<String, Any>
+    ): Boolean {
+        val userId = currentUserId()
+        return try {
+            val queueStr = queueNumber.toString()
+
+            // Ref user
+            val userDocRef = db.collection("users")
+                .document(userId)
+                .collection("orders")
+                .document(dateKey)
+                .collection("entries")
+                .document(queueStr)
+
+            // Ref global
+            val globalDocRef = db.collection("orders_global")
+                .document(dateKey)
+                .collection("entries")
+                .document(queueStr)
+
+            // 🔹 Update dua-duanya
+            db.runBatch { batch ->
+                // pakai merge biar field lain nggak hilang
+                batch.set(userDocRef, updatedOrder, SetOptions.merge())
+                batch.set(globalDocRef, updatedOrder, SetOptions.merge())
+            }.await()
+
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "updateOrder error: ${e.message}", e)
+            false
+        }
+    }
+
+
+    suspend fun getDailyRevenue(dateKey: String): Int {
+        return try {
+            val userId = currentUserId()
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("orders")
+                .document(dateKey)
+                .collection("entries")
+                .get()
+                .await()
+
+            snapshot.documents.sumOf { it.getLong("total")?.toInt() ?: 0 }
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "getDailyRevenue error: ${e.message}", e)
+            0 // kalau gagal, kembalikan 0 supaya tidak crash
+        }
+    }
+
+    suspend fun getDailyRevenueGlobal(dateKey: String): Int {
+        return try {
+            val snapshot = db.collection("orders_global")
+                .document(dateKey)
+                .collection("entries")
+                .get()
+                .await()
+
+            snapshot.documents.sumOf { it.getLong("total")?.toInt() ?: 0 }
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "getDailyRevenueGlobal error: ${e.message}", e)
+            0
+        }
+    }
+
+
+    suspend fun getUserData(): Users? {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return null
+
+        val snapshot = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .get()
+            .await()
+
+        if (!snapshot.exists()) return null
+
+        return Users(
+            uid = uid,
+            name = snapshot.getString("name") ?: "",
+            email = snapshot.getString("email") ?: "",
+            role = snapshot.getString("role") ?: "kasir",
+            profileImageUrl = snapshot.getString("profileImageUrl") ?: ""   // 🔥 INI YANG PENTING
+        )
+    }
+
+    suspend fun isStockFilled(dateKey: String): Boolean {
+        val userId = currentUserId()
+        return try {
+            val doc = db.collection("users")
+                .document(userId)
+                .collection("stock_inputs")
+                .document(dateKey)
+                .get()
+                .await()
+            doc.exists()
+        } catch (e: Exception) {
+            false
+        }
+    }
+}

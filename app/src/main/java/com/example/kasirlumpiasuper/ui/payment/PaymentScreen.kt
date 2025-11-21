@@ -59,7 +59,7 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.data.Result
-import com.example.kasirlumpiasuper.data.model.PaymentMethod
+import com.example.kasirlumpiasuper.domain.model.PaymentMethod
 import com.example.kasirlumpiasuper.domain.error.DomainError
 import com.example.kasirlumpiasuper.domain.validator.TransactionValidator
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
@@ -72,8 +72,8 @@ import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
 import com.example.kasirlumpiasuper.ui.transaction.TransactionViewModel
-import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
-import com.example.kasirlumpiasuper.ui.utils.PrintHelper
+import com.example.kasirlumpiasuper.helper.date.BusinessDateManager
+import com.example.kasirlumpiasuper.helper.printing.PrintHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -93,7 +93,6 @@ fun PaymentScreen(
     val paymentStatus by pgViewModel.paymentStatus.collectAsState()
     var currentOrderId by remember { mutableStateOf<String?>(null) }
 
-//    val subtotal by transactionViewModel.subtotal.collectAsState()
     val total by transactionViewModel.total.collectAsState()
     val queuePreview by transactionViewModel.queuePreview.collectAsState()
     val cups by transactionViewModel.cups.collectAsState()
@@ -112,6 +111,24 @@ fun PaymentScreen(
 
     LaunchedEffect(total) {
         paymentViewModel.setTotalOrder(total)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            pgViewModel.stopPolling()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        isPrinterConnected = PrintHelper.initPrinter(context)
+    }
+
+    LaunchedEffect(qrUrl, currentOrderId, selectedMethod) {
+        if (selectedMethod == PaymentMethod.CASHLESS &&
+            !qrUrl.isNullOrBlank() &&
+            currentOrderId != null) {
+            pgViewModel.startPollingStatus(currentOrderId!!)
+        }
     }
 
     LaunchedEffect(selectedMethod) {
@@ -133,33 +150,10 @@ fun PaymentScreen(
         }
     }
 
-    LaunchedEffect(qrUrl, currentOrderId, selectedMethod) {
-        if (selectedMethod == PaymentMethod.CASHLESS &&
-            !qrUrl.isNullOrBlank() &&
-            currentOrderId != null) {
-
-            // 2) Mulai polling setelah QR siap
-            pgViewModel.startPollingStatus(currentOrderId!!)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            pgViewModel.stopPolling()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        isPrinterConnected = PrintHelper.initPrinter(context)
-    }
-
-    // Tangani status pembayaran
     LaunchedEffect(paymentStatus) {
         when (paymentStatus) {
             "settlement" -> {
-//                commitTransactionAnyway(context, transactionViewModel, paymentViewModel)
                 Toast.makeText(context, "Pembayaran berhasil!", Toast.LENGTH_SHORT).show()
-//                pgViewModel.resetPayment()
             }
 
             "expire" -> {
@@ -210,7 +204,6 @@ fun PaymentScreen(
     LaunchedEffect(state) {
         when (state) {
             is Result.Success -> {
-                // 🔹 Ambil order terakhir
                 val order = transactionViewModel.getLastOrder()
                 if (order != null && isPrinterConnected) {
                     try {
@@ -222,14 +215,9 @@ fun PaymentScreen(
 
                 delay(1000L)
 
-                // Reset form setelah sukses
                 transactionViewModel.resetTransaction()
                 paymentViewModel.reset()
-
-                // Navigasi ke dashboard kasir
                 navController.navigate(NavRoutes.Dashboard.route)
-
-                // Reset state supaya efek ini tidak ke-trigger ulang
                 transactionViewModel.clearSaveOrderState()
             }
 
@@ -243,8 +231,6 @@ fun PaymentScreen(
                     else -> "Terjadi kesalahan tak dikenal"
                 }
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-
-                // Optional: reset state agar tidak berulang
                 transactionViewModel.clearSaveOrderState()
             }
 
@@ -549,7 +535,6 @@ fun PaymentScreen(
                                         Text("Menyiapkan QRIS...")
                                     } else {
 
-                                        // Gambar QR dari Midtrans
                                         AsyncImage(
                                             model = qrUrl,
                                             contentDescription = "QRIS",
@@ -568,7 +553,6 @@ fun PaymentScreen(
                                         Divider()
                                         Spacer(Modifier.height(8.dp))
 
-                                        // Status pembayaran
                                         Text(
                                             text = "Status: ${paymentStatus ?: "Menunggu..."}",
                                             style = MaterialTheme.typography.titleMedium
@@ -705,10 +689,8 @@ fun PaymentScreen(
                                         .fillMaxWidth()
                                         .onFocusChanged { focusState ->
                                             if (focusState.isFocused) {
-                                                // Saat diklik, kosongkan tampilan kalau nilainya 0
                                                 showEmpty = true
                                             } else {
-                                                // Saat kehilangan fokus, kembalikan angka jika kosong
                                                 if (inputAmount == 0) showEmpty = false
                                             }
                                         },
@@ -893,13 +875,19 @@ fun commitTransactionAnyway(
     transactionViewModel: TransactionViewModel,
     paymentViewModel: PaymentViewModel
 ) {
+    val paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH
+    val cashReceived = paymentViewModel.inputAmount.value
+    val change = paymentViewModel.change.value
+    val nonCashAmount =
+        if (paymentMethod == PaymentMethod.CASHLESS) cashReceived else null ?: 0
+
     val error = TransactionValidator.validateTransaction(
         items = transactionViewModel.cups.value,
         total = transactionViewModel.total.value,
         queueNumber = transactionViewModel.queuePreview.value,
-        paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH,
-        cashReceived = paymentViewModel.inputAmount.value,
-        nonCashAmount = paymentViewModel.inputAmount.value
+        paymentMethod = paymentMethod,
+        cashReceived = cashReceived,
+        nonCashAmount = nonCashAmount
     )
 
     if (error != null) {
@@ -911,19 +899,13 @@ fun commitTransactionAnyway(
         return
     }
 
-    val queueNumber = transactionViewModel.queuePreview.value ?: 1
-    val order = transactionViewModel.buildOrderForCommit(
-//        cashierId = "kasir123",
-        queueNumber = queueNumber,
-        paymentMethod = paymentViewModel.selectedPaymentMethod.value ?: PaymentMethod.CASH,
-        cashReceived = paymentViewModel.inputAmount.value,
-        change = paymentViewModel.change.value,
-        nonCashAmount = if (paymentViewModel.selectedPaymentMethod.value != PaymentMethod.CASH)
-            paymentViewModel.inputAmount.value else null
+    // Submit transaksi baru (DISINI PAKAI DUAL QUEUE)
+    transactionViewModel.submitOrder(
+        paymentMethod = paymentMethod,
+        cashReceived = cashReceived,
+        change = change,
+        nonCashAmount = nonCashAmount
     )
-
-    transactionViewModel.setLastOrder(order)
-    transactionViewModel.commitTransaction(order)
 }
 
 

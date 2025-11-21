@@ -64,16 +64,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.model.OrderItem
+import com.example.kasirlumpiasuper.domain.model.OrderItem
 import com.example.kasirlumpiasuper.ui.components.AddButtonTransaction
 import com.example.kasirlumpiasuper.ui.components.queueLabel
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
+import com.example.kasirlumpiasuper.ui.theme.Danger
 import com.example.kasirlumpiasuper.ui.theme.Outline
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.PrimaryBold
 import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
+import com.example.kasirlumpiasuper.ui.theme.Warning
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,28 +86,32 @@ fun TransactionScreen(
     queueNumber: Int? = null
 ) {
     val productViewModel: ProductListViewModel = viewModel()
+    val stockViewModel: TransactionStockViewModel = viewModel()
 
     var showEmpty by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
+    val products by productViewModel.productList.collectAsState()
+    val remainingStock by stockViewModel.remainingStock.collectAsState()
     val subtotal by transactionViewModel.subtotal.collectAsState()
     val total by transactionViewModel.total.collectAsState()
     val discountInput by transactionViewModel.discountInput.collectAsState()
     val currentCup by transactionViewModel.currentCupIndex.collectAsState()
     val queuePreview by transactionViewModel.queuePreview.collectAsState()
     val cups by transactionViewModel.cups.collectAsState()
-    val currentItems = cups[currentCup] ?: emptyList()
     val notes by transactionViewModel.notes.collectAsState()
     val isLoading by transactionViewModel.isLoading.collectAsState()
+    val isLoadingStock by stockViewModel.isLoading.collectAsState()
 
-    val products by productViewModel.productList.collectAsState()
-
-
+    val currentItems = cups[currentCup] ?: emptyList()
     val allItems = cups.values.flatten()
     val isValid = allItems.isNotEmpty()
     val isEditMode = !dateKey.isNullOrBlank() && queueNumber != null
-
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        stockViewModel.loadTodayStock()
+    }
 
     LaunchedEffect(dateKey, queueNumber) {
         if (!dateKey.isNullOrBlank() && queueNumber != null) {
@@ -115,30 +121,16 @@ fun TransactionScreen(
         }
     }
 
-    if (isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White.copy(alpha = 0.7f)),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = Primary)
-        }
-    } else {
+    if (!isLoading && !isLoadingStock) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            // =========================
-            // KIRI - DAFTAR PRODUK
-            // =========================
-
             Column(
                 modifier = Modifier
                     .weight(2f)
                     .padding(end = 16.dp)
             ) {
-                // TopBar kiri
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shadowElevation = 2.dp,
@@ -176,6 +168,7 @@ fun TransactionScreen(
                             name = product.name,
                             price = product.price,
                             imageUrl = product.imageUrl,
+                            remaining = remainingStock[product.id] ?: 0,
                             modifier = Modifier,
                             onFreeClick = {
                                 transactionViewModel.addItemToCurrentCup(
@@ -202,7 +195,6 @@ fun TransactionScreen(
                         )
                     }
 
-                    // (Opsional) ketika belum ada produk sama sekali
                     if (products.isEmpty()) {
                         item(span = { GridItemSpan(3) }) {
                             Box(
@@ -222,11 +214,6 @@ fun TransactionScreen(
                 }
             }
 
-            // =========================
-            // KANAN - KERANJANG (scrollable)
-            // =========================
-
-
             Surface(
                 modifier = Modifier
                     .weight(1.2f)
@@ -237,7 +224,6 @@ fun TransactionScreen(
                 shadowElevation = 4.dp
             ) {
                 Box(Modifier.fillMaxSize()) {
-                    // ==== HEADER: full-bleed, tidak kena padding ====
                     val headerHeight = 64.dp
                     Column {
                         Surface(
@@ -290,12 +276,10 @@ fun TransactionScreen(
                                 modifier = Modifier
                                     .padding(16.dp)
                             ) {
-
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-
                                     Button(
                                         onClick = { transactionViewModel.addCup() },
                                         shape = RoundedCornerShape(4.dp),
@@ -308,7 +292,6 @@ fun TransactionScreen(
                                             )
                                         )
                                     ) {
-
                                         Row(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
@@ -422,19 +405,16 @@ fun TransactionScreen(
                                 }
                             }
                         }
-
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth(),
                             shadowElevation = 4.dp,
                             shape = RoundedCornerShape(8.dp)
-
                         ) {
                             Column(
                                 modifier = Modifier
                                     .padding(16.dp)
                             ) {
-
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth(),
@@ -452,7 +432,6 @@ fun TransactionScreen(
                                 OutlinedTextField(
                                     value = if (showEmpty && discountInput == 0) "()" else "(${discountInput})",
                                     onValueChange = { input ->
-                                        // filter hanya angka
                                         val onlyDigits = input.filter { it.isDigit() }
                                         transactionViewModel.setDiscount(onlyDigits)
                                     },
@@ -464,10 +443,8 @@ fun TransactionScreen(
                                         .fillMaxWidth()
                                         .onFocusChanged { focusState ->
                                             if (focusState.isFocused) {
-                                                // Saat diklik, kosongkan tampilan kalau nilainya 0
                                                 showEmpty = true
                                             } else {
-                                                // Saat kehilangan fokus, kembalikan angka jika kosong
                                                 if (discountInput == 0) showEmpty = false
                                             }
                                         },
@@ -515,7 +492,7 @@ fun TransactionScreen(
                                                         "Perubahan disimpan",
                                                         Toast.LENGTH_SHORT
                                                     ).show()
-                                                    navController.popBackStack() // kembali ke OrderDetailScreen
+                                                    navController.popBackStack()
                                                 },
                                                 onError = { e ->
                                                     Toast.makeText(
@@ -526,7 +503,6 @@ fun TransactionScreen(
                                                 }
                                             )
                                         } else {
-                                            // mode transaksi baru → lanjut ke pembayaran
                                             if (isValid) {
                                                 navController.navigate(NavRoutes.Payment.route)
                                             } else {
@@ -550,6 +526,15 @@ fun TransactionScreen(
                 }
             }
         }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White.copy(alpha = 0.7f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Primary)
+        }
     }
 }
 
@@ -559,9 +544,21 @@ fun ProductCard(
     price: Int,
     modifier: Modifier = Modifier,
     imageUrl: String,
+    remaining: Int,
     onFreeClick: () -> Unit,
     onItemClick: () -> Unit
 ) {
+
+    val stockColor = when {
+        remaining <= 0 -> Danger
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val stockText = when {
+        remaining <= 0 -> "Stok kosong"
+        remaining < 50 -> "Sisa stok: $remaining"
+        else -> "Sisa stok: $remaining"
+    }
     Card(
         modifier = modifier
             .heightIn(min = 140.dp)
@@ -592,31 +589,72 @@ fun ProductCard(
             }
             Spacer(Modifier.height(8.dp))
 
-            Row(verticalAlignment = Alignment.Top) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stockText,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = stockColor,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    text = "Free?",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = PrimaryBold,
+                    modifier = Modifier
+                        .clickable(onClick = onFreeClick)
+                        .padding(4.dp),
+                )
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = name,
                     fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    text = "Rp. $price",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Free?",
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = PrimaryBold,
-                        modifier = Modifier
-                            .clickable(
-                                onClick = onFreeClick
-                            )
-                            .padding(4.dp),
-                    )
-                    Text(
-                        text = "Rp. $price",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
             }
+
+//            Row(verticalAlignment = Alignment.Top) {
+//                Text(
+//                    text = name,
+//                    fontSize = 14.sp,
+//                    fontWeight = FontWeight.Medium
+//                )
+//                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+//                    Text(
+//                        text = "Free?",
+//                        fontSize = 8.sp,
+//                        fontWeight = FontWeight.Normal,
+//                        color = PrimaryBold,
+//                        modifier = Modifier
+//                            .clickable(
+//                                onClick = onFreeClick
+//                            )
+//                            .padding(4.dp),
+//                    )
+//                    Text(
+//                        text = "Rp. $price",
+//                        fontSize = 12.sp,
+//                        fontWeight = FontWeight.Medium
+//                    )
+//                }
+//            }
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.example.kasirlumpiasuper.domain.validator
 
-import com.example.kasirlumpiasuper.data.model.OrderItem
-import com.example.kasirlumpiasuper.data.model.PaymentMethod
+import com.example.kasirlumpiasuper.domain.model.OrderItem
+import com.example.kasirlumpiasuper.domain.model.PaymentMethod
 import com.example.kasirlumpiasuper.domain.error.DomainError
 
 object TransactionValidator {

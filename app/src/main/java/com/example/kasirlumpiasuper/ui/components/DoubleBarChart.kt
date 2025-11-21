@@ -1,20 +1,16 @@
 package com.example.kasirlumpiasuper.ui.components
 
 import android.graphics.Color.DKGRAY
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.kasirlumpiasuper.ui.theme.Danger
 import com.example.kasirlumpiasuper.ui.theme.Success
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
+import com.example.kasirlumpiasuper.helper.date.DateUtils
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
@@ -24,95 +20,6 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
-import java.text.SimpleDateFormat
-import java.util.Locale
-
-@Composable
-fun DoubleBarChart(
-    income: List<Int>,
-    cash: List<Int>,
-    labels: List<String>
-) {
-    AndroidView(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(280.dp),
-        factory = { context ->
-            BarChart(context).apply {
-                description.isEnabled = false
-                axisRight.isEnabled = false
-                legend.apply {
-                    isEnabled = true
-                    textSize = 12f
-                    xEntrySpace = 12f
-                    yOffset = 10f
-                    verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
-                    orientation = Legend.LegendOrientation.HORIZONTAL
-                    setDrawInside(false)
-                }
-
-                xAxis.apply {
-                    valueFormatter = IndexAxisValueFormatter(
-                        labels.map { DateUtils.shortDayLabelFromKey(it) }
-                    )
-                    position = XAxis.XAxisPosition.BOTTOM
-                    setDrawGridLines(false)
-                    granularity = 1f
-                    yOffset = 6f
-                    setCenterAxisLabels(true)
-                    textColor = DKGRAY
-                    textSize = 12f
-                }
-
-                axisLeft.apply {
-                    textColor = DKGRAY
-                    setDrawGridLines(true)
-                    gridColor = android.graphics.Color.LTGRAY
-                    gridLineWidth = 0.5f // garis halus
-                }
-                setExtraOffsets(8f, 0f, 8f, 0f)
-            }
-        },
-        update = { chart ->
-            if (income.isEmpty() || cash.isEmpty() || labels.isEmpty()) return@AndroidView
-
-            val barEntriesIncome =
-                income.mapIndexed { i, v -> BarEntry(i.toFloat(), v.toFloat()) }
-            val barEntriesCash =
-                cash.mapIndexed { i, v -> BarEntry(i.toFloat(), v.toFloat()) }
-
-            val dataSetIncome = BarDataSet(barEntriesIncome, "Pendapatan").apply {
-                color = Color(0xFF2196F3).toArgb()
-                valueTextColor = android.graphics.Color.BLACK
-                valueTextSize = 10f
-            }
-
-            val dataSetCash = BarDataSet(barEntriesCash, "Pengeluaran").apply {
-                color = Danger.toArgb()
-                valueTextColor = android.graphics.Color.BLACK
-                valueTextSize = 10f
-            }
-
-            val barData = BarData(dataSetIncome, dataSetCash)
-            val groupSpace = 0.26f
-            val barSpace = 0.04f
-            val barWidth = 0.33f
-
-            barData.barWidth = barWidth
-            chart.data = barData
-
-            val groupCount = labels.size
-            val groupWidth = barData.getGroupWidth(groupSpace, barSpace)
-
-            chart.xAxis.axisMinimum = 0f
-            chart.xAxis.axisMaximum = groupWidth * groupCount + 0.4f
-
-            chart.groupBars(0f, groupSpace, barSpace)
-            chart.animateY(800)
-            chart.invalidate()
-        }
-    )
-}
 
 @Composable
 fun SingleBarChart(

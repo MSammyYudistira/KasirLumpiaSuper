@@ -63,10 +63,6 @@ fun MenuDetailScreen(
     val currentProduct by viewModel.currentProduct.collectAsState()
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(productId) {
-        viewModel.loadProductDetail(productId)
-    }
-
     var name by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -75,7 +71,9 @@ fun MenuDetailScreen(
         selectedImageUri = uri
     }
 
-
+    LaunchedEffect(productId) {
+        viewModel.loadProductDetail(productId)
+    }
 
     LaunchedEffect(currentProduct) {
         name = currentProduct?.name ?: ""
@@ -116,11 +114,8 @@ fun MenuDetailScreen(
                         onPickImage = { launcher.launch("image/*") }
                     )
 
-
-
                     Spacer(Modifier.height(24.dp))
 
-                    // INPUT NAMA
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
@@ -130,7 +125,6 @@ fun MenuDetailScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // INPUT HARGA
                     OutlinedTextField(
                         value = price,
                         onValueChange = { price = it.filter { char -> char.isDigit() } },
@@ -194,7 +188,7 @@ fun MenuDetailScreen(
                         onClick = {
                             showDeleteDialog = false
                             viewModel.deleteProduct(productId) {
-                                navController.popBackStack()   // kembali setelah delete
+                                navController.popBackStack()
                             }
                         }
                     ) {
@@ -221,20 +215,17 @@ fun ProductImagePicker(
         modifier = Modifier.size(160.dp),
         contentAlignment = Alignment.BottomEnd
     ) {
-
         AsyncImage(
             model = localImageUri ?: imageUrl,
             contentDescription = "Product Image",
             placeholder = painterResource(R.drawable.lumper_logo),
             error = painterResource(R.drawable.lumper_logo),
-//            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(140.dp)
                 .clip(CircleShape)
                 .border(BorderStroke(4.dp, Primary), CircleShape)
                 .padding(4.dp)
         )
-
         IconButton(
             onClick = onPickImage,
             modifier = Modifier

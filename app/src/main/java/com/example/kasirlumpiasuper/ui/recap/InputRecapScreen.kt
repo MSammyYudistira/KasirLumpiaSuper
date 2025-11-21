@@ -27,7 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.kasirlumpiasuper.data.model.RecapInput
+import com.example.kasirlumpiasuper.domain.model.RecapInput
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.theme.Primary
 
@@ -73,7 +73,6 @@ fun InputRecapScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 72.dp),
         ) {
-            /** Bagian Pendapatan Kotor */
             item {
                 Surface(
                     modifier = Modifier
@@ -129,7 +128,6 @@ fun InputRecapScreen(
                 }
             }
 
-            /** Bagian Pengeluaran Tambahan */
             item {
                 Surface(
                     modifier = Modifier
@@ -193,7 +191,7 @@ fun InputRecapScreen(
                             onValueChange = { lokasi.value = it },
                             label = { Text("Lokasi Acara") },
                             placeholder = { Text("Dimana letak lokasi acara hari ini?") },
-                            textStyle = MaterialTheme.typography.displaySmall,
+                            textStyle = MaterialTheme.typography.bodyLarge,
                         )
 
                         OutlinedTextField(
@@ -203,7 +201,7 @@ fun InputRecapScreen(
                             onValueChange = { notes.value = it },
                             label = { Text("Catatan") },
                             placeholder = { Text("Tulis catatan penting untuk hari ini...") },
-                            textStyle = MaterialTheme.typography.bodyMedium,
+                            textStyle = MaterialTheme.typography.bodyLarge,
                             maxLines = 4
                         )
                     }

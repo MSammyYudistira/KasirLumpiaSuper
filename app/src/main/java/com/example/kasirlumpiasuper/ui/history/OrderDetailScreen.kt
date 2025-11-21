@@ -44,8 +44,8 @@ import com.example.kasirlumpiasuper.R
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.ui.theme.Success
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.example.kasirlumpiasuper.ui.utils.PrintHelper
+import com.example.kasirlumpiasuper.helper.date.DateUtils
+import com.example.kasirlumpiasuper.helper.printing.PrintHelper
 import kotlinx.coroutines.launch
 
 
@@ -64,7 +64,7 @@ fun OrderDetailScreen(
 
     val openDialog = remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope() //
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(dateKey, queueNumber) {
         viewModel.loadOrderByQueue(dateKey, queueNumber)
@@ -93,7 +93,6 @@ fun OrderDetailScreen(
                         .padding(innerPadding)
                         .padding(horizontal = 72.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-//                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
                     item {
                         Surface(
@@ -102,14 +101,13 @@ fun OrderDetailScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 24.dp)
-                                .wrapContentHeight() // 🔹 penting agar tinggi mengikuti isi
+                                .wrapContentHeight()
                         ) {
                             Column(
                                 modifier = Modifier
                                     .padding(horizontal = 32.dp, vertical = 24.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                // 🔹 Header: Nomor Struk & Jumlah
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
@@ -159,10 +157,8 @@ fun OrderDetailScreen(
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
-//                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        // 🔹 Catatan
                                         if (order!!.notes.isNotBlank()) {
                                             Text(
                                                 "Catatan",
@@ -178,7 +174,7 @@ fun OrderDetailScreen(
 
                                     Surface(
                                         modifier = Modifier
-                                            .size(40.dp) // ✅ Ukuran bebas kamu tentukan
+                                            .size(40.dp)
                                             .clickable {
                                                 if (order != null) {
                                                     scope.launch {
@@ -245,7 +241,7 @@ fun OrderDetailScreen(
 
                                         Surface(
                                             modifier = Modifier
-                                                .size(40.dp) // ✅ Ukuran bebas kamu tentukan
+                                                .size(40.dp)
                                                 .clickable {
                                                     openDialog.value = true
                                                 },
@@ -264,7 +260,6 @@ fun OrderDetailScreen(
 
                                 Divider(thickness = 1.dp, color = Color.LightGray)
 
-                                // 🔹 Jenis Makanan
                                 Text(
                                     "Jenis Makanan",
                                     color = Primary,
@@ -348,129 +343,7 @@ fun OrderDetailScreen(
 
                     item {
                         Column {
-//                            Row(
-//                                modifier = Modifier.fillMaxWidth(),
-//                                horizontalArrangement = Arrangement.SpaceBetween,
-//                                verticalAlignment = Alignment.CenterVertically
-//                            ) {
-//                                if (isAdmin) {
-//                                    Button(
-//                                        onClick = {
-//                                            viewModel.saveUpdatedOrder(
-//                                                onDeleted = {
-//                                                    Toast.makeText(
-//                                                        context,
-//                                                        "Transaksi dihapus (semua item kosong)",
-//                                                        Toast.LENGTH_SHORT
-//                                                    ).show()
-//                                                    navController.popBackStack() // kembali ke History setelah delete
-//                                                },
-//                                                onSaved = {
-//                                                    Toast.makeText(
-//                                                        context,
-//                                                        "Perubahan disimpan",
-//                                                        Toast.LENGTH_SHORT
-//                                                    ).show()
-//                                                }
-//                                            )
-//                                            Toast.makeText(
-//                                                context,
-//                                                "Perubahan disimpan",
-//                                                Toast.LENGTH_SHORT
-//                                            ).show()
-//                                        },
-//                                        modifier = Modifier
-//                                            .weight(1f)
-//                                            .padding(bottom = 24.dp),
-//                                        shape = RoundedCornerShape(8.dp),
-//                                        colors = ButtonDefaults.buttonColors(containerColor = Primary)
-//                                    ) {
-//                                        Icon(
-//                                            painter = painterResource(R.drawable.baseline_save_24),
-//                                            contentDescription = "Simpan Perubahan",
-//                                            tint = Color.White
-//                                        )
-//                                        Spacer(Modifier.width(8.dp))
-//                                        Text(
-//                                            "Simpan Perubahan",
-//                                            color = Color.White,
-//                                            style = MaterialTheme.typography.titleMedium
-//                                        )
-//                                    }
-//                                }
-
                             Spacer(Modifier.width(16.dp))
-
-//                            Button(
-//                                onClick = {
-//                                    if (order != null) {
-//                                        scope.launch {
-//                                            try {
-//                                                PrintHelper.printReceipt(context, order!!)
-//                                            } catch (e: Exception) {
-//                                                Toast.makeText(
-//                                                    context,
-//                                                    "Gagal print: ${e.message}",
-//                                                    Toast.LENGTH_SHORT
-//                                                ).show()
-//                                            }
-//                                        }
-//                                    }
-//                                },
-//                                modifier = Modifier
-//                                    .fillMaxWidth()
-//                                    .padding(bottom = 24.dp),
-//                                shape = RoundedCornerShape(8.dp),
-//                                colors = ButtonDefaults.buttonColors(containerColor = Primary)
-//                            ) {
-//                                Icon(
-//                                    painter = painterResource(R.drawable.baseline_print_24),
-//                                    contentDescription = "Cetak Struk",
-//                                    tint = Color.White
-//                                )
-//                                Spacer(Modifier.width(8.dp))
-//                                Text(
-//                                    "Cetak Struk",
-//                                    color = Color.White,
-//                                    style = MaterialTheme.typography.titleMedium
-//                                )
-//                            }
-
-
-//                            Button(
-//                                modifier = Modifier.fillMaxWidth(),
-//                                shape = RoundedCornerShape(8.dp),
-//                                colors = ButtonDefaults.buttonColors(containerColor = Primary),
-//                                onClick = {
-//                                    val currentDateKey = dateKey
-//                                    val currentQueue = queueNumber
-//
-//                                    if (currentDateKey.isNotBlank() && currentQueue > 0) {
-//                                        navController.navigate(
-//                                            "transaction?dateKey=$currentDateKey&queueNumber=$currentQueue"
-//                                        )
-//                                    } else {
-//                                        Toast.makeText(
-//                                            context,
-//                                            "Data transaksi tidak valid",
-//                                            Toast.LENGTH_SHORT
-//                                        ).show()
-//                                    }
-//                                }
-//                            ) {
-//                                Icon(
-//                                    painter = painterResource(R.drawable.outline_edit_square_24),
-//                                    contentDescription = "Edit Transaksi",
-//                                    tint = Color.White
-//                                )
-//                                Spacer(Modifier.width(8.dp))
-//                                Text(
-//                                    "Edit Transaksi",
-//                                    color = Color.White,
-//                                    style = MaterialTheme.typography.titleMedium
-//                                )
-//                            }
-
                             if (openDialog.value) {
                                 AlertDialog(
                                     onDismissRequest = { openDialog.value = false },
@@ -489,7 +362,7 @@ fun OrderDetailScreen(
                                                         "Transaksi berhasil dihapus!",
                                                         Toast.LENGTH_SHORT
                                                     ).show()
-                                                    navController.popBackStack() // kembali ke halaman sebelumnya
+                                                    navController.popBackStack()
                                                 },
                                                 onError = { err ->
                                                     Toast.makeText(
@@ -510,27 +383,6 @@ fun OrderDetailScreen(
                                     }
                                 )
                             }
-
-//                            Button(
-//                                modifier = Modifier.fillMaxWidth(),
-//                                shape = RoundedCornerShape(8.dp),
-//                                colors = ButtonDefaults.buttonColors(containerColor = Danger),
-//                                onClick = {
-//                                    openDialog.value = true
-//                                }
-//                            ) {
-//                                Icon(
-//                                    painter = painterResource(R.drawable.baseline_delete_24),
-//                                    contentDescription = "Hapus Transaksi",
-//                                    tint = Color.White
-//                                )
-//                                Spacer(Modifier.width(8.dp))
-//                                Text(
-//                                    "Hapus Transaksi",
-//                                    color = Color.White,
-//                                    style = MaterialTheme.typography.titleMedium
-//                                )
-//                            }
                         }
                     }
                 }

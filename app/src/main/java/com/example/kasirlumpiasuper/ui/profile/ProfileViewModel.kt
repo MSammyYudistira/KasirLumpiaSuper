@@ -4,8 +4,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.data.model.Users
-import com.example.kasirlumpiasuper.ui.utils.StorageHelper
+import com.example.kasirlumpiasuper.domain.model.Users
+import com.example.kasirlumpiasuper.helper.storage.StorageHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,7 +64,7 @@ class ProfileViewModel : ViewModel() {
 
     fun updateUser(name: String, onResult: (Boolean) -> Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        _isLoading.value = true // ✅ aktifkan loading saat update
+        _isLoading.value = true
 
         val updates = mapOf("name" to name)
 
@@ -93,7 +93,6 @@ class ProfileViewModel : ViewModel() {
             .update("profileImageUrl", url)
             .await()
 
-        // refresh user
         loadUserFromAuth()
     }
 

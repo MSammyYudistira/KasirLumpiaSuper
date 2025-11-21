@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.ui.utils.DataStoreKeys
-import com.example.kasirlumpiasuper.ui.utils.datastore
+import com.example.kasirlumpiasuper.data.datastore.DataStoreKeys
+import com.example.kasirlumpiasuper.data.datastore.datastore
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow

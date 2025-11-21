@@ -151,7 +151,7 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Logout
+                    // Logout button
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(),
@@ -243,7 +243,6 @@ private fun ProfilePictureWithEdit(
         contentAlignment = Alignment.BottomEnd
     ) {
 
-        // FOTO PROFIL UTAMA
         AsyncImage(
             model = localImageUri ?: imageUrl,
             contentDescription = "Profile Picture",
@@ -257,7 +256,6 @@ private fun ProfilePictureWithEdit(
             contentScale = ContentScale.Crop
         )
 
-        // TOMBOL EDIT FOTO
         IconButton(
             onClick = onEditClick,
             modifier = Modifier

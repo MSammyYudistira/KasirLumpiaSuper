@@ -52,12 +52,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.model.CashAtRegister
-import com.example.kasirlumpiasuper.data.model.DailyRecap
-import com.example.kasirlumpiasuper.data.model.ExpenseSummary
-import com.example.kasirlumpiasuper.data.model.FreeSummary
-import com.example.kasirlumpiasuper.data.model.GrossSection
-import com.example.kasirlumpiasuper.data.model.ProductRecapRow
+import com.example.kasirlumpiasuper.domain.model.CashAtRegister
+import com.example.kasirlumpiasuper.domain.model.DailyRecap
+import com.example.kasirlumpiasuper.domain.model.ExpenseSummary
+import com.example.kasirlumpiasuper.domain.model.FreeSummary
+import com.example.kasirlumpiasuper.domain.model.GrossSection
+import com.example.kasirlumpiasuper.domain.model.ProductRecapRow
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.theme.Danger
 import com.example.kasirlumpiasuper.ui.theme.Primary
@@ -65,8 +65,8 @@ import com.example.kasirlumpiasuper.ui.theme.Secondary
 import com.example.kasirlumpiasuper.ui.theme.Success
 import com.example.kasirlumpiasuper.ui.theme.Surface
 import com.example.kasirlumpiasuper.ui.theme.Warning
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.example.kasirlumpiasuper.ui.utils.PdfUtils
+import com.example.kasirlumpiasuper.helper.date.DateUtils
+import com.example.kasirlumpiasuper.helper.printing.PdfUtils
 import java.io.File
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -130,12 +130,10 @@ fun DetailRecapScreen(
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
 
-                    // 🔹 1. Header Info (Tanggal + Lokasi)
                     item {
                         HeaderInfo(recap!!)
                     }
 
-                    // 🔹 2. Tabel Rekapan Jumlah Makanan
                     item {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
@@ -154,7 +152,6 @@ fun DetailRecapScreen(
                         }
                     }
 
-                    // 🔹 3. Grid Section
                     item {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -199,8 +196,6 @@ fun DetailRecapScreen(
                         }
                     }
 
-
-                    // 🔹 4. Button Cetak Rekapan
                     item {
                         Button(
                             onClick = {
@@ -214,7 +209,7 @@ fun DetailRecapScreen(
                                             paddingHorizontal = 72.dp
                                         )
                                     },
-                                    highQuality = true // ✅ aktifkan mode tajam
+                                    highQuality = true
                                 )
 
                                 val fileName = PdfUtils.defaultRecapFileName(recap!!.dateLabel)
@@ -222,15 +217,14 @@ fun DetailRecapScreen(
                                     context = context,
                                     bitmap = bitmap,
                                     fileName = fileName,
-                                    dpi = 300 // ✅ tajam, posisi tengah atas otomatis
+                                    dpi = 300
                                 )
 
                                 if (ok) {
-                                    // 🔹 Cari file PDF di folder Downloads
                                     val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                                     val candidateNames = listOf(
                                         "$fileName.pdf",
-                                        fileName, // jaga-jaga kalau PdfUtils sudah tambahkan .pdf
+                                        fileName,
                                     )
                                     var pdfFile: File? = null
                                     for (name in candidateNames) {
@@ -241,13 +235,11 @@ fun DetailRecapScreen(
                                         }
                                     }
 
-                                    // 🔹 kalau masih belum ketemu, coba di getExternalFilesDir
                                     if (pdfFile == null) {
                                         val internalFile = File(context.getExternalFilesDir(null), "$fileName.pdf")
                                         if (internalFile.exists()) pdfFile = internalFile
                                     }
 
-                                    // 🔹 kalau ketemu, tampilkan dialog
                                     if (pdfFile != null && pdfFile.exists()) {
                                         val uri = FileProvider.getUriForFile(
                                             context,
@@ -262,11 +254,6 @@ fun DetailRecapScreen(
                                 } else {
                                     Toast.makeText(context, "Gagal menyimpan PDF", Toast.LENGTH_SHORT).show()
                                 }
-//                                Toast.makeText(
-//                                    context,
-//                                    if (ok) "PDF berhasil disimpan di folder Download" else "Gagal menyimpan PDF",
-//                                    Toast.LENGTH_LONG
-//                                ).show()
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
@@ -315,10 +302,6 @@ fun DetailRecapScreen(
     }
 }
 
-// =====================
-// KONTEN REUSABLE
-// =====================
-
 @Composable
 private fun HeaderInfo(
     recap: DailyRecap,
@@ -354,10 +337,6 @@ private fun HeaderInfo(
     }
 }
 
-/**
- * Versi EXPORT: tanpa LazyColumn, full Column agar seluruh konten terekam.
- * Gunakan komponen yang sama dengan layar, jadi tampilan & warna IDENTIK.
- */
 @Composable
 private fun DetailRecapBodyExport(
     recap: DailyRecap,
@@ -369,10 +348,7 @@ private fun DetailRecapBodyExport(
             .padding(horizontal = paddingHorizontal, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Header
         HeaderInfo(recap)
-
-        // Tabel
         Surface(
             shape = RoundedCornerShape(8.dp),
             border = BorderStroke(1.dp, Color.Black),
@@ -784,8 +760,6 @@ fun RecapCardCash(title: String, data: CashAtRegister, modifier: Modifier = Modi
                     color = Primary
                 )
             }
-
-//            Spacer(Modifier.height(4.dp))
 
             val diff = data.diff
             val diffColor = when {

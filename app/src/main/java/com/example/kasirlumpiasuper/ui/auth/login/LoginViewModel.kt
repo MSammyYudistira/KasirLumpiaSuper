@@ -7,8 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
-import com.example.kasirlumpiasuper.ui.utils.DataStoreKeys
-import com.example.kasirlumpiasuper.ui.utils.datastore
+import com.example.kasirlumpiasuper.data.datastore.DataStoreKeys
+import com.example.kasirlumpiasuper.data.datastore.datastore
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
@@ -58,7 +58,17 @@ class LoginViewModel : ViewModel() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    val firebaseUser = auth.currentUser
                     val uid = auth.currentUser?.uid
+
+                    if (firebaseUser != null && !firebaseUser.isEmailVerified) {
+                        isLoading = false
+                        errorMessage = "Email belum diverifikasi. Cek inbox kamu!"
+                        auth.signOut()
+                        onResult(false, null, null)
+                        return@addOnCompleteListener
+                    }
+
                     if (uid != null) {
                         firestore.collection("users").document(uid)
                             .get()

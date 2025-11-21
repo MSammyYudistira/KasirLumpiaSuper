@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.kasirlumpiasuper.data.model.StockInputItem
+import com.example.kasirlumpiasuper.domain.model.StockInputItem
 import com.example.kasirlumpiasuper.ui.components.CustomActionButton
 import com.example.kasirlumpiasuper.ui.components.CustomTopBarWithBackAction
 import com.example.kasirlumpiasuper.ui.dashboard.DashboardViewModel
@@ -75,10 +75,6 @@ fun StockScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 72.dp),
         ) {
-
-            // ======================
-            // STOK AWAL
-            // ======================
             item {
                 Surface(
                     modifier = Modifier
@@ -114,10 +110,6 @@ fun StockScreen(
                     }
                 }
             }
-
-            // ======================
-            // STOK RUSAK / RETUR
-            // ======================
             item {
                 Surface(
                     modifier = Modifier
@@ -153,10 +145,6 @@ fun StockScreen(
                     }
                 }
             }
-
-            // ======================
-            // UANG KAS PEMBUKA
-            // ======================
             item {
                 Surface(
                     modifier = Modifier
@@ -185,10 +173,6 @@ fun StockScreen(
                     }
                 }
             }
-
-            // ======================
-            // BUTTON SIMPAN
-            // ======================
             item {
                 val isButtonEnabled = hasAnyStockInput.value || uangKas.isNotBlank()
 
@@ -200,7 +184,6 @@ fun StockScreen(
                             return@CustomActionButton
                         }
 
-                        // 🔥 Simpan berdasarkan product dinamis
                         val items = products.map { product ->
                             StockInputItem(
                                 productId = product.id,

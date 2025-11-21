@@ -3,13 +3,13 @@ package com.example.kasirlumpiasuper.ui.recap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.data.model.DailyRecap
-import com.example.kasirlumpiasuper.data.model.RecapInput
-import com.example.kasirlumpiasuper.data.model.StockInputItem
-import com.example.kasirlumpiasuper.data.model.StockMeta
-import com.example.kasirlumpiasuper.data.repository.RecapRepository
-import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
-import com.example.kasirlumpiasuper.ui.utils.RecapUtils
+import com.example.kasirlumpiasuper.domain.model.DailyRecap
+import com.example.kasirlumpiasuper.domain.model.RecapInput
+import com.example.kasirlumpiasuper.domain.model.StockInputItem
+import com.example.kasirlumpiasuper.domain.model.StockMeta
+import com.example.kasirlumpiasuper.data.firestore.RecapRepository
+import com.example.kasirlumpiasuper.helper.date.BusinessDateManager
+import com.example.kasirlumpiasuper.helper.recap.RecapUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -51,13 +51,12 @@ class RecapViewModel(
                 val cashierId = dailyRecap.cashierId
                 val userName = if (cashierId.isNotBlank()) {
                     try {
-                        repo.getUserNameById(cashierId) ?: "" // kamu tambahkan fungsi ini di repo (lihat di bawah)
+                        repo.getUserNameById(cashierId)
                     } catch (e: Exception) {
                         ""
                     }
                 } else ""
 
-                // 4) Set state
                 _recap.value = dailyRecap.copy(userName = userName)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Gagal memuat rekap"
@@ -75,17 +74,12 @@ class RecapViewModel(
     ) {
         viewModelScope.launch {
             try {
-                // ✅ Ambil profil user lengkap dari Firestore (punya nama dan role)
                 val profile = repo.getCurrentUserProfile()
-
-                // ✅ Buat meta dengan data lengkap
                 val meta = StockMeta(
                     cashOpening = cashOpening,
                     createdAt = System.currentTimeMillis(),
                     createdBy = profile
                 )
-
-                // ✅ Simpan ke Firestore
                 val dateLabel = BusinessDateManager.getBusinessDateLabel()
                 repo.saveStockInputs(dateLabel, items, meta)
 
@@ -105,7 +99,7 @@ class RecapViewModel(
         viewModelScope.launch {
             try {
                 repo.saveRecapInput(input, dateLabel)
-                onSuccess() // ✅ hanya terpanggil kalau Firestore berhasil
+                onSuccess()
             } catch (e: Exception) {
                 Log.e("RecapViewModel", "Gagal simpan recap", e)
                 onError(e.message ?: "Gagal menyimpan data recap")

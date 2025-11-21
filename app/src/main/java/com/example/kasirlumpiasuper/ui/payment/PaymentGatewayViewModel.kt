@@ -20,13 +20,9 @@ class PaymentGatewayViewModel : ViewModel() {
 
     private var polling = false
 
-    // =====================================================================
-    // CREATE QRIS
-    // =====================================================================
     fun createQris(orderId: String, amount: Int) {
         viewModelScope.launch {
             try {
-                // LOG
                 println("PG: createQris START orderId=$orderId amount=$amount")
 
                 val result = Firebase.functions
@@ -44,7 +40,6 @@ class PaymentGatewayViewModel : ViewModel() {
                 val url = data["qrUrl"] as? String
                 val status = data["status"] as? String ?: "pending"
 
-                // LOG
                 println("PG: createQris RESULT data=$data")
                 println("PG: QR URL = $url status=$status")
 
@@ -59,9 +54,6 @@ class PaymentGatewayViewModel : ViewModel() {
         }
     }
 
-    // =====================================================================
-    // POLLING STATUS
-    // =====================================================================
     fun startPollingStatus(orderId: String, intervalMs: Long = 2500L) {
         if (polling) return
         polling = true
@@ -80,7 +72,6 @@ class PaymentGatewayViewModel : ViewModel() {
                     val data = result.data as Map<*, *>
                     val status = data["transaction_status"] as? String ?: "error"
 
-                    // LOG
                     println("PG: Polling RESULT=$data")
                     println("PG: Polling STATUS=$status")
 
@@ -102,17 +93,11 @@ class PaymentGatewayViewModel : ViewModel() {
         }
     }
 
-    // =====================================================================
-    // STOP POLLING
-    // =====================================================================
     fun stopPolling() {
         println("PG: stopPolling CALLED")
         polling = false
     }
 
-    // =====================================================================
-    // RESET PAYMENT
-    // =====================================================================
     fun resetPayment() {
         println("PG: resetPayment CALLED")
         _qrUrl.value = null

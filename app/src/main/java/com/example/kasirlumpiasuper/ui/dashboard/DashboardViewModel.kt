@@ -3,10 +3,10 @@ package com.example.kasirlumpiasuper.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
-import com.example.kasirlumpiasuper.data.PreferencesManager
-import com.example.kasirlumpiasuper.data.repository.FirestoreRepository
+import com.example.kasirlumpiasuper.data.datastore.PreferencesManager
+import com.example.kasirlumpiasuper.data.firestore.FirestoreRepository
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
-import com.example.kasirlumpiasuper.ui.utils.BusinessDateManager
+import com.example.kasirlumpiasuper.helper.date.BusinessDateManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -19,8 +19,6 @@ class DashboardViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
 ) : ViewModel() {
 
-    private val db = FirebaseFirestore.getInstance()
-
     // --- UI States ---
     private val _stockFilledToday = MutableStateFlow(false)
     val stockFilledToday: StateFlow<Boolean> = _stockFilledToday
@@ -28,14 +26,10 @@ class DashboardViewModel(
     private val _customerCountToday = MutableStateFlow(0)
     val customerCountToday: StateFlow<Int> = _customerCountToday
 
-    private val _cashFilledToday = MutableStateFlow(false)
-    val cashFilledToday: StateFlow<Boolean> = _cashFilledToday
-
     private val _grandTotalToday = MutableStateFlow(0)
     val grandTotalToday: StateFlow<Int> = _grandTotalToday
 
     private val _isNewDay = MutableStateFlow(false)
-    val isNewDay: StateFlow<Boolean> = _isNewDay
 
     private val _manualResetRequired = MutableStateFlow(false)
     val manualResetRequired: StateFlow<Boolean> = _manualResetRequired
@@ -84,7 +78,7 @@ class DashboardViewModel(
     fun isStockFilledToday() {
         viewModelScope.launch {
             _isLoading.value = true
-            val date = businessDate.value   // ← BUKAN tanggal sistem
+            val date = businessDate.value
             val filled = repository.isStockFilled(date)
             _stockFilledToday.value = filled
             _isLoading.value = false
@@ -101,41 +95,6 @@ class DashboardViewModel(
             }
         }
     }
-
-//    fun resetStock() {
-//        _stockFilledToday.value = false
-//    }
-//
-//    fun resetCash() {
-//        _cashFilledToday.value = false
-//    }
-
-
-//    fun resetStock() {
-//        viewModelScope.launch {
-//            try {
-//                val dateKey = BusinessDateManager.getBusinessDateLabel()
-//                repository.resetStockForDate(dateKey)
-//                _stockFilledToday.value = false
-//                println("✅ Stok berhasil di-reset untuk $dateKey")
-//            } catch (e: Exception) {
-//                println("❌ Gagal reset stok: ${e.message}")
-//            }
-//        }
-//    }
-//
-//    fun resetCash() {
-//        viewModelScope.launch {
-//            try {
-//                val dateKey = BusinessDateManager.getBusinessDateLabel()
-//                repository.resetCashForDate(dateKey)
-//                _cashFilledToday.value = false
-//                println("✅ Kas berhasil di-reset untuk $dateKey")
-//            } catch (e: Exception) {
-//                println("❌ Gagal reset kas: ${e.message}")
-//            }
-//        }
-//    }
 
     fun checkCustomerCountToday(filterByCashierId: String? = null) {
         val dateKey = BusinessDateManager.getBusinessDateLabel()
@@ -174,13 +133,9 @@ class DashboardViewModel(
         navController: NavHostController
     ) {
         _isLoading.value = true
-
-        // RESET STATE HARI INI SAJA (JANGAN HAPUS DATA FIRESTORE)
         _stockFilledToday.value = false
-//        _cashFilledToday.value = false
 
         delay(500)
-        // UPDATE TANGGAL BISNIS
         prefs.saveLastBusinessDate(currentDate)
         BusinessDateManager.lockTo(currentDate)
         _businessDate.value = currentDate
@@ -193,19 +148,16 @@ class DashboardViewModel(
         _isLoading.value = false
     }
 
-
-    // --------------------------------------------------------------------
-    // 🔹 CEK APAKAH HARI BERGANTI
-    // --------------------------------------------------------------------
     fun initializeBusinessDay(prefs: PreferencesManager) {
         viewModelScope.launch {
             val savedDate = prefs.getLastBusinessDate()
             if (savedDate != null) {
-                BusinessDateManager.lockTo(savedDate)   // WAJIB
+                BusinessDateManager.lockTo(savedDate)
                 _businessDate.value = savedDate
+
             } else {
                 val today = BusinessDateManager.getCurrentSystemDateLabel()
-                BusinessDateManager.lockTo(today)       // WAJIB
+                BusinessDateManager.lockTo(today)
                 prefs.saveLastBusinessDate(today)
                 _businessDate.value = today
             }
@@ -217,7 +169,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             BusinessDateManager.lockTo(date)
-            prefs.saveLastBusinessDate(date)     // WAJIB
+            prefs.saveLastBusinessDate(date)
             prefs.saveManualLock(true, date)
             _businessDate.value = date
             _isLoading.value = false
@@ -228,14 +180,11 @@ class DashboardViewModel(
     fun rejectAutoReset(prefs: PreferencesManager) {
         viewModelScope.launch {
             val currentBusinessDate = BusinessDateManager.getBusinessDateLabel()
-
             BusinessDateManager.lockTo(currentBusinessDate)
             prefs.saveManualLock(true, currentBusinessDate)
 
             _isNewDay.value = false
             _manualResetRequired.value = true
-
-            println("🔒 Hari tetap di $currentBusinessDate, manual reset diaktifkan")
         }
     }
 
@@ -244,7 +193,6 @@ class DashboardViewModel(
             val currentDate = BusinessDateManager.getBusinessDateLabel()
             prefs.saveLastBusinessDate(currentDate)
             prefs.clearManualLock()
-
             BusinessDateManager.releaseLock()
 
             _isNewDay.value = false

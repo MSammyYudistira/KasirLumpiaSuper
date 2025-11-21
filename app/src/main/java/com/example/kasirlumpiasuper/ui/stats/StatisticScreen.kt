@@ -2,6 +2,7 @@ package com.example.kasirlumpiasuper.ui.stats
 
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,15 +35,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.ui.components.DoubleBarChart
 import com.example.kasirlumpiasuper.ui.components.GrowthLineChart
 import com.example.kasirlumpiasuper.ui.components.SingleBarChart
+import com.example.kasirlumpiasuper.ui.history.showDatePicker
 import com.example.kasirlumpiasuper.ui.theme.Primary
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -63,15 +65,11 @@ fun StatisticScreen(
     var selectedMonth by remember { mutableStateOf(Calendar.getInstance().get(Calendar.MONTH)) }
     var selectedYear by remember { mutableStateOf(Calendar.getInstance().get(Calendar.YEAR)) }
     var incomeData by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-
-    // label tanggal yang dipilih
     var selectedRangeLabel by remember {
         mutableStateOf(
             SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID")).format(Date())
         )
     }
-
-
 
     LaunchedEffect(Unit) {
         viewModel.loadRevenueRange(Date()) { i ->
@@ -92,7 +90,6 @@ fun StatisticScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
 
-            /** 🔹 Grafik Pendapatan */
             item {
                 Spacer(Modifier.height(24.dp))
                 Surface(
@@ -124,28 +121,27 @@ fun StatisticScreen(
                             shape = RoundedCornerShape(8.dp),
                             shadowElevation = 4.dp,
                             onClick = {
-                                val cal = Calendar.getInstance()
-                                DatePickerDialog(
-                                    context,
-                                    { _, year, month, day ->
-                                        val picked =
-                                            Calendar.getInstance()
-                                                .apply { set(year, month, day) }.time
-                                        val format =
-                                            SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
-                                        selectedRangeLabel = format.format(picked)
+                                showDatePicker(
+                                    context = context,
+                                    currentKey = selectedRangeLabel,
+                                    onPick = { pickedDateLabel ->
 
-                                        viewModel.loadRevenueRange(picked) { i ->
-                                            incomeData = i
+                                        selectedRangeLabel = pickedDateLabel
+
+                                        val fmt = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+                                        val pickedDate = fmt.parse(pickedDateLabel)
+
+                                        if (pickedDate != null) {
+                                            viewModel.loadRevenueRange(pickedDate) { result ->
+                                                incomeData = result
+                                            }
                                         }
-                                    },
-                                    cal.get(Calendar.YEAR),
-                                    cal.get(Calendar.MONTH),
-                                    cal.get(Calendar.DAY_OF_MONTH)
-                                ).show()
+                                    }
+                                )
                             }
                         ) {
-                            Row(
+
+                        Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
 
@@ -216,11 +212,10 @@ fun StatisticScreen(
                             }
                         }
 
-                        // Dropdown filter
                         var expanded by remember { mutableStateOf(false) }
                         ExposedDropdownMenuBox(
                             expanded = expanded,
-                            onExpandedChange = { expanded = !expanded }
+                            onExpandedChange = { expanded = !expanded },
                         ) {
                             OutlinedTextField(
                                 value = selectedPeriod,

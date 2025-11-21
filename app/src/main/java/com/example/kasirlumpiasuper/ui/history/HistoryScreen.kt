@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.history
 
+import android.R.attr.onClick
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
@@ -49,13 +50,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.kasirlumpiasuper.R
-import com.example.kasirlumpiasuper.data.model.Order
+import com.example.kasirlumpiasuper.data.firestore.FirestoreViewModel
+import com.example.kasirlumpiasuper.domain.model.Order
 import com.example.kasirlumpiasuper.ui.navigation.NavRoutes
 import com.example.kasirlumpiasuper.ui.recap.RecapViewModel
 import com.example.kasirlumpiasuper.ui.theme.OnSurfaceVariant
 import com.example.kasirlumpiasuper.ui.theme.Primary
-import com.example.kasirlumpiasuper.ui.utils.DateUtils
-import com.example.kasirlumpiasuper.ui.utils.PrintHelper
+import com.example.kasirlumpiasuper.helper.date.DateUtils
+import com.example.kasirlumpiasuper.helper.printing.PrintHelper
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -68,8 +70,13 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = viewModel()
 ) {
     val recapViewModel: RecapViewModel = viewModel()
+    val firestoreViewModel: FirestoreViewModel = viewModel()
+
     var hasInputRecap by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+
+    val user by firestoreViewModel.user.collectAsState()
+    val role = user?.role ?: "kasir"
 
     val context = LocalContext.current
     val dateKey by viewModel.selectedDateKey.collectAsState()
@@ -91,6 +98,7 @@ fun HistoryScreen(
     }
 
     LaunchedEffect(Unit) {
+        firestoreViewModel.loadUser()
         viewModel.initLoadIfNeeded()
     }
 
@@ -108,37 +116,40 @@ fun HistoryScreen(
             LazyColumn(
                 modifier = Modifier
                     .padding(horizontal = 72.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
                     Spacer(Modifier.height(24.dp))
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        shadowElevation = 4.dp,
-                        onClick = {
-                            showDatePicker(
-                                context = context,
-                                currentKey = dateKey,
-                                onPick = { viewModel.setSelectedDateKey(it) }
-                            )
-                        }
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
 
+                    if (role == "admin") {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            shadowElevation = 4.dp,
+                            onClick = {
+                                showDatePicker(
+                                    context = context,
+                                    currentKey = dateKey,
+                                    onPick = { viewModel.setSelectedDateKey(it) }
+                                )
+                            }
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.baseline_date_range_24),
-                                contentDescription = "date picker",
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = dateKey,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_date_range_24),
+                                    contentDescription = "date picker",
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = dateKey,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
                         }
                     }
+                    Spacer(Modifier.height(16.dp))
                 }
 
                 item {
@@ -149,10 +160,14 @@ fun HistoryScreen(
                             val q = searchQuery.trim().lowercase()
 
                             orders.filter { order ->
-                                val queueMatch = q.startsWith("#") && order.queueNumber.toString() == q.removePrefix("#")
+                                val queueMatch =
+                                    q.startsWith("#") && order.queueNumber.toString() == q.removePrefix(
+                                        "#"
+                                    )
                                 val itemMatch = order.items.any { item ->
                                     val nameMatch = item.name.lowercase().contains(q)
-                                    val qtyMatch = "${item.name.lowercase()} ${item.qty}".contains(q)
+                                    val qtyMatch =
+                                        "${item.name.lowercase()} ${item.qty}".contains(q)
                                     nameMatch || qtyMatch
                                 }
                                 queueMatch || itemMatch
@@ -176,14 +191,6 @@ fun HistoryScreen(
                             )
                         }
 
-//                        filterOrders.isEmpty() && searchQuery.isNotBlank() -> {
-//                            Text(
-//                                "Tidak ada hasil untuk \"$searchQuery\"",
-//                                style = MaterialTheme.typography.bodyMedium,
-//                                color = Color.Gray,
-//                                modifier = Modifier.padding(vertical = 16.dp)
-//                            )
-//                        }
                         else -> {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -191,13 +198,20 @@ fun HistoryScreen(
                             ) {
                                 Column(
                                     modifier = Modifier
-                                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                                        .padding(horizontal = 24.dp, vertical = 24.dp)
                                 ) {
                                     Text(
                                         "Transaksi Hari Ini",
                                         style = MaterialTheme.typography.displaySmall
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    if (role == "kasir") {
+                                        Text(
+                                            text = dateKey,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
 
                                     if (filterOrders.isEmpty() && searchQuery.isNotBlank()) {
                                         Text(
@@ -214,7 +228,7 @@ fun HistoryScreen(
                                         label = { Text("Cari Struk atau Item...") },
                                         trailingIcon = {
                                             if (searchQuery.isNotEmpty()) {
-                                                IconButton(onClick =  { searchQuery = "" }) {
+                                                IconButton(onClick = { searchQuery = "" }) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.baseline_close_24),
                                                         contentDescription = "Hapus pencarian"
@@ -235,26 +249,26 @@ fun HistoryScreen(
                                     filterOrders
                                         .sortedByDescending { it.queueNumber }
                                         .forEach { order ->
-                                        HistoryListItem(
-                                            order,
-                                            onPrint = {
-                                                scope.launch {
-                                                    try {
-                                                        PrintHelper.printReceipt(context, order)
-                                                    } catch (e: Exception) {
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Gagal print: ${e.message}",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
+                                            HistoryListItem(
+                                                order,
+                                                onPrint = {
+                                                    scope.launch {
+                                                        try {
+                                                            PrintHelper.printReceipt(context, order)
+                                                        } catch (e: Exception) {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Gagal print: ${e.message}",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
                                                     }
+                                                },
+                                                onClick = {
+                                                    navController.navigate("${NavRoutes.OrderDetail.route}/${dateKey}/${order.queueNumber}")
                                                 }
-                                            },
-                                            onClick = {
-                                                navController.navigate("${NavRoutes.OrderDetail.route}/${dateKey}/${order.queueNumber}")
-                                            }
-                                        )
-                                    }
+                                            )
+                                        }
 
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Row(
@@ -377,7 +391,7 @@ private fun HistoryListItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
-            .clickable{ onClick() }
+            .clickable { onClick() }
     ) {
         // Header: Struk #xxx + total
         Row(

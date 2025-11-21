@@ -2,7 +2,7 @@ package com.example.kasirlumpiasuper.ui.payment
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.data.model.PaymentMethod
+import com.example.kasirlumpiasuper.domain.model.PaymentMethod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,5 +39,4 @@ class PaymentViewModel : ViewModel() {
     fun setTotalOrder(value: Int) {
         _totalOrder.value = value
     }
-
 }

@@ -15,9 +15,7 @@ sealed class NavRoutes(val route: String) {
     object DetailRecap : NavRoutes("detail_recap")
     object OrderDetail : NavRoutes("order_detail")
     object Dashboard : NavRoutes("dashboard")
-
     object MenuManagement : NavRoutes("menu_management")
-
     object MenuDetail : NavRoutes("menu_detail/{productId}") {
         fun build(productId: String) = "menu_detail/$productId"
     }

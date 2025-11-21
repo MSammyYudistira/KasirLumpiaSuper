@@ -3,9 +3,9 @@ package com.example.kasirlumpiasuper.ui.menu
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kasirlumpiasuper.data.model.Product
-import com.example.kasirlumpiasuper.data.repository.MenuRepository
-import com.example.kasirlumpiasuper.ui.utils.StorageHelper
+import com.example.kasirlumpiasuper.domain.model.Product
+import com.example.kasirlumpiasuper.data.firestore.MenuRepository
+import com.example.kasirlumpiasuper.helper.storage.StorageHelper
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,10 +27,6 @@ class MenuViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> get() = _isLoading
 
-
-    // ------------------------------------------------------
-    // 🔹 LOAD ALL PRODUCTS (dipanggil dari MenuManagementScreen)
-    // ------------------------------------------------------
     fun loadProducts() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -40,9 +36,6 @@ class MenuViewModel(
         }
     }
 
-    // ------------------------------------------------------
-    // 🔹 LOAD DETAIL PRODUK UNTUK EDIT
-    // ------------------------------------------------------
     fun loadProductDetail(productId: String) {
         viewModelScope.launch {
             if (productId == "new") {
@@ -56,9 +49,6 @@ class MenuViewModel(
         }
     }
 
-    // ------------------------------------------------------
-    // 🔹 ADD NEW PRODUCT
-    // ------------------------------------------------------
     suspend fun saveNewProduct(name: String, price: Int, imageUri: Uri?) {
         val doc = db.collection("products").document()
         val productId = doc.id
@@ -66,7 +56,7 @@ class MenuViewModel(
         val url = if (imageUri != null) {
             StorageHelper.uploadProductImage(productId, imageUri)
         } else {
-            ""  // default local image
+            ""
         }
 
         val data = mapOf(
@@ -79,9 +69,6 @@ class MenuViewModel(
         doc.set(data).await()
     }
 
-    // ------------------------------------------------------
-    // 🔹 UPDATE EXISTING PRODUCT
-    // ------------------------------------------------------
     suspend fun updateProduct(id: String, name: String, price: Int, imageUri: Uri?) {
         val data = mutableMapOf<String, Any>(
             "name" to name,
@@ -100,7 +87,7 @@ class MenuViewModel(
         viewModelScope.launch {
             repository.deleteProduct(productId)
             loadProducts()
-            onDone()    // callback untuk kembali ke screen sebelumnya
+            onDone()
         }
     }
 

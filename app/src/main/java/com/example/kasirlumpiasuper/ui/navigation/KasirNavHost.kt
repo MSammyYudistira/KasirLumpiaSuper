@@ -22,8 +22,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import com.example.kasirlumpiasuper.data.PreferencesManager
-import com.example.kasirlumpiasuper.data.repository.FirestoreViewModel
+import com.example.kasirlumpiasuper.data.datastore.PreferencesManager
+import com.example.kasirlumpiasuper.data.firestore.FirestoreViewModel
 import com.example.kasirlumpiasuper.ui.auth.AuthCheckScreen
 import com.example.kasirlumpiasuper.ui.auth.AuthViewModel
 import com.example.kasirlumpiasuper.ui.auth.AuthViewModelFactory
@@ -58,21 +58,13 @@ fun KasirNavHost(
     navController: NavHostController,
     authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(LocalContext.current))
 ) {
-//    val navController = rememberNavController()
-
-    // ViewModel global untuk Firestore user (bisa diakses dari mana saja)
     val firestoreViewModel: FirestoreViewModel = viewModel()
-
-    // ViewModel yang akan menampung role admin/kasir (di-scope ke "main")
-    // Dibuat di luar NavHost supaya Compose tidak re-create tiap navigasi
-//    val dashboardViewModel: DashboardViewModel = viewModel()
 
     NavHost(
         navController = navController,
         startDestination = NavRoutes.Splash.route,
     ) {
 
-        // === SPLASH / AUTH SECTION ===
         composable(NavRoutes.Splash.route) {
             SplashScreen {
                 navController.navigate(NavRoutes.AuthCheck.route) {
@@ -82,6 +74,7 @@ fun KasirNavHost(
         }
 
         composable(NavRoutes.AuthCheck.route) { AuthCheckScreen(navController, authViewModel) }
+
         composable(NavRoutes.Login.route) {
             LoginScreen(
                 navController = navController,
@@ -91,21 +84,16 @@ fun KasirNavHost(
         }
         composable(NavRoutes.Signup.route) { SignupScreen(navController) }
 
-        // === MAIN SECTION (setelah login) ===
         navigation(
             startDestination = NavRoutes.Dashboard.route,
             route = "main"
         ) {
 
             composable(NavRoutes.Dashboard.route) { backStackEntry ->
-                // ⭐ Ambil parent entry dari "main" NAV GRAPH
                 val parentEntry = remember(backStackEntry) {
                     navController.getBackStackEntry("main")
                 }
-
-                // ⭐ DashboardViewModel shared untuk semua screen
                 val dashboardViewModel: DashboardViewModel = viewModel(parentEntry)
-
                 val context = LocalContext.current
                 val prefs = remember { PreferencesManager(context) }
                 MainScaffold(
@@ -147,13 +135,9 @@ fun KasirNavHost(
 
             composable(NavRoutes.Stock.route) { backStackEntry ->
                 val recapViewModel: RecapViewModel = viewModel(backStackEntry)
-
-                    // ⭐ Ambil parent entry dari "main" NAV GRAPH
                     val parentEntry = remember(backStackEntry) {
                         navController.getBackStackEntry("main")
                     }
-
-                    // ⭐ DashboardViewModel shared untuk semua screen
                     val dashboardViewModel: DashboardViewModel = viewModel(parentEntry)
 
                     StockScreen(
@@ -185,8 +169,6 @@ fun KasirNavHost(
                 val dateKey = backStackEntry.arguments?.getString("dateKey") ?: return@composable
                 val queueNumber = backStackEntry.arguments?.getString("queueNumber")?.toIntOrNull()
                     ?: return@composable
-
-                // Pastikan aman dari crash jika "main" tidak ada
                 val parentEntry = remember(navController) {
                     try {
                         navController.getBackStackEntry("main")
@@ -198,8 +180,6 @@ fun KasirNavHost(
                 val historyViewModel: HistoryViewModel =
                     if (parentEntry != null) viewModel(parentEntry)
                     else viewModel()
-
-                // 👉 Ambil role dari FirestoreViewModel root milik KasirNavHost
                 val user by firestoreViewModel.user.collectAsState()
                 val isAdmin = user?.role == "admin"
 
@@ -246,7 +226,6 @@ fun KasirNavHost(
                 PaymentScreen(navController, paymentViewModel, transactionViewModel)
             }
 
-            // Kelola Menu (Admin Only)
             composable(NavRoutes.MenuManagement.route) { backStackEntry ->
                 val menuViewModel: MenuViewModel = viewModel(backStackEntry)
                 MenuManagementScreen(
