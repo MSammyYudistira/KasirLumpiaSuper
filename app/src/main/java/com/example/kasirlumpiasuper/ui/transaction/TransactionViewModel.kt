@@ -143,13 +143,10 @@ class TransactionViewModel(
             val uid = FirebaseAuth.getInstance().currentUser!!.uid
             val dateKey = getBusinessDateLabel()
 
-            // 1️⃣ Ambil nomor queue LOKAL
             val localQueue = repository.getNextLocalQueueNumber(uid, dateKey)
 
-            // 2️⃣ Ambil nomor queue GLOBAL
             val globalQueue = repository.getNextGlobalQueueNumber(dateKey)
 
-            // 3️⃣ Bangun ORDER siap simpan
             val order = buildOrderForCommit(
                 queueNumber = localQueue,
                 paymentMethod = paymentMethod,
@@ -161,7 +158,6 @@ class TransactionViewModel(
                 globalQueueNumber = globalQueue
             )
 
-            // 4️⃣ Simpan ke Firestore
             val result = repository.saveOrder(
                 uid = uid,
                 date = dateKey,
@@ -169,6 +165,10 @@ class TransactionViewModel(
                 localQueue = localQueue,
                 order = order
             )
+
+            if (result is Result.Success) {
+                _lastOrder.value = order
+            }
 
             _saveOrderState.value = result
             _isLoading.value = false

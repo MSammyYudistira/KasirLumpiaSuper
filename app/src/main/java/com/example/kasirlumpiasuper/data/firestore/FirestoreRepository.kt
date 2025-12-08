@@ -278,7 +278,7 @@ class FirestoreRepository(
             name = snapshot.getString("name") ?: "",
             email = snapshot.getString("email") ?: "",
             role = snapshot.getString("role") ?: "kasir",
-            profileImageUrl = snapshot.getString("profileImageUrl") ?: ""   // 🔥 INI YANG PENTING
+            profileImageUrl = snapshot.getString("profileImageUrl") ?: ""
         )
     }
 

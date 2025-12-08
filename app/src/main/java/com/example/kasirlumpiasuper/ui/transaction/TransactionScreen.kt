@@ -52,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -559,11 +560,18 @@ fun ProductCard(
         remaining < 50 -> "Sisa stok: $remaining"
         else -> "Sisa stok: $remaining"
     }
+//    { onItemClick() }
     Card(
         modifier = modifier
             .heightIn(min = 140.dp)
             .padding(start = 16.dp)
-            .clickable { onItemClick() },
+            .alpha(if (remaining > 0) 1f else 0.5f)
+            .clickable(
+                enabled = remaining > 0,
+                onClick = {
+                    if (remaining > 0) onItemClick()
+                }
+            ) ,
         elevation = CardDefaults.cardElevation(4.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(Surface)
@@ -605,9 +613,9 @@ fun ProductCard(
                     text = "Free?",
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Normal,
-                    color = PrimaryBold,
+                    color = if (remaining > 0) PrimaryBold else Color.Gray,
                     modifier = Modifier
-                        .clickable(onClick = onFreeClick)
+                        .clickable(enabled = remaining > 0) { onFreeClick() }
                         .padding(4.dp),
                 )
             }

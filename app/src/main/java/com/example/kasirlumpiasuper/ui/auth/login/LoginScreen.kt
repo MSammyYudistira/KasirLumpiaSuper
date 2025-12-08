@@ -1,5 +1,6 @@
 package com.example.kasirlumpiasuper.ui.auth.login
 
+import android.R.attr.onClick
 import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -175,12 +176,6 @@ fun LoginScreen(
                                 navController.navigate(NavRoutes.AuthCheck.route) {
                                     popUpTo(0)
                                 }
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    loginViewModel.errorMessage ?: "Login gagal",
-                                    Toast.LENGTH_SHORT
-                                ).show()
                             }
                         }
                     },

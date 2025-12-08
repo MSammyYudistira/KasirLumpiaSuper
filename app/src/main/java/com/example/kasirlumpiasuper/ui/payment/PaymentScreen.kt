@@ -2,6 +2,7 @@ package com.example.kasirlumpiasuper.ui.payment
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -205,19 +206,18 @@ fun PaymentScreen(
         when (state) {
             is Result.Success -> {
                 val order = transactionViewModel.getLastOrder()
+                Log.d("PAYMENT", "ORDER = $order")
                 if (order != null && isPrinterConnected) {
-                    try {
                         PrintHelper.printReceipt(context, order)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Gagal mencetak struk", Toast.LENGTH_SHORT).show()
-                    }
+                } else {
+                    Log.e("PAYMENT", "ORDER MASIH NULL SETELAH SAVE!")
                 }
 
-                delay(1000L)
+                // baru navigate setelah printer selesai
+                navController.navigate(NavRoutes.Dashboard.route)
 
                 transactionViewModel.resetTransaction()
                 paymentViewModel.reset()
-                navController.navigate(NavRoutes.Dashboard.route)
                 transactionViewModel.clearSaveOrderState()
             }
 
@@ -632,7 +632,6 @@ fun PaymentScreen(
                                                     transactionViewModel = transactionViewModel,
                                                     paymentViewModel = paymentViewModel
                                                 )
-                                                Toast.makeText(context, "Transaksi berhasil disimpan.", Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                     ) {

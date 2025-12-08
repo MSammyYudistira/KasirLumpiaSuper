@@ -14,5 +14,4 @@ object ErrorMapper {
             else -> DomainError.UnknownError
         }
     }
-
 }

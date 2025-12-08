@@ -1,8 +1,10 @@
 package com.example.kasirlumpiasuper.ui.dashboard
 
 import android.annotation.SuppressLint
+import android.widget.Space
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +52,7 @@ import com.example.kasirlumpiasuper.ui.theme.Primary
 import com.example.kasirlumpiasuper.helper.date.BusinessDateManager
 import com.example.kasirlumpiasuper.helper.date.BusinessDateManager.getBusinessDateLabel
 import com.example.kasirlumpiasuper.helper.date.DateUtils
+import com.example.kasirlumpiasuper.ui.theme.Success
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -79,6 +82,7 @@ fun DashboardScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    var isRevenueVisible by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var showNewDayDialog by remember { mutableStateOf(true) }
     var selectedBusinessDate by remember { mutableStateOf(getBusinessDateLabel()) }
@@ -246,7 +250,7 @@ fun DashboardScreen(
                                                             }
 
                                                             else -> {
-                                                                // ✅ boleh tanggal hari ini atau sebelumnya
+                                                                //  boleh tanggal hari ini atau sebelumnya
                                                                 viewModel.updateBusinessDate(
                                                                     pickedDate,
                                                                     prefs
@@ -342,34 +346,62 @@ fun DashboardScreen(
                                     color = Color(0xFFE3FCEB),
                                     shape = RoundedCornerShape(8.dp),
                                 ) {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier.padding(24.dp)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp)
                                     ) {
+
+                                        // 🔍 Icon Show/Hide di pojok kanan atas
                                         Icon(
-                                            painter = painterResource(R.drawable.baseline_money_bill_wave_24),
-                                            contentDescription = "Total Pendapatan Hari Ini",
+                                            painter = painterResource(
+                                                if (isRevenueVisible) R.drawable.baseline_visibility_24
+                                                else R.drawable.baseline_visibility_off_24
+                                            ),
+                                            contentDescription = "Show/Hide Revenue",
+                                            tint = Success,
                                             modifier = Modifier
-                                                .size(40.dp)
-                                                .background(
-                                                    color = Color(0xFF22C55E),
-                                                    shape = CircleShape
-                                                )
-                                                .padding(6.dp),
-                                            tint = Color.White
+                                                .size(28.dp)
+                                                .align(Alignment.TopEnd)
+                                                .clickable { isRevenueVisible = !isRevenueVisible }
                                         )
-                                        Text(
-                                            "Total Pendapatan Hari Ini",
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                        Text(
-                                            text = DateUtils.rupiah(totalRevenue),
-                                            style = MaterialTheme.typography.displayMedium,
-                                            color = Color(0xFF22C55E)
-                                        )
+
+                                        // Isi utama card
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+
+                                            // 🟢 Icon uang tetap di tengah
+                                            Icon(
+                                                painter = painterResource(R.drawable.baseline_money_bill_wave_24),
+                                                contentDescription = "Total Pendapatan Hari Ini",
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .background(
+                                                        color = Color(0xFF22C55E),
+                                                        shape = CircleShape
+                                                    )
+                                                    .padding(6.dp),
+                                                tint = Color.White
+                                            )
+
+                                            Text(
+                                                "Total Pendapatan Hari Ini",
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+
+                                            Text(
+                                                text = if (isRevenueVisible) DateUtils.rupiah(totalRevenue) else "******",
+                                                style = MaterialTheme.typography.displayMedium,
+                                                color = Color(0xFF22C55E)
+                                            )
+                                        }
                                     }
                                 }
+
                             }
                         }
                     }
@@ -495,8 +527,18 @@ fun DashboardScreen(
                         AlertDialog(
                             onDismissRequest = { showDialog = false },
                             containerColor = Color.White,
-                            title = { Text("Stok sudah di isi", style = MaterialTheme.typography.displaySmall) },
-                            text = { Text("Apakah kamu ingin mengatur ulang stok?", style = MaterialTheme.typography.bodyMedium) },
+                            title = {
+                                Text(
+                                    "Stok sudah di isi",
+                                    style = MaterialTheme.typography.displaySmall
+                                )
+                            },
+                            text = {
+                                Text(
+                                    "Apakah kamu ingin mengatur ulang stok?",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            },
                             confirmButton = {
                                 TextButton(onClick = {
                                     showDialog = false

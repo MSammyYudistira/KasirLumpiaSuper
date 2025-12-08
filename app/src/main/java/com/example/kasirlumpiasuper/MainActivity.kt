@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val bluetoothPremissionLauncher =
+    private val bluetoothPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val granted = permissions.entries.all { it.value == true }
             if (!granted) {
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
 
     private fun requestBluetoothPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            bluetoothPremissionLauncher.launch(
+            bluetoothPermissionLauncher.launch(
                 arrayOf(
                     android.Manifest.permission.BLUETOOTH_CONNECT,
                     android.Manifest.permission.BLUETOOTH_SCAN,
