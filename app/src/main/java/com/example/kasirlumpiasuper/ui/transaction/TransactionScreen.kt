@@ -550,28 +550,17 @@ fun ProductCard(
     onItemClick: () -> Unit
 ) {
 
-    val stockColor = when {
-        remaining <= 0 -> Danger
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    // Warna stok
+    val stockColor = if (remaining <= 0) Danger else MaterialTheme.colorScheme.onSurfaceVariant
 
-    val stockText = when {
-        remaining <= 0 -> "Stok kosong"
-        remaining < 50 -> "Sisa stok: $remaining"
-        else -> "Sisa stok: $remaining"
-    }
-//    { onItemClick() }
+    // Teks stok (angka bisa minus)
+    val stockText = "Sisa stok: $remaining"
+
     Card(
         modifier = modifier
             .heightIn(min = 140.dp)
             .padding(start = 16.dp)
-            .alpha(if (remaining > 0) 1f else 0.5f)
-            .clickable(
-                enabled = remaining > 0,
-                onClick = {
-                    if (remaining > 0) onItemClick()
-                }
-            ) ,
+            .clickable(onClick = { onItemClick() }) ,
         elevation = CardDefaults.cardElevation(4.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(Surface)
@@ -613,9 +602,9 @@ fun ProductCard(
                     text = "Free?",
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Normal,
-                    color = if (remaining > 0) PrimaryBold else Color.Gray,
+                    color = PrimaryBold,
                     modifier = Modifier
-                        .clickable(enabled = remaining > 0) { onFreeClick() }
+                        .clickable{ onFreeClick() }
                         .padding(4.dp),
                 )
             }
@@ -637,32 +626,6 @@ fun ProductCard(
                     fontWeight = FontWeight.Medium
                 )
             }
-
-//            Row(verticalAlignment = Alignment.Top) {
-//                Text(
-//                    text = name,
-//                    fontSize = 14.sp,
-//                    fontWeight = FontWeight.Medium
-//                )
-//                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-//                    Text(
-//                        text = "Free?",
-//                        fontSize = 8.sp,
-//                        fontWeight = FontWeight.Normal,
-//                        color = PrimaryBold,
-//                        modifier = Modifier
-//                            .clickable(
-//                                onClick = onFreeClick
-//                            )
-//                            .padding(4.dp),
-//                    )
-//                    Text(
-//                        text = "Rp. $price",
-//                        fontSize = 12.sp,
-//                        fontWeight = FontWeight.Medium
-//                    )
-//                }
-//            }
         }
     }
 }

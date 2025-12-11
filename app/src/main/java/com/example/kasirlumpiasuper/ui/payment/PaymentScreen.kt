@@ -124,55 +124,112 @@ fun PaymentScreen(
         isPrinterConnected = PrintHelper.initPrinter(context)
     }
 
-    LaunchedEffect(qrUrl, currentOrderId, selectedMethod) {
-        if (selectedMethod == PaymentMethod.CASHLESS &&
-            !qrUrl.isNullOrBlank() &&
-            currentOrderId != null) {
-            pgViewModel.startPollingStatus(currentOrderId!!)
-        }
-    }
+//    LaunchedEffect(qrUrl, currentOrderId, selectedMethod) {
+//        if (selectedMethod == PaymentMethod.CASHLESS &&
+//            !qrUrl.isNullOrBlank() &&
+//            currentOrderId != null) {
+//            pgViewModel.startPollingStatus(currentOrderId!!)
+//        }
+//    }
+
+//    LaunchedEffect(selectedMethod) {
+//        if (selectedMethod == PaymentMethod.CASHLESS) {
+//            pgViewModel.stopPolling()
+//            pgViewModel.resetPayment()
+//
+//            paymentViewModel.setInputAmount(total.toString())
+//
+//            val dateKey = BusinessDateManager.getBusinessDateLabel()
+//            val q = transactionViewModel.queuePreview.value ?: 0
+//            val orderId = "LUMPER-${dateKey}-${q}-${System.currentTimeMillis()}"
+//            currentOrderId = orderId
+//
+//            pgViewModel.createQris(orderId, total)
+//        } else {
+//            pgViewModel.stopPolling()
+//            pgViewModel.resetPayment()
+//        }
+//    }
 
     LaunchedEffect(selectedMethod) {
+        // Tidak generate QRIS lagi
+        pgViewModel.stopPolling()
+        pgViewModel.resetPayment()
+
         if (selectedMethod == PaymentMethod.CASHLESS) {
-            pgViewModel.stopPolling()
-            pgViewModel.resetPayment()
-
+            // kembali ke input manual seperti cash
             paymentViewModel.setInputAmount(total.toString())
-
-            val dateKey = BusinessDateManager.getBusinessDateLabel()
-            val q = transactionViewModel.queuePreview.value ?: 0
-            val orderId = "LUMPER-${dateKey}-${q}-${System.currentTimeMillis()}"
-            currentOrderId = orderId
-
-            pgViewModel.createQris(orderId, total)
-        } else {
-            pgViewModel.stopPolling()
-            pgViewModel.resetPayment()
         }
     }
 
-    LaunchedEffect(paymentStatus) {
-        when (paymentStatus) {
-            "settlement" -> {
-                Toast.makeText(context, "Pembayaran berhasil!", Toast.LENGTH_SHORT).show()
+    LaunchedEffect(state) {
+        when (state) {
+            is Result.Success -> {
+                // 🔹 Ambil order terakhir
+                val order = transactionViewModel.getLastOrder()
+                if (order != null && isPrinterConnected) {
+                    try {
+                        PrintHelper.printReceipt(context, order)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Gagal mencetak struk", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                delay(1000L)
+
+                // Reset form setelah sukses
+                transactionViewModel.resetTransaction()
+                paymentViewModel.reset()
+
+                // Navigasi ke dashboard kasir
+                navController.navigate(NavRoutes.Dashboard.route)
+
+                // Reset state supaya efek ini tidak ke-trigger ulang
+                transactionViewModel.clearSaveOrderState()
             }
 
-            "expire" -> {
-                Toast.makeText(context, "Pembayaran kedaluwarsa", Toast.LENGTH_SHORT).show()
-                pgViewModel.stopPolling()
+            is Result.Error -> {
+                val error = (state as Result.Error).error
+                val message = when (error) {
+                    is DomainError.NetworkError -> "Koneksi bermasalah, coba lagi"
+                    is DomainError.PermissionDenied -> "Akses ditolak, cek login"
+                    is DomainError.PreconditionFailed -> "Index Firestore belum dibuat"
+                    is DomainError.InvalidInput -> error.reason
+                    else -> "Terjadi kesalahan tak dikenal"
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+
+                // Optional: reset state agar tidak berulang
+                transactionViewModel.clearSaveOrderState()
             }
 
-            "cancel" -> {
-                Toast.makeText(context, "Pembayaran dibatalkan", Toast.LENGTH_SHORT).show()
-                pgViewModel.stopPolling()
-            }
-
-            "error" -> {
-                Toast.makeText(context, "Gagal memeriksa status", Toast.LENGTH_SHORT).show()
-                pgViewModel.stopPolling()
-            }
+            else -> Unit
         }
     }
+
+
+//    LaunchedEffect(paymentStatus) {
+//        when (paymentStatus) {
+//            "settlement" -> {
+//                Toast.makeText(context, "Pembayaran berhasil!", Toast.LENGTH_SHORT).show()
+//            }
+//
+//            "expire" -> {
+//                Toast.makeText(context, "Pembayaran kedaluwarsa", Toast.LENGTH_SHORT).show()
+//                pgViewModel.stopPolling()
+//            }
+//
+//            "cancel" -> {
+//                Toast.makeText(context, "Pembayaran dibatalkan", Toast.LENGTH_SHORT).show()
+//                pgViewModel.stopPolling()
+//            }
+//
+//            "error" -> {
+//                Toast.makeText(context, "Gagal memeriksa status", Toast.LENGTH_SHORT).show()
+//                pgViewModel.stopPolling()
+//            }
+//        }
+//    }
 
 
     if (showPrinterWarning) {
@@ -202,41 +259,41 @@ fun PaymentScreen(
         )
     }
 
-    LaunchedEffect(state) {
-        when (state) {
-            is Result.Success -> {
-                val order = transactionViewModel.getLastOrder()
-                Log.d("PAYMENT", "ORDER = $order")
-                if (order != null && isPrinterConnected) {
-                        PrintHelper.printReceipt(context, order)
-                } else {
-                    Log.e("PAYMENT", "ORDER MASIH NULL SETELAH SAVE!")
-                }
-
-                // baru navigate setelah printer selesai
-                navController.navigate(NavRoutes.Dashboard.route)
-
-                transactionViewModel.resetTransaction()
-                paymentViewModel.reset()
-                transactionViewModel.clearSaveOrderState()
-            }
-
-            is Result.Error -> {
-                val error = (state as Result.Error).error
-                val message = when (error) {
-                    is DomainError.NetworkError -> "Koneksi bermasalah, coba lagi"
-                    is DomainError.PermissionDenied -> "Akses ditolak, cek login"
-                    is DomainError.PreconditionFailed -> "Index Firestore belum dibuat"
-                    is DomainError.InvalidInput -> error.reason
-                    else -> "Terjadi kesalahan tak dikenal"
-                }
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                transactionViewModel.clearSaveOrderState()
-            }
-
-            else -> Unit
-        }
-    }
+//    LaunchedEffect(state) {
+//        when (state) {
+//            is Result.Success -> {
+//                val order = transactionViewModel.getLastOrder()
+//                Log.d("PAYMENT", "ORDER = $order")
+//                if (order != null && isPrinterConnected) {
+//                        PrintHelper.printReceipt(context, order)
+//                } else {
+//                    Log.e("PAYMENT", "ORDER MASIH NULL SETELAH SAVE!")
+//                }
+//
+//                // baru navigate setelah printer selesai
+//                navController.navigate(NavRoutes.Dashboard.route)
+//
+//                transactionViewModel.resetTransaction()
+//                paymentViewModel.reset()
+//                transactionViewModel.clearSaveOrderState()
+//            }
+//
+//            is Result.Error -> {
+//                val error = (state as Result.Error).error
+//                val message = when (error) {
+//                    is DomainError.NetworkError -> "Koneksi bermasalah, coba lagi"
+//                    is DomainError.PermissionDenied -> "Akses ditolak, cek login"
+//                    is DomainError.PreconditionFailed -> "Index Firestore belum dibuat"
+//                    is DomainError.InvalidInput -> error.reason
+//                    else -> "Terjadi kesalahan tak dikenal"
+//                }
+//                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+//                transactionViewModel.clearSaveOrderState()
+//            }
+//
+//            else -> Unit
+//        }
+//    }
 
     LazyColumn(
         modifier = Modifier
@@ -511,8 +568,15 @@ fun PaymentScreen(
                         shadowElevation = 2.dp,
                         color = Outline
                     ) {
-                        // =========== CASHLESS ===================
+                        // =========== CASHLESS =============
                         if (selectedMethod == PaymentMethod.CASHLESS) {
+
+                            val quickAmounts = listOf(
+                                10_000, 20_000, 30_000, 50_000,
+                                70_000, 80_000, 90_000, 100_000
+                            )
+                            val isExact = inputAmount == total
+
                             Column(
                                 modifier = Modifier
                                     .padding(24.dp)
@@ -522,56 +586,60 @@ fun PaymentScreen(
                                     "Nominal Pembayaran (Non-Tunai)",
                                     style = MaterialTheme.typography.displaySmall
                                 )
+
                                 Spacer(Modifier.height(24.dp))
 
-                                Column(
+                                OutlinedTextField(
+                                    value = if (showEmpty && inputAmount == 0) "" else inputAmount.toString(),
+                                    onValueChange = { newValue ->
+                                        val filtered = newValue.filter { it.isDigit() }
+                                        paymentViewModel.setInputAmount(filtered)
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(top = 16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    if (qrUrl == null) {
-                                        CircularProgressIndicator()
-                                        Text("Menyiapkan QRIS...")
-                                    } else {
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused) {
+                                                showEmpty = true
+                                            } else {
+                                                if (inputAmount == 0) showEmpty = false
+                                            }
+                                        },
+                                    colors = TextFieldDefaults.colors(
+                                        unfocusedContainerColor = Surface,
+                                    ),
+                                )
 
-                                        AsyncImage(
-                                            model = qrUrl,
-                                            contentDescription = "QRIS",
-                                            modifier = Modifier
-                                                .fillMaxWidth(0.6f)
-                                                .aspectRatio(1f)
+                                Spacer(Modifier.height(16.dp))
+
+                                FlowRow {
+                                    Button(
+                                        onClick = { paymentViewModel.setInputAmount(total.toString()) },
+                                        shape = RoundedCornerShape(36.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (isExact) Primary else Color(0xFFE1EEFE)
                                         )
-
-                                        Spacer(Modifier.height(8.dp))
+                                    ) {
                                         Text(
-                                            "Silakan scan QR ini untuk membayar",
-                                            style = MaterialTheme.typography.bodyMedium
+                                            "Uang Pas",
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isExact) Color.White else Primary
                                         )
+                                    }
 
-                                        Spacer(Modifier.height(8.dp))
-                                        Divider()
-                                        Spacer(Modifier.height(8.dp))
-
-                                        Text(
-                                            text = "Status: ${paymentStatus ?: "Menunggu..."}",
-                                            style = MaterialTheme.typography.titleMedium
-                                        )
-
-                                        if (paymentStatus == "settlement") {
-                                            Text(
-                                                "✅ Pembayaran berhasil!",
-                                                color = Color.Green
+                                    quickAmounts.forEach { amount ->
+                                        val isSelected = inputAmount == amount
+                                        Button(
+                                            onClick = { paymentViewModel.setInputAmount(amount.toString()) },
+                                            shape = RoundedCornerShape(36.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = if (isSelected) Primary else Color(0xFFE1EEFE)
                                             )
-                                        } else if (paymentStatus == "expire") {
+                                        ) {
                                             Text(
-                                                "⚠️ Pembayaran kedaluwarsa",
-                                                color = Color.Red
-                                            )
-                                        } else if (paymentStatus == "pending" || paymentStatus == null) {
-                                            Text(
-                                                "⌛ Menunggu pembayaran...",
-                                                color = Color.Gray
+                                                "Rp ${"%,d".format(amount)}",
+                                                color = if (isSelected) Color.White else Primary
                                             )
                                         }
                                     }
@@ -579,20 +647,42 @@ fun PaymentScreen(
 
                                 Spacer(Modifier.height(16.dp))
 
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Nominal Diterima", style = MaterialTheme.typography.bodyMedium)
+                                    Text("Rp $inputAmount", style = MaterialTheme.typography.titleMedium)
+                                }
+
+                                Spacer(Modifier.height(16.dp))
+                                Divider(thickness = 1.dp)
+                                Spacer(Modifier.height(16.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Kembalian", style = MaterialTheme.typography.displaySmall, color = Primary)
+                                    Text("Rp $change", style = MaterialTheme.typography.displaySmall, color = Primary)
+                                }
+
+                                Spacer(Modifier.height(24.dp))
+
                                 Row(horizontalArrangement = Arrangement.SpaceBetween) {
+
+                                    // CETAK NOMOR ANTRIAN
                                     Button(
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(12.dp),
-                                        enabled = qrUrl != null,
+                                        enabled = isPrinterConnected,
                                         onClick = {
-                                            val queueNumber =
-                                                transactionViewModel.queuePreview.value
+                                            val queueNumber = transactionViewModel.queuePreview.value
                                             if (queueNumber != null) {
                                                 scope.launch {
-                                                    PrintHelper.printQueueNumber(
-                                                        context,
-                                                        queueNumber
-                                                    )
+                                                    PrintHelper.printQueueNumber(context, queueNumber)
                                                 }
                                             } else {
                                                 Toast.makeText(
@@ -608,21 +698,18 @@ fun PaymentScreen(
                                                 painter = painterResource(R.drawable.baseline_receipt_24),
                                                 contentDescription = "Cetak Nomor Antrian"
                                             )
-
                                             Spacer(Modifier.width(8.dp))
-                                            Text(
-                                                "Cetak Nomor Antrian",
-                                                style = MaterialTheme.typography.titleMedium
-                                            )
+                                            Text("Cetak Nomor Antrian", style = MaterialTheme.typography.titleMedium)
                                         }
                                     }
 
                                     Spacer(Modifier.width(24.dp))
 
+                                    // TRANSAKSI SELESAI
                                     Button(
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(12.dp),
-                                        enabled = paymentStatus == "settlement",
+                                        enabled = true,
                                         onClick = {
                                             if (!isPrinterConnected) {
                                                 showPrinterWarning = true
@@ -637,15 +724,11 @@ fun PaymentScreen(
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
-                                                painter = painterResource(R.drawable.outline_check_24),
+                                                painter = painterResource(R.drawable.baseline_print_24),
                                                 contentDescription = "Transaksi Selesai"
                                             )
-
                                             Spacer(Modifier.width(8.dp))
-                                            Text(
-                                                "Transaksi Selesai",
-                                                style = MaterialTheme.typography.titleMedium
-                                            )
+                                            Text("Cetak Struk", style = MaterialTheme.typography.titleMedium)
                                         }
                                     }
                                 }
