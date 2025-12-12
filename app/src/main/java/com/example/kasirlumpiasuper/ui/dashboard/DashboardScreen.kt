@@ -1,7 +1,6 @@
 package com.example.kasirlumpiasuper.ui.dashboard
 
 import android.annotation.SuppressLint
-import android.widget.Space
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -514,6 +513,52 @@ fun DashboardScreen(
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     "Klik disini untuk membuat pesanan baru",
+                                    style = MaterialTheme.typography.displaySmall,
+                                    color = Primary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    // Input Barang Masuk
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp, horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    "Apakah Ada Barang Masuk?",
+                                    style = MaterialTheme.typography.displaySmall
+                                )
+                                Text(
+                                    "Kaloa ada barang masuk baru, input di sini.",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            TextButton(onClick = {
+                                    navController.navigate(NavRoutes.InputIncomingStock.route)
+                            }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.outline_assignment_add_24),
+                                    contentDescription = "Tambah Barang Masuk",
+                                    modifier = Modifier.size(30.dp),
+                                    tint = Primary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "Klik disini untuk menambah barang yang masuk",
                                     style = MaterialTheme.typography.displaySmall,
                                     color = Primary
                                 )

@@ -37,6 +37,7 @@ object RecapUtils {
                         productId = productId,
                         name = name,
                         initialStock = 0,
+                        incomingStock = 0,
                         damagedStock = 0
                     )
                 }
@@ -52,16 +53,13 @@ object RecapUtils {
             val soldByOrder = soldAgg[si.productId] ?: 0
             val revenue = revenueAgg[si.productId] ?: 0
 
-            val ending = when {
-                si.initialStock > 0 -> (si.initialStock - si.damagedStock - soldByOrder).coerceAtLeast(0)
-                soldByOrder > 0 -> 0
-                else -> 0
-            }
+            val ending = si.initialStock + si.incomingStock - si.damagedStock - soldByOrder
 
             ProductRecapRow(
                 productId = si.productId,
                 name = si.name,
                 initialStock = si.initialStock,
+                incomingStock = si.incomingStock,
                 endingStock = ending,
                 damagedStock = si.damagedStock,
                 sold = soldByOrder,
@@ -100,7 +98,7 @@ object RecapUtils {
         val sum2 = sum1 - nonCash - expense.sum
 
         // Hasil dari sum2 + Uang kas
-        val sum3 = sum2 + cashOpening
+        val remainingBalance = sum2 + cashOpening
 
         val gross = GrossSection(
             sum1 = sum1,
@@ -108,7 +106,7 @@ object RecapUtils {
             expenseToday = expense.sum,
             sum2 = sum2,
             cashOpening = cashOpening,
-            sum3 = sum3,
+            remainingBalance = remainingBalance,
 
             )
 
@@ -117,7 +115,7 @@ object RecapUtils {
         val smallCash = recapIn?.smallCash ?: 0
         val extraCash = recapIn?.extraCash ?: 0
         val sumCash = bigCash + smallCash + extraCash
-        val diff = sum3 - sumCash
+        val diff = remainingBalance - sumCash
         val currentCashierId = FirebaseAuth.getInstance().currentUser?.uid ?: "unknown"
 
         val cash = CashAtRegister(

@@ -50,6 +50,7 @@ fun StockScreen(
     val products by productViewModel.productList.collectAsState()
 
     val initialStocks = remember { mutableStateMapOf<String, Int>() }
+    val incomingStocks = remember { mutableStateMapOf<String, Int>() }
     val damagedStocks = remember { mutableStateMapOf<String, Int>() }
 
     var uangKas by remember { mutableStateOf("") }
@@ -110,6 +111,43 @@ fun StockScreen(
                     }
                 }
             }
+
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    shadowElevation = 4.dp
+                ) {
+                    Column {
+                        Text(
+                            "Barang Masuk",
+                            style = MaterialTheme.typography.displaySmall,
+                            modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)
+                        )
+
+                        products.forEach { product ->
+                            var value by remember { mutableStateOf("") }
+
+                            OutlinedTextField(
+                                value = value,
+                                onValueChange = {
+                                    value = it.filter(Char::isDigit)
+                                    incomingStocks[product.id] = value.toIntOrNull() ?: 0
+                                },
+                                label = { Text(product.name) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = MaterialTheme.typography.displaySmall.copy(textAlign = TextAlign.Center),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             item {
                 Surface(
                     modifier = Modifier
@@ -189,6 +227,7 @@ fun StockScreen(
                                 productId = product.id,
                                 name = product.name,
                                 initialStock = initialStocks[product.id] ?: 0,
+                                incomingStock = incomingStocks[product.id] ?: 0,
                                 damagedStock = damagedStocks[product.id] ?: 0
                             )
                         }

@@ -4,6 +4,7 @@ data class StockInputItem(
     val productId: String = "",
     val name: String = "",
     val initialStock: Int = 0,
+    val incomingStock: Int = 0,
     val damagedStock: Int = 0
 )
 
@@ -26,6 +27,7 @@ data class ProductRecapRow(
     val productId: String = "",
     val name: String = "",
     val initialStock: Int = 0,
+    val incomingStock: Int = 0,
     val endingStock: Int = 0,
     val damagedStock: Int = 0,
     val sold: Int = 0,
@@ -50,7 +52,7 @@ data class GrossSection(
     val nonCash: Int = 0,       // total transaksi non tunai
     val expenseToday: Int = 0,
     val sum2: Int = 0,          // sum1 - nonCash - expenseToday
-    val sum3: Int = 0,          // sum 2 + cashOpening = sum3
+    val remainingBalance: Int = 0,          // sum 2 + cashOpening = remainingBalance
     val cashOpening: Int = 0    // dari StockMeta hari pertama, atau dari “Uang Kecil” hari kemarin
 )
 

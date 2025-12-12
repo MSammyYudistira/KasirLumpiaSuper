@@ -149,6 +149,43 @@ class RecapRepository(
         batch.commit().await()
     }
 
+    suspend fun addIncomingStockByDate(
+        dateLabel: String,
+        deltas: Map<String, Pair<String /*name*/, Int /*delta*/>>
+    ) {
+        val userId = currentUserId()
+        val batch = db.batch()
+
+        val parentRef = db.collection("users")
+            .document(userId)
+            .collection("stock_inputs")
+            .document(dateLabel)
+
+        // update updatedAt / hasData
+        batch.set(parentRef, mapOf("updatedAt" to FieldValue.serverTimestamp(), "hasData" to true), SetOptions.merge())
+
+        val itemsRef = parentRef.collection("items")
+
+        deltas.forEach { (productId, pair) ->
+            val name = pair.first
+            val delta = pair.second
+
+            val docRef = itemsRef.document(productId)
+
+            // Jika dokumen item belum ada, gunakan merge untuk membuat doc awal dengan nama dan incomingStock = delta
+            // Menggunakan increment juga aman untuk dokumen baru.
+            val updates = mapOf<String, Any>(
+                "productId" to productId,
+                "name" to name,
+                "incomingStock" to FieldValue.increment(delta.toLong())
+            )
+            batch.set(docRef, updates, SetOptions.merge())
+        }
+
+        batch.commit().await()
+    }
+
+
     suspend fun getRecapInputByDate(dateLabel: String): RecapInput? {
         val userId = currentUserId()
         return try {
@@ -178,8 +215,8 @@ class RecapRepository(
 
         return stockItems.associate { stock ->
             val sold = soldMap[stock.productId] ?: 0
-            val rawRemaining = stock.initialStock - stock.damagedStock - sold
-            val remaining = maxOf(0, rawRemaining)
+            val rawRemaining = stock.initialStock + stock.incomingStock - stock.damagedStock - sold
+            val remaining = rawRemaining   // ← sekarang bisa minus
 
             stock.productId to remaining
         }

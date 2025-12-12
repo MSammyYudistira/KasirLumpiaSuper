@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
 data class WeekRange(
     val label: String,
@@ -33,6 +34,16 @@ object DateUtils {
         val numberFormat = NumberFormat.getNumberInstance(idLocale)
         numberFormat.maximumFractionDigits = 0
         return "Rp ${numberFormat.format(amount)}"
+    }
+
+    fun rupiahWithSymbol(amount: Int): String {
+        val numberFormat = NumberFormat.getNumberInstance(idLocale)
+        val formatted = numberFormat.format(abs(amount))
+        return if (amount >= 0) {
+            "Rp +$formatted"
+        } else {
+            "Rp -$formatted"
+        }
     }
 
     fun generateWeeksOfMonth(year: Int, month: Int): List<WeekRange> {

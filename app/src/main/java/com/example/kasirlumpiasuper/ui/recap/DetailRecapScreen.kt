@@ -166,7 +166,7 @@ fun DetailRecapScreen(
                                     Modifier.weight(1f)
                                 )
                                 RecapCardGross(
-                                    "Pendapatan",
+                                    "Rekapitulasi Saldo Akhir",
                                     recap!!.grossSection,
                                     Modifier.weight(1f)
                                 )
@@ -197,92 +197,155 @@ fun DetailRecapScreen(
                     }
 
                     item {
-                        Button(
-                            onClick = {
-                                val widthPx = PdfUtils.screenWidthPx(context)
-                                val bitmap = PdfUtils.renderComposableToBitmap(
-                                    context = context,
-                                    widthPx = widthPx,
-                                    content = {
-                                        DetailRecapBodyExport(
-                                            recap = recap!!,
-                                            paddingHorizontal = 72.dp
-                                        )
-                                    },
-                                    highQuality = true
-                                )
-
-                                val fileName = PdfUtils.defaultRecapFileName(recap!!.dateLabel)
-                                val ok = PdfUtils.saveBitmapAsPdfToDownloads(
-                                    context = context,
-                                    bitmap = bitmap,
-                                    fileName = fileName,
-                                    dpi = 300
-                                )
-
-                                if (ok) {
-                                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                                    val candidateNames = listOf(
-                                        "$fileName.pdf",
-                                        fileName,
-                                    )
-                                    var pdfFile: File? = null
-                                    for (name in candidateNames) {
-                                        val tryFile = File(downloadsDir, name)
-                                        if (tryFile.exists()) {
-                                            pdfFile = tryFile
-                                            break
-                                        }
-                                    }
-
-                                    if (pdfFile == null) {
-                                        val internalFile = File(context.getExternalFilesDir(null), "$fileName.pdf")
-                                        if (internalFile.exists()) pdfFile = internalFile
-                                    }
-
-                                    if (pdfFile != null && pdfFile.exists()) {
-                                        val uri = FileProvider.getUriForFile(
-                                            context,
-                                            "${context.packageName}.provider",
-                                            pdfFile
-                                        )
-                                        generatedPdfUri = uri
-                                        showPdfDialog = true
-                                    } else {
-                                        Toast.makeText(context, "PDF tersimpan, tapi file tidak ditemukan.", Toast.LENGTH_SHORT).show()
-                                    }
-                                } else {
-                                    Toast.makeText(context, "Gagal menyimpan PDF", Toast.LENGTH_SHORT).show()
-                                }
-                            },
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Text(
-                                "Cetak Rekapan",
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                            Button(
+                                onClick = {
+                                    val widthPx = PdfUtils.screenWidthPx(context)
+                                    val bitmap = PdfUtils.renderComposableToBitmap(
+                                        context = context,
+                                        widthPx = widthPx,
+                                        content = {
+                                            DetailRecapBodyExport(
+                                                recap = recap!!,
+                                                paddingHorizontal = 72.dp
+                                            )
+                                        },
+                                        highQuality = true
+                                    )
+
+                                    val fileName = PdfUtils.defaultRecapFileName(recap!!.dateLabel)
+                                    val ok = PdfUtils.saveBitmapAsPdfToDownloads(
+                                        context = context,
+                                        bitmap = bitmap,
+                                        fileName = fileName,
+                                        dpi = 300
+                                    )
+
+                                    if (ok) {
+                                        val downloadsDir =
+                                            Environment.getExternalStoragePublicDirectory(
+                                                Environment.DIRECTORY_DOWNLOADS
+                                            )
+                                        val candidateNames = listOf(
+                                            "$fileName.pdf",
+                                            fileName,
+                                        )
+                                        var pdfFile: File? = null
+
+                                        for (name in candidateNames) {
+                                            val tryFile = File(downloadsDir, name)
+                                            if (tryFile.exists()) {
+                                                pdfFile = tryFile
+                                                break
+                                            }
+                                        }
+
+                                        if (pdfFile == null) {
+                                            val internalFile = File(
+                                                context.getExternalFilesDir(null),
+                                                "$fileName.pdf"
+                                            )
+                                            if (internalFile.exists()) pdfFile = internalFile
+                                        }
+
+                                        if (pdfFile != null && pdfFile.exists()) {
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.provider",
+                                                pdfFile
+                                            )
+
+//                                            recapViewModel.sendEmailWithAttachment(
+//                                                context,
+//                                                "msyudistiraa1@gmail.com",
+//                                                uri
+//                                            )
+
+                                            generatedPdfUri = uri
+                                            showPdfDialog = true
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "PDF tersimpan, tapi file tidak ditemukan.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Gagal menyimpan PDF",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                            ) {
+                                Text(
+                                    "Cetak Rekapan",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    generatedPdfUri?.let { recapViewModel.sendEmailWithAttachment(
+                                        context,
+                                        email = "msyudistiraa1@gmail.com",
+                                        uri = it
+                                    ) }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = generatedPdfUri != null,   // hanya aktif kalau PDF sudah dibuat
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (generatedPdfUri != null) Primary else Color.Gray
+                                )
+                            ) {
+                                Text(
+                                    "Kirim Rekapan",
+                                    color = Color.White
+                                )
+                            }
                         }
 
                         if (showPdfDialog && generatedPdfUri != null) {
                             AlertDialog(
                                 onDismissRequest = { showPdfDialog = false },
                                 containerColor = Color.White,
-                                title = { Text("Rekapan Disimpan", style = MaterialTheme.typography.displaySmall) },
-                                text = { Text("Rekapan telah disimpan dalam bentuk PDF di folder Download. Apakah kamu ingin membukanya sekarang?", style = MaterialTheme.typography.bodyMedium) },
+                                title = {
+                                    Text(
+                                        "Rekapan Disimpan",
+                                        style = MaterialTheme.typography.displaySmall
+                                    )
+                                },
+                                text = {
+                                    Text(
+                                        "Rekapan telah disimpan dalam bentuk PDF di folder Download. Apakah kamu ingin membukanya sekarang?",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
                                 confirmButton = {
                                     TextButton(onClick = {
                                         showPdfDialog = false
                                         val intent = Intent(Intent.ACTION_VIEW).apply {
                                             setDataAndType(generatedPdfUri, "application/pdf")
-                                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+                                            flags =
+                                                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
                                         }
                                         try {
                                             context.startActivity(intent)
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "Tidak ada aplikasi untuk membuka PDF", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                "Tidak ada aplikasi untuk membuka PDF",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
                                     }) {
                                         Text("Ya")
@@ -381,7 +444,7 @@ private fun DetailRecapBodyExport(
                         .border(width = 1.dp, color = Color.Black)
                 )
                 RecapCardGross(
-                    "Pendapatan",
+                    "Rekapitulasi Saldo Akhir",
                     recap.grossSection,
                     Modifier
                         .weight(1f)
@@ -423,9 +486,10 @@ private fun DetailRecapBodyExport(
 
 @Composable
 fun RecapTableDynamic(rows: List<ProductRecapRow>) {
-    val columnWeights = listOf(2f, 1f, 1f, 1f, 1f, 1.5f)
+    val columnWeights = listOf(2f, 1f, 1f, 1f, 1f, 1f, 1.5f)
     val alignments = listOf(
         TextAlign.Start,
+        TextAlign.Center,
         TextAlign.Center,
         TextAlign.Center,
         TextAlign.Center,
@@ -434,7 +498,15 @@ fun RecapTableDynamic(rows: List<ProductRecapRow>) {
     )
 
     val headers =
-        listOf("Nama Makanan", "Stok Awal", "Stok Akhir", "Rusak / Retur", "Terjual", "Pendapatan")
+        listOf(
+            "Nama Makanan",
+            "Stok Awal",
+            "Barang Masuk",
+            "Stok Akhir",
+            "Rusak / Retur",
+            "Terjual",
+            "Pendapatan"
+        )
 
     Column(Modifier.fillMaxWidth()) {
         // Header
@@ -462,24 +534,29 @@ fun RecapTableDynamic(rows: List<ProductRecapRow>) {
                     align = alignments[1]
                 )
                 TableCell(
-                    r.endingStock.toString(),
+                    r.incomingStock.toString(),
                     Modifier.weight(columnWeights[2]),
                     align = alignments[2]
                 )
                 TableCell(
-                    r.damagedStock.toString(),
+                    r.endingStock.toString(),
                     Modifier.weight(columnWeights[3]),
                     align = alignments[3]
                 )
                 TableCell(
-                    r.sold.toString(),
+                    r.damagedStock.toString(),
                     Modifier.weight(columnWeights[4]),
                     align = alignments[4]
                 )
                 TableCell(
-                    DateUtils.rupiah(r.revenue),
+                    r.sold.toString(),
                     Modifier.weight(columnWeights[5]),
                     align = alignments[5]
+                )
+                TableCell(
+                    DateUtils.rupiah(r.revenue),
+                    Modifier.weight(columnWeights[6]),
+                    align = alignments[6]
                 )
             }
             if (idx < rows.lastIndex) Divider(color = Color(0xFFDDDDDD), thickness = 1.dp)
@@ -497,15 +574,16 @@ fun RecapTableDynamic(rows: List<ProductRecapRow>) {
             TableCell("", Modifier.weight(columnWeights[1]))
             TableCell("", Modifier.weight(columnWeights[2]))
             TableCell("", Modifier.weight(columnWeights[3]))
+            TableCell("", Modifier.weight(columnWeights[4]))
             TableCell(
                 totalSold.toString(),
-                Modifier.weight(columnWeights[4]),
+                Modifier.weight(columnWeights[5]),
                 bold = true,
                 align = TextAlign.Center
             )
             TableCell(
                 DateUtils.rupiah(totalRevenue),
-                Modifier.weight(columnWeights[5]),
+                Modifier.weight(columnWeights[6]),
                 bold = true,
                 align = TextAlign.End
             )
@@ -683,7 +761,7 @@ fun RecapCardGross(title: String, data: GrossSection, modifier: Modifier = Modif
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Uang Kas (pembuka):", style = MaterialTheme.typography.bodyMedium)
+                Text("Uang Kas:", style = MaterialTheme.typography.bodyMedium)
                 Text(
                     DateUtils.rupiah(data.cashOpening),
                     color = Primary,
@@ -697,9 +775,9 @@ fun RecapCardGross(title: String, data: GrossSection, modifier: Modifier = Modif
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Laba Bersih:", style = MaterialTheme.typography.titleLarge)
+                Text("Sisa Saldo:", style = MaterialTheme.typography.titleLarge)
                 Text(
-                    DateUtils.rupiah(data.sum3),
+                    DateUtils.rupiah(data.remainingBalance),
                     style = MaterialTheme.typography.titleLarge,
                     color = Primary
                 )
@@ -763,9 +841,8 @@ fun RecapCardCash(title: String, data: CashAtRegister, modifier: Modifier = Modi
 
             val diff = data.diff
             val diffColor = when {
-                diff >= 100_000 -> Danger
-                diff == 0 -> Success
-                else -> Warning
+                diff >= 0 -> Success
+                else -> Danger
             }
 
             Divider(Modifier.padding(vertical = 8.dp))
@@ -773,7 +850,7 @@ fun RecapCardCash(title: String, data: CashAtRegister, modifier: Modifier = Modi
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Selisih", style = MaterialTheme.typography.titleLarge)
                 Text(
-                    DateUtils.rupiah(data.diff),
+                    DateUtils.rupiahWithSymbol(data.diff),
                     color = diffColor,
                     style = MaterialTheme.typography.titleLarge
                 )

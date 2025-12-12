@@ -1,5 +1,8 @@
 package com.example.kasirlumpiasuper.ui.recap
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -90,6 +93,22 @@ class RecapViewModel(
         }
     }
 
+    fun addIncomingStock(
+        deltas: Map<String, Pair<String, Int>>,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val dateLabel = BusinessDateManager.getBusinessDateLabel()
+                repo.addIncomingStockByDate(dateLabel, deltas)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.message ?: "Gagal simpan barang masuk")
+            }
+        }
+    }
+
     fun saveRecapInput(
         input: RecapInput,
         dateLabel: String,
@@ -109,5 +128,18 @@ class RecapViewModel(
 
     suspend fun hasRecapInput(dateLabel: String): Boolean {
         return repo.hasRecapInput(dateLabel)
+    }
+
+    fun sendEmailWithAttachment(context: Context, email: String, uri: Uri) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
+            putExtra(Intent.EXTRA_SUBJECT, "Rekapan Harian")
+            putExtra(Intent.EXTRA_TEXT, "Berikut terlampir rekapan dalam bentuk PDF.")
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        context.startActivity(Intent.createChooser(intent, "Kirim email"))
     }
 }
